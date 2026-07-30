@@ -3,6 +3,7 @@ import { useCutline } from '../context/CutlineContext'
 
 const NAV = [
   { to: '/command', label: 'Command' },
+  { to: '/pipeline', label: 'Pipeline' },
   { to: '/money-now', label: 'Money Now' },
   { to: '/studio', label: 'Studio' },
   { to: '/autopilot', label: 'Autopilot' },
@@ -13,6 +14,7 @@ const NAV = [
   { to: '/deals', label: 'Deals' },
   { to: '/analytics', label: 'Analytics' },
   { to: '/media-kit', label: 'Media Kit' },
+  { to: '/blog', label: 'Blog' },
   { to: '/export', label: 'Export' },
   { to: '/projects', label: 'Projects' },
   { to: '/playbook', label: 'Playbook' },

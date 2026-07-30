@@ -19,6 +19,22 @@ export const PLATFORM_MODULES: PlatformModule[] = [
     group: 'ops',
   },
   {
+    id: 'pipeline',
+    name: 'Content Pipeline',
+    blurb: 'AI + Replit + AWS + YouTube/AdSense execution loop from trends to cash.',
+    path: '/pipeline',
+    status: 'live',
+    group: 'create',
+  },
+  {
+    id: 'blog',
+    name: 'Guides Blog',
+    blurb: 'Companion AdSense layer for search traffic outside YouTube.',
+    path: '/blog',
+    status: 'live',
+    group: 'money',
+  },
+  {
     id: 'studio',
     name: 'Studio',
     blurb: 'Mark clutch moments, score clips, generate gaming-native copy.',

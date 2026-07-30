@@ -16,6 +16,8 @@ import { DealsPage } from './pages/DealsPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { MediaKitPage } from './pages/MediaKitPage'
 import { MoneyNowPage } from './pages/MoneyNowPage'
+import { PipelinePage } from './pages/PipelinePage'
+import { BlogPage } from './pages/BlogPage'
 
 export default function App() {
   return (
@@ -24,6 +26,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route element={<AppShell />}>
           <Route path="/command" element={<CommandPage />} />
+          <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/studio" element={<StudioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/packs" element={<PacksPage />} />
@@ -37,6 +40,7 @@ export default function App() {
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/media-kit" element={<MediaKitPage />} />
+          <Route path="/blog" element={<BlogPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

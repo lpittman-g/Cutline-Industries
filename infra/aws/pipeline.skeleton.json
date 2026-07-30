@@ -1,0 +1,18 @@
+{
+  "cutlinePipeline": {
+    "version": "1.0",
+    "description": "Cutline media + analytics skeleton for AWS",
+    "resources": {
+      "S3Buckets": ["cutline-media", "cutline-thumbs", "cutline-exports"],
+      "Compute": ["Lambda FFmpeg worker OR EC2 Autopilot host"],
+      "Database": ["DynamoDB table cutline_pipeline_jobs"],
+      "Secrets": ["YouTube OAuth token", "OpenAI key", "AdSense config"]
+    },
+    "jobStates": ["queued", "scripting", "rendering", "uploading", "published", "failed"],
+    "suggestedTable": {
+      "name": "cutline_pipeline_jobs",
+      "pk": "jobId",
+      "attributes": ["topic", "stage", "youtubeId", "s3Prefix", "updatedAt", "rpmHint"]
+    }
+  }
+}
