@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cutline Industries — 4-Week Outreach Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Pinyon+Script&display=swap" rel="stylesheet" />
+  <style>
+    @page { size: letter landscape; margin: 0.45in; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      margin: 0;
+      font-family: "Libre Caslon Text", "Times New Roman", serif;
+      color: #e8f7ef;
+      background: #050a09;
+    }
+    .page {
+      min-height: 7.5in;
+      padding: 0.35in 0.4in;
+      background:
+        radial-gradient(700px 320px at 90% 0%, rgba(61,255,208,0.1), transparent 55%),
+        linear-gradient(180deg, #07110f, #050a09);
+    }
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #b8ff3c;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .hdr img { width: 64px; height: 64px; border-radius: 12px; }
+    h1 {
+      margin: 0;
+      font-family: "Pinyon Script", cursive;
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1.1;
+    }
+    .sub { color: #8aa396; font-size: 12px; margin-top: 4px; }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .card {
+      border: 1px solid rgba(184,255,60,0.25);
+      background: #0f1c18;
+      border-radius: 12px;
+      padding: 14px 12px;
+      min-height: 4.6in;
+      position: relative;
+    }
+    .card::after {
+      content: "▸";
+      position: absolute;
+      right: -11px;
+      top: 28px;
+      color: #3dffd0;
+      font-size: 18px;
+      z-index: 2;
+    }
+    .card:last-child::after { content: ""; }
+    .week {
+      color: #b8ff3c;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #3dffd0;
+    }
+    ul {
+      margin: 0;
+      padding-left: 16px;
+      color: #cfe7da;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    li { margin: 7px 0; }
+    .foot {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      color: #8aa396;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="hdr">
+      <div>
+        <h1>Cutline Industries</h1>
+        <div class="sub">4-Week Buyer Outreach Plan — sponsors, brands, agencies, creators</div>
+      </div>
+      <img src="./cutline-logo.png" alt="Cutline logo" />
+    </div>
+
+    <div class="flow">
+      <article class="card">
+        <div class="week">Week 1</div>
+        <h2>Optimize Profile</h2>
+        <ul>
+          <li>Update banner with Cutline logo + tagline: “gaming content, cut to ship”</li>
+          <li>Feature cutline-industries.studio, media kit, and best Shorts</li>
+          <li>Rewrite About for gaming media + Autopilot Shorts + monetization</li>
+          <li>Upload portfolio: sample Shorts packs, channel proof, brand-safe clips</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="week">Week 2</div>
+        <h2>Build Buyer Lists</h2>
+        <ul>
+          <li>Filter by industry: games, esports, creator tools, gaming hardware</li>
+          <li>Filter by title: Partnerships, Brand, Influencer, Growth, Sponsorships</li>
+          <li>Save 50–100 high-value leads (brands, agencies, creators)</li>
+          <li>Tag lists: Game Brand / Agency / Creator / Affiliate</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="week">Week 3</div>
+        <h2>Launch Outreach</h2>
+        <ul>
+          <li>Send value-first messages (no hard sell in first note)</li>
+          <li>Offer free Shorts audit or sample clip pack for their game</li>
+          <li>Share 1 proof link + clear CTA (reply / 15-min call)</li>
+          <li>Follow up day 3 and day 7 with a new clip angle</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="week">Week 4</div>
+        <h2>Secure Deals</h2>
+        <ul>
+          <li>Move hot leads to phone / Zoom / secure portal</li>
+          <li>Send media kit + rate card (Shorts pack / retainer / integration)</li>
+          <li>Close with Stripe invoice or sponsorship agreement</li>
+          <li>Book next content drop date and kickoff checklist</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="foot">
+      <span>Cutline Industries</span>
+      <span>cutline-industries.studio</span>
+      <span>Confidential</span>
+    </div>
+  </section>
+</body>
+</html>
