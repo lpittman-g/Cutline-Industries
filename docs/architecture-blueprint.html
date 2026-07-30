@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cutline Industries — YouTube Monetization Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050a09;
+      --panel: #0f1c18;
+      --ink: #e8f7ef;
+      --muted: #8aa396;
+      --lime: #b8ff3c;
+      --cyan: #3dffd0;
+      --amber: #ffc857;
+      --coral: #ff5d4a;
+      --line: rgba(184, 255, 60, 0.16);
+    }
+    * { box-sizing: border-box; }
+    @page { size: letter portrait; margin: 0.55in; }
+    body {
+      margin: 0;
+      background: #111;
+      color: var(--ink);
+      font-family: "IBM Plex Mono", monospace;
+      line-height: 1.45;
+    }
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0 auto 24px;
+      padding: 0.55in;
+      background:
+        radial-gradient(700px 360px at 100% 0%, rgba(61,255,208,0.08), transparent 50%),
+        linear-gradient(180deg, #07110f, var(--bg));
+      border: 1px solid var(--line);
+    }
+    .actions {
+      max-width: 8.5in;
+      margin: 16px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 8px;
+    }
+    .actions a, .actions button {
+      font-family: Syne, sans-serif;
+      border: 0;
+      background: var(--lime);
+      color: #04100c;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      border-bottom: 2px solid var(--lime);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .hdr img {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      object-fit: cover;
+    }
+    .hdr h1 {
+      margin: 0;
+      font-family: Syne, sans-serif;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+    .hdr p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    h2 {
+      font-family: Syne, sans-serif;
+      font-size: 18px;
+      margin: 18px 0 10px;
+      letter-spacing: -0.02em;
+    }
+    h3 {
+      font-family: Syne, sans-serif;
+      font-size: 14px;
+      margin: 0 0 6px;
+      color: var(--cyan);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .card p, .card li { font-size: 11px; color: var(--muted); margin: 0; }
+    .card ul { margin: 6px 0 0; padding-left: 16px; }
+    .money { border-color: rgba(255, 200, 87, 0.35); }
+    .money h3 { color: var(--amber); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 10px 0 6px;
+    }
+    .step {
+      background: rgba(184,255,60,0.06);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 10px;
+      min-height: 78px;
+    }
+    .step strong {
+      display: block;
+      font-family: Syne, sans-serif;
+      color: var(--lime);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,200,87,0.4);
+      color: var(--amber);
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: rgba(184,255,60,0.08);
+      color: var(--lime);
+      font-family: Syne, sans-serif;
+      font-size: 11px;
+    }
+    .foot {
+      margin-top: 16px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .note {
+      margin-top: 10px;
+      font-size: 10px;
+      color: var(--muted);
+      border-left: 3px solid var(--cyan);
+      padding-left: 10px;
+    }
+    @media print {
+      body { background: white; }
+      .page {
+        border: none;
+        margin: 0;
+        page-break-after: always;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="actions no-print">
+    <button type="button" onclick="window.print()">Print blueprint</button>
+    <a href="./cover-sheet.html">Cover sheet</a>
+  </div>
+
+  <!-- PAGE 1: Money map -->
+  <section class="page">
+    <div class="hdr">
+      <div>
+        <h1>Cutline Industries Monetization Blueprint</h1>
+        <p>All standard YouTube money paths + Cutline Autopilot delivery system · cutline-industries.studio</p>
+      </div>
+      <img src="./cutline-logo.png" alt="Cutline logo" />
+    </div>
+
+    <span class="badge">Goal: make money from the channel</span>
+    <h2>1. End-to-end money flow</h2>
+    <div class="flow">
+      <div class="step"><strong>1. Create</strong>Game VODs / Shorts / Longform / Lives</div>
+      <div class="step"><strong>2. Publish</strong>Autopilot + Studio → YouTube</div>
+      <div class="step"><strong>3. Watch</strong>Views, watch time, subs, engagement</div>
+      <div class="step"><strong>4. Monetize</strong>Ads · Premium · Fans · Shopping · Deals</div>
+      <div class="step"><strong>5. Collect</strong>AdSense + Stripe + brand invoices</div>
+    </div>
+
+    <h2>2. YouTube Partner Program (YPP) revenue — include all of these</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Money source</th>
+          <th>How it pays Cutline</th>
+          <th>Needs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Ad revenue (longform)</strong></td>
+          <td>Skipable/non-skippable in-stream, bumper, overlay, display, and sponsored cards on eligible videos. Shared via Google AdSense.</td>
+          <td>YPP + AdSense linked; content eligible for ads</td>
+        </tr>
+        <tr>
+          <td><strong>Shorts ad revenue</strong></td>
+          <td>Revenue share from ads shown in/around Shorts feed for eligible Shorts.</td>
+          <td>YPP Shorts monetization; Shorts volume via Autopilot</td>
+        </tr>
+        <tr>
+          <td><strong>YouTube Premium</strong></td>
+          <td>Share of Premium subscriber watch time on your content (no ads shown to them).</td>
+          <td>YPP; audience that uses Premium</td>
+        </tr>
+        <tr>
+          <td><strong>Channel memberships</strong></td>
+          <td>Monthly fan subscriptions for badges, emotes, perks, members-only videos/posts.</td>
+          <td>YPP + memberships enabled</td>
+        </tr>
+        <tr>
+          <td><strong>Super Chat / Super Stickers</strong></td>
+          <td>Paid highlighted messages during live streams / premieres.</td>
+          <td>YPP + live / premiere</td>
+        </tr>
+        <tr>
+          <td><strong>Super Thanks</strong></td>
+          <td>One-time fan support on uploaded videos.</td>
+          <td>YPP + Super Thanks enabled</td>
+        </tr>
+        <tr>
+          <td><strong>Shopping / Merch shelf</strong></td>
+          <td>Commission/sales from YouTube Shopping products and merch shelf on watch pages.</td>
+          <td>Shopping eligibility + products connected</td>
+        </tr>
+        <tr>
+          <td><strong>YouTube Shopping affiliate</strong></td>
+          <td>Commission when viewers buy tagged products through your videos/lives.</td>
+          <td>Shopping affiliate program access</td>
+        </tr>
+        <tr>
+          <td><strong>BrandConnect / official brand deals</strong></td>
+          <td>Paid campaigns matched through YouTube’s brand marketplace (where available).</td>
+          <td>Access + brand-safe channel</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note">
+      YPP thresholds change over time. Blueprint assumes Cutline will qualify (subs + watch hours / Shorts views) then turn on every eligible revenue feature above.
+    </div>
+
+    <div class="foot">
+      <span>CI-ARCH-001 · Page 1 of 3</span>
+      <span>Confidential</span>
+      <span>Cutline Industries</span>
+    </div>
+  </section>
+
+  <!-- PAGE 2: Extended money + architecture -->
+  <section class="page">
+    <div class="hdr">
+      <div>
+        <h1>Channel Business Stack</h1>
+        <p>YouTube-native money + outside money that still depends on the channel</p>
+      </div>
+      <img src="./cutline-logo.png" alt="Cutline logo" />
+    </div>
+
+    <h2>3. Extended revenue (still channel-driven)</h2>
+    <div class="grid-3">
+      <div class="card money">
+        <h3>Sponsorships</h3>
+        <p>Direct brand deals, integrations, and dedicated sponsor reads sold off channel kit + media rates.</p>
+      </div>
+      <div class="card money">
+        <h3>Affiliate links</h3>
+        <p>Amazon, game stores, VPN, chairs, GPUs — tracked links in description / community posts.</p>
+      </div>
+      <div class="card money">
+        <h3>Digital products</h3>
+        <p>Aim packs, editing packs, Discord VIP, courses — sold via cutline-industries.studio / Stripe.</p>
+      </div>
+      <div class="card money">
+        <h3>Live events / tickets</h3>
+        <p>Paid live premieres, tournament watch parties, members-only live nights.</p>
+      </div>
+      <div class="card money">
+        <h3>Licensing / clips</h3>
+        <p>License Cutline clips to esports orgs, apps, or compilations.</p>
+      </div>
+      <div class="card money">
+        <h3>Email / community</h3>
+        <p>Own audience off-platform (Discord, email) to sell launches without relying only on ads.</p>
+      </div>
+    </div>
+
+    <h2>4. System architecture (how content becomes cash)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Production layer</h3>
+        <ul>
+          <li>Capture VODs / ranked sessions</li>
+          <li>Cutline Studio marks clips</li>
+          <li>Autopilot cuts vertical Shorts (FFmpeg)</li>
+          <li>Titles, hooks, hashtags, CTAs auto-written</li>
+          <li>Publish longform + Shorts + lives on schedule</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Distribution layer</h3>
+        <ul>
+          <li>YouTube channel (primary)</li>
+          <li>Shorts feed for subscriber growth</li>
+          <li>Cross-post clips when useful</li>
+          <li>Website: cutline-industries.studio</li>
+          <li>AWS Amplify hosting + Route 53 DNS</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Monetization layer</h3>
+        <ul>
+          <li>AdSense (ads + Shorts ads + Premium share)</li>
+          <li>Memberships / Super Chat / Super Thanks</li>
+          <li>Shopping + merch shelf</li>
+          <li>BrandConnect + direct sponsors</li>
+          <li>Stripe for products / services</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Operations layer</h3>
+        <ul>
+          <li>Google OAuth + YouTube Data API</li>
+          <li>Secrets / token storage</li>
+          <li>Inbox → cut → upload worker</li>
+          <li>Analytics review (RPM, CTR, retention)</li>
+          <li>Tax / business entity (Atlas / LLC)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>5. Money collection map</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Payout rail</th>
+          <th>Cutline action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ads, Shorts ads, Premium, Fan funding, Shopping (YT)</td>
+          <td>Google AdSense → bank</td>
+          <td>Keep AdSense verified; watch CPM/RPM weekly</td>
+        </tr>
+        <tr>
+          <td>BrandConnect / some marketplace deals</td>
+          <td>YouTube / partner payout</td>
+          <td>Accept brand-safe offers only</td>
+        </tr>
+        <tr>
+          <td>Direct sponsorships</td>
+          <td>Invoice → Stripe/ACH/wire</td>
+          <td>Media kit + rate card on studio site</td>
+        </tr>
+        <tr>
+          <td>Digital products / consulting</td>
+          <td>Stripe on cutline-industries.studio</td>
+          <td>Pay links + product pages</td>
+        </tr>
+        <tr>
+          <td>Affiliate</td>
+          <td>Amazon / network dashboards</td>
+          <td>Tracked links in every description template</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="foot">
+      <span>CI-ARCH-001 · Page 2 of 3</span>
+      <span>Confidential</span>
+      <span>Cutline Industries</span>
+    </div>
+  </section>
+
+  <!-- PAGE 3: Printable pipeline + checklist -->
+  <section class="page">
+    <div class="hdr">
+      <div>
+        <h1>Autopilot → Revenue Operating Model</h1>
+        <p>What to run daily so ad revenue and fan money can compound</p>
+      </div>
+      <img src="./cutline-logo.png" alt="Cutline logo" />
+    </div>
+
+    <h2>6. Daily / weekly machine</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Daily (Autopilot)</h3>
+        <ul>
+          <li>Drop VOD in inbox (or overnight recording)</li>
+          <li>Autopilot cuts 5–15 Shorts</li>
+          <li>Upload Shorts (private → public schedule)</li>
+          <li>Pin comment CTA: membership / Super Thanks / product</li>
+          <li>Reply to early comments (retention + community)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Weekly (money ops)</h3>
+        <ul>
+          <li>1–2 longform videos for ad inventory</li>
+          <li>1 live or premiere for Super Chat</li>
+          <li>Members-only perk post</li>
+          <li>Update affiliate + sponsor reads</li>
+          <li>Review RPM, RPM by video, Shorts revenue, top traffic sources</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>7. Enablement checklist (turn money ON)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Item</th>
+          <th>Status target</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>YouTube channel on business brand (Cutline Industries)</td><td>Live</td></tr>
+        <tr><td>2</td><td>Meet YPP thresholds (subs + watch hours and/or Shorts views)</td><td>Qualify</td></tr>
+        <tr><td>3</td><td>Link AdSense to channel</td><td>Payouts on</td></tr>
+        <tr><td>4</td><td>Turn on ads for longform + Shorts monetization</td><td>Enabled</td></tr>
+        <tr><td>5</td><td>Enable memberships, Super Thanks, Super Chat/Stickers</td><td>Enabled</td></tr>
+        <tr><td>6</td><td>Enable Shopping / merch shelf when eligible</td><td>Enabled</td></tr>
+        <tr><td>7</td><td>Autopilot posting Shorts daily</td><td>Running</td></tr>
+        <tr><td>8</td><td>Website + Stripe pay links for products/sponsors</td><td>Live</td></tr>
+        <tr><td>9</td><td>Media kit PDF for direct brand deals</td><td>Ready</td></tr>
+        <tr><td>10</td><td>Business entity + tax profile (Atlas / LLC / AdSense info match)</td><td>Filed</td></tr>
+      </tbody>
+    </table>
+
+    <h2>8. Architecture summary (one glance)</h2>
+    <div class="card">
+      <p style="color: var(--ink); font-size: 12px;">
+        <strong>Creator / VODs</strong> → <strong>Cutline Studio + Autopilot (AWS)</strong> →
+        <strong>YouTube Data API</strong> → <strong>YouTube Channel</strong> →
+        <strong>Viewers</strong> → <strong>YPP Money Stack</strong>
+        (Ads · Shorts Ads · Premium · Memberships · Super Chat/Stickers · Super Thanks · Shopping · BrandConnect)
+        → <strong>AdSense / Stripe / Invoices</strong> → <strong>Cutline Industries bank</strong>.
+      </p>
+      <p style="margin-top: 8px;">
+        Site edge: Squarespace domain <strong>cutline-industries.studio</strong> → Route 53 → Amplify → Cutline web app / media kit / pay links.
+      </p>
+    </div>
+
+    <div class="note">
+      This blueprint is the business + systems map for making money from the channel. Ad rates (CPM/RPM) vary by niche, country, season, and content; volume + retention from Autopilot Shorts and ad-friendly longform are the growth levers.
+    </div>
+
+    <div class="foot">
+      <span>CI-ARCH-001 · Page 3 of 3</span>
+      <span>Confidential</span>
+      <span>Gaming content, cut to ship</span>
+    </div>
+  </section>
+</body>
+</html>
