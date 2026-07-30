@@ -885,6 +885,20 @@ video {
     linear-gradient(180deg, rgba(19, 36, 31, 0.95), rgba(11, 21, 18, 0.95));
 }
 
+.ad-placeholder {
+  border: 1px dashed rgba(184, 255, 60, 0.35);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.22);
+  text-align: center;
+}
+
+.ad-placeholder code {
+  color: var(--cyan);
+}
+
 .sidebar .nav {
   max-height: calc(100vh - 220px);
   overflow: auto;

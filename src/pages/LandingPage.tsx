@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AdSlot } from '../components/AdSlot'
 import { MEGA_NORTH_STAR, PLATFORM_MODULES } from '../data/mega'
 
 export function LandingPage() {
@@ -13,7 +14,10 @@ export function LandingPage() {
           </div>
         </div>
         <div className="btn-row">
-          <Link className="btn btn-primary" to="/command">
+          <Link className="btn btn-primary" to="/money-now">
+            Make money
+          </Link>
+          <Link className="btn" to="/command">
             Enter OS
           </Link>
         </div>
@@ -26,18 +30,21 @@ export function LandingPage() {
           <p>
             Not a single tool — a full gaming creator business machine: Studio, Autopilot, Outreach,
             Ads Lab, Money Stack, Deal Desk, Analytics, and Media Kit under one roof at{' '}
-            {MEGA_NORTH_STAR.domain}.
+            {MEGA_NORTH_STAR.domain}. Powered by AdSense, AWS, Replit, GPT, Stripe, and YouTube.
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-primary" to="/command">
+            <Link className="btn btn-primary" to="/money-now">
+              Money Now
+            </Link>
+            <Link className="btn" to="/command">
               Open Command Center
             </Link>
             <Link className="btn" to="/studio">
               Start cutting
             </Link>
-            <Link className="btn" to="/monetize">
-              Money stack
-            </Link>
+          </div>
+          <div style={{ marginTop: '1.25rem' }}>
+            <AdSlot />
           </div>
           <div className="hero-rail">
             {PLATFORM_MODULES.slice(0, 6).map((m) => (

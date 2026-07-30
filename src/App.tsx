@@ -15,6 +15,7 @@ import { AdsLabPage } from './pages/AdsLabPage'
 import { DealsPage } from './pages/DealsPage'
 import { AnalyticsPage } from './pages/AnalyticsPage'
 import { MediaKitPage } from './pages/MediaKitPage'
+import { MoneyNowPage } from './pages/MoneyNowPage'
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/autopilot" element={<AutopilotPage />} />
           <Route path="/outreach" element={<OutreachPage />} />
           <Route path="/monetize" element={<MonetizePage />} />
+          <Route path="/money-now" element={<MoneyNowPage />} />
           <Route path="/ads" element={<AdsLabPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />

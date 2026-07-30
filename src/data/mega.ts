@@ -67,6 +67,14 @@ export const PLATFORM_MODULES: PlatformModule[] = [
     group: 'money',
   },
   {
+    id: 'money-now',
+    name: 'Money Now',
+    blurb: 'Execute AdSense, AWS, Replit, GPT, Stripe, and YouTube for cash this week.',
+    path: '/money-now',
+    status: 'live',
+    group: 'money',
+  },
+  {
     id: 'deals',
     name: 'Deal Desk',
     blurb: 'Sponsor packages, retainers, invoices, close pipeline.',
