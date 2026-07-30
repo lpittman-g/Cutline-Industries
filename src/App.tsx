@@ -18,6 +18,7 @@ import { MediaKitPage } from './pages/MediaKitPage'
 import { MoneyNowPage } from './pages/MoneyNowPage'
 import { PipelinePage } from './pages/PipelinePage'
 import { BlogPage } from './pages/BlogPage'
+import { Sprint73Page } from './pages/Sprint73Page'
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/command" element={<CommandPage />} />
           <Route path="/pipeline" element={<PipelinePage />} />
+          <Route path="/sprint-73" element={<Sprint73Page />} />
           <Route path="/studio" element={<StudioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/packs" element={<PacksPage />} />

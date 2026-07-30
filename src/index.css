@@ -885,6 +885,21 @@ video {
     linear-gradient(180deg, rgba(19, 36, 31, 0.95), rgba(11, 21, 18, 0.95));
 }
 
+.sprint-bar {
+  margin-top: 0.85rem;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.sprint-bar span {
+  display: block;
+  height: 100%;
+  width: calc(var(--p, 0) * 1%);
+  background: linear-gradient(90deg, var(--lime), var(--cyan));
+}
+
 .ad-placeholder {
   border: 1px dashed rgba(184, 255, 60, 0.35);
   border-radius: 12px;

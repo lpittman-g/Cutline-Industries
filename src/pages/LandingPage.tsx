@@ -14,8 +14,8 @@ export function LandingPage() {
           </div>
         </div>
         <div className="btn-row">
-          <Link className="btn btn-primary" to="/money-now">
-            Make money
+          <Link className="btn btn-primary" to="/sprint-73">
+            73h money sprint
           </Link>
           <Link className="btn" to="/command">
             Enter OS
@@ -33,8 +33,8 @@ export function LandingPage() {
             {MEGA_NORTH_STAR.domain}. Powered by AdSense, AWS, Replit, GPT, Stripe, and YouTube.
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-primary" to="/money-now">
-              Money Now
+            <Link className="btn btn-primary" to="/sprint-73">
+              Start 73h sprint
             </Link>
             <Link className="btn" to="/command">
               Open Command Center
