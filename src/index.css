@@ -835,6 +835,62 @@ video {
   }
 }
 
+.card-lite {
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.card-lite h4,
+.card-lite h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.card-lite p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.money-card {
+  border-color: rgba(255, 200, 87, 0.28);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  color: var(--lime);
+  font-family: var(--font-display);
+  background: rgba(184, 255, 60, 0.06);
+}
+
+.media-kit-preview {
+  background:
+    radial-gradient(600px 240px at 90% 0%, rgba(61, 255, 208, 0.08), transparent 55%),
+    linear-gradient(180deg, rgba(19, 36, 31, 0.95), rgba(11, 21, 18, 0.95));
+}
+
+.sidebar .nav {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
 @media (max-width: 640px) {
   .main,
   .landing-nav,
