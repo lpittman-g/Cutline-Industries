@@ -28,6 +28,8 @@ shorts_out/*
 !shorts_out/.gitkeep
 uploaded/*
 !uploaded/.gitkeep
+*.zip
+cutline-industries-web.zip
 
 # Editor directories and files
 .vscode/*

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cutline Industries — Stripe Authorization Letter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet" />
+  <style>
+    @page { size: letter; margin: 0.55in 0.65in; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body {
+      margin: 0;
+      font-family: Inter, Helvetica, Arial, sans-serif;
+      color: #1a1a1a;
+      font-size: 12.5px;
+      line-height: 1.45;
+      background: #fff;
+    }
+    .sheet { width: 100%; min-height: 10in; position: relative; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
+    .bars {
+      width: 150px;
+      height: 78px;
+      position: relative;
+    }
+    .bar {
+      position: absolute;
+      width: 34px;
+      height: 92px;
+      border-radius: 4px;
+      transform: skewX(-18deg);
+    }
+    .bar.b1 { left: 8px; background: #0a2540; }
+    .bar.b2 { left: 48px; background: #635bff; }
+    .bar.b3 { left: 88px; background: #00d4ff; }
+    .logo-box {
+      border: 2px solid #635bff;
+      padding: 10px 18px;
+      min-width: 120px;
+      text-align: center;
+    }
+    .logo-box .brand {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+      color: #0a2540;
+    }
+    .logo-box .sub {
+      font-size: 10px;
+      color: #635bff;
+      margin-top: 2px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .box {
+      border: 1.5px solid #635bff;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+    }
+    .sender .date {
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    .sender .entity {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .muted { color: #444; }
+    .body-box p { margin: 0 0 12px; }
+    .body-box ul {
+      margin: 8px 0 14px;
+      padding-left: 18px;
+    }
+    .body-box li { margin: 6px 0; }
+    .body-box strong { font-weight: 600; }
+    .sig-box {
+      min-height: 130px;
+    }
+    .signature {
+      font-family: "Pinyon Script", cursive;
+      font-size: 42px;
+      line-height: 1.1;
+      color: #0a2540;
+      margin: 8px 0 6px;
+    }
+    .sig-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .sig-title {
+      color: #444;
+      font-size: 12px;
+    }
+    .footnote {
+      margin-top: 28px;
+      font-size: 10px;
+      color: #777;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="header">
+      <div class="bars" aria-hidden="true">
+        <div class="bar b1"></div>
+        <div class="bar b2"></div>
+        <div class="bar b3"></div>
+      </div>
+      <div class="logo-box">
+        <div class="brand">CUTLINE</div>
+        <div class="sub">Industries</div>
+      </div>
+    </div>
+
+    <div class="box sender">
+      <div class="date">July 30, 2026</div>
+      <div class="entity">Cutline Industries</div>
+      <div class="muted">
+        Bronx, NY 10467<br />
+        United States<br />
+        cutline-industries.studio
+      </div>
+    </div>
+
+    <div class="box body-box">
+      <p>To whom it may concern,</p>
+      <p>
+        I, <strong>Lamont R Pittman</strong>, hereby authorize the designated account representative
+        at the financial institution associated with this Stripe account to manage the Stripe account
+        for Cutline Industries, as described below.
+      </p>
+      <ul>
+        <li><strong>Account ID(s):</strong> _______________________________</li>
+        <li><strong>Stripe account name:</strong> Cutline Industries</li>
+        <li><strong>Website (if applicable):</strong> https://cutline-industries.studio</li>
+        <li><strong>Employer ID (EIN):</strong> _______________________________</li>
+        <li><strong>Account Representative (legal name):</strong> _______________________________</li>
+      </ul>
+      <p>
+        This authorization is provided for Stripe account verification and management purposes
+        related to Cutline Industries business operations, including receipt of funds from
+        customers, sponsors, and platform payouts connected to our gaming media services.
+      </p>
+      <p>Sincerely,</p>
+    </div>
+
+    <div class="box sig-box">
+      <div class="signature">Lamont R Pittman</div>
+      <div class="sig-name">Lamont R Pittman</div>
+      <div class="sig-title">Owner / Authorized Official, Cutline Industries</div>
+    </div>
+
+    <div class="footnote">
+      Electronic signature applied for Cutline Industries Stripe authorization letter.
+      Replace blank Account ID, EIN, and Account Representative fields before submission if required.
+    </div>
+  </div>
+</body>
+</html>
