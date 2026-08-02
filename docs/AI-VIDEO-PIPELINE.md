@@ -1,69 +1,50 @@
 # AI video pipeline
 
-Cutline can **create Shorts from scratch** — no gameplay VOD required.
+Cutline creates **Thermal / Cutline Industries** Shorts — not generic gaming content.
 
-## Flow
+## Project mode (default)
 
-```
-trend_radar.py → script_factory.py → voice_factory.py → FFmpeg render → YouTube upload
-```
+`CUTLINE_AI_MODE=project` uses dedicated product topics:
 
-1. **Trend radar** — scans Reddit (or demo seeds) → `inbox/trend_queue.json`
-2. **Script factory** — titles, hooks, script, Shorts cutdowns → `inbox/script_package.json`
-3. **Voice factory** — Edge TTS (free) or OpenAI TTS → `ai_out/*/voice_*.mp3`
-4. **Render** — vertical 1080×1920 slideshow with title + hook overlays → `ai_out/*/*.mp4`
-5. **Upload** — existing YouTube Autopilot uploader (private by default)
+- How Thermal turns chat heat into Shorts
+- $15 live Discord unlocks
+- Bounty Board bundles
+- Indie dev ad retainers
+- Cutline API + FFmpeg engine
 
-## Run once
+Scripts come from `scripts/ai/project_script_factory.py` and always promote Thermal.
+
+## Feedback loop
+
+Before each run the pipeline:
+
+1. Fetches **YouTube views, likes, and comments** on published AI Shorts
+2. Reads **audience inputs** from `/feedback` and the API
+3. Writes `inbox/feedback_report.json` with winning hooks and next topic suggestions
+4. Biases the next script batch toward what performed and what people asked for
+
+### Public input
+
+- **Page:** `/feedback` on the public site
+- **API:** `POST /api/ai-pipeline/feedback` `{ "message": "..." }`
+- **Refresh analytics:** `POST /api/ai-pipeline/feedback/refresh`
+
+## Privacy
+
+Project Shorts upload as **`public`** by default (`CUTLINE_AI_PRIVACY=public`).
+VOD Autopilot clips still use `CUTLINE_PRIVACY`.
+
+## Run
 
 ```bash
+pip install edge-tts
 npm run ai:pipeline:once
-```
-
-## Run continuously (every 5 min by default)
-
-```bash
 npm run ai:pipeline
 ```
 
-Or via API:
+## Modes
 
-```bash
-curl -X POST http://127.0.0.1:8787/api/ai-pipeline/run-once
-curl http://127.0.0.1:8787/api/ai-pipeline/status
-```
-
-## Environment
-
-See `.env.example` — key vars:
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `CUTLINE_AI_MAX_SHORTS` | `3` | Shorts per topic |
-| `CUTLINE_AI_TOPICS_PER_RUN` | `1` | New topics per cycle |
-| `CUTLINE_AI_POLL_MS` | `300000` | Daemon poll interval |
-| `CUTLINE_TREND_SUBREDDIT` | `gaming` | Reddit source |
-| `CUTLINE_TTS_VOICE` | `en-US-GuyNeural` | Edge TTS voice |
-| `OPENAI_API_KEY` | — | Optional: GPT scripts + OpenAI TTS |
-
-## Dependencies
-
-- **Python 3** + `edge-tts` (`pip install edge-tts`)
-- **ffmpeg** / **ffprobe** on PATH
-- **YouTube OAuth** — `token.json` (same as VOD Autopilot)
-
-## Output
-
-- Videos: `ai_out/<topic-hash>/`
-- State: `ai-pipeline-state.json`
-- Log: `ai-pipeline.log`
-
-## VOD Autopilot vs AI pipeline
-
-| | VOD Autopilot | AI pipeline |
-|---|---------------|-------------|
-| Input | `inbox/*.mp4` gameplay | Trend topics |
-| Command | `npm run autopilot` | `npm run ai:pipeline` |
-| Best for | Clip highlights from streams | Daily faceless Shorts from trends |
-
-Both can run in parallel.
+| `CUTLINE_AI_MODE` | Behavior |
+|-------------------|----------|
+| `project` (default) | Thermal/Cutline product Shorts + feedback loop |
+| `trends` | Generic Reddit gaming topics (legacy) |

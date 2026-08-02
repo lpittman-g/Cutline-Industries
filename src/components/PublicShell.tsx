@@ -5,6 +5,7 @@ const NAV = [
   { to: '/', label: 'Home', end: true },
   { to: '/bounty', label: 'Bounty Board' },
   { to: '/developers', label: 'Developers' },
+  { to: '/feedback', label: 'Content input' },
 ]
 
 export function PublicShell() {

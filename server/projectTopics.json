@@ -1,0 +1,42 @@
+[
+  {
+    "id": "thermal-heat",
+    "title": "How Thermal turns stream chat heat into monetized Shorts",
+    "keywords": ["Thermal", "streaming", "Shorts", "monetization", "chat velocity"]
+  },
+  {
+    "id": "live-unlock",
+    "title": "Streamers: unlock clean 4K clips live for $15 while chat is popping",
+    "keywords": ["streamers", "Discord", "clip unlock", "Valorant", "Twitch"]
+  },
+  {
+    "id": "bounty-board",
+    "title": "The Bounty Board: fans claim heat clips while creators sleep",
+    "keywords": ["bounty board", "Shorts", "community", "clips", "Stripe"]
+  },
+  {
+    "id": "indie-retainer",
+    "title": "Indie devs: TikTok ad packs from creators playing your game",
+    "keywords": ["indie games", "Steam wishlist", "TikTok ads", "game marketing"]
+  },
+  {
+    "id": "cutline-engine",
+    "title": "Cutline API + FFmpeg: the engine inside Thermal",
+    "keywords": ["Cutline", "FFmpeg", "Autopilot", "API", "Shorts factory"]
+  },
+  {
+    "id": "heat-detection",
+    "title": "What is chat velocity and why it predicts viral clips",
+    "keywords": ["heat detection", "msg/min", "viral clips", "streaming analytics"]
+  },
+  {
+    "id": "monetize-streams",
+    "title": "3 ways streamers monetize heat without going viral",
+    "keywords": ["streamer income", "Shorts revenue", "clips", "monetization"]
+  },
+  {
+    "id": "wishlist-ads",
+    "title": "One creator playing your indie game beats a $5k ad spend",
+    "keywords": ["Steam", "wishlist", "creator marketing", "indie dev"]
+  }
+]

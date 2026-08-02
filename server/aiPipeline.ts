@@ -7,10 +7,10 @@ import dotenv from 'dotenv'
 import { probeDuration } from './ffmpegCut.ts'
 import { renderAiShort } from './renderAiShort.ts'
 import type { PlannedClip } from './planClips.ts'
+import { PROJECT, PROJECT_TOPICS, type ProjectTopic } from './projectContent.ts'
+import { runFeedbackLoop } from './youtubeFeedback.ts'
 import { moveToUploaded, uploadShort } from './youtubeUpload.ts'
 import { ROOT, TOKEN_PATH } from './youtubeAuth.ts'
-import { HASHTAG_SETS } from '../src/data/catalog.ts'
-import type { GameNiche } from '../src/types.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -23,10 +23,13 @@ const STATE_PATH = path.join(ROOT, 'ai-pipeline-state.json')
 const LOG_PATH = path.join(ROOT, 'ai-pipeline.log')
 const TREND_QUEUE = path.join(INBOX, 'trend_queue.json')
 const SCRIPT_PACKAGE = path.join(INBOX, 'script_package.json')
+const PROJECT_QUEUE = path.join(INBOX, 'project_topic_queue.json')
 
-const GAME = process.env.CUTLINE_GAME || 'Valorant'
-const NICHE = (process.env.CUTLINE_NICHE || 'fps') as GameNiche
-const PRIVACY = (process.env.CUTLINE_PRIVACY || 'private') as 'private' | 'unlisted' | 'public'
+const MODE = process.env.CUTLINE_AI_MODE || 'project'
+const PRIVACY = (process.env.CUTLINE_AI_PRIVACY || process.env.CUTLINE_PRIVACY || 'public') as
+  | 'private'
+  | 'unlisted'
+  | 'public'
 const DRY_RUN = process.env.CUTLINE_DRY_RUN === '1' || process.env.CUTLINE_DRY_RUN === 'true'
 const MAX_SHORTS_PER_RUN = Number(process.env.CUTLINE_AI_MAX_SHORTS || 3)
 const SUBREDDIT = process.env.CUTLINE_TREND_SUBREDDIT || 'gaming'
@@ -36,6 +39,8 @@ export type TrendTopic = {
   title: string
   trend_score?: number
   keywords?: string[]
+  pillar?: string
+  cta?: string
 }
 
 export type ScriptPackage = {
@@ -46,13 +51,15 @@ export type ScriptPackage = {
   script: string
   shorts_cutdowns: string[]
   mode?: string
+  project?: typeof PROJECT
 }
 
 type AiPipelineState = {
-  processedTopics: Record<string, { at: string; uploads: string[] }>
+  processedTopics: Record<string, { at: string; uploads: string[]; topicId?: string }>
   lastRun: string | null
   lastError: string | null
   running: boolean
+  mode?: string
 }
 
 async function readState(): Promise<AiPipelineState> {
@@ -97,25 +104,38 @@ function topicKey(topic: TrendTopic) {
 
 function buildNarration(pkg: ScriptPackage, cutdownIndex: number): string {
   const hook = pkg.hooks[cutdownIndex % pkg.hooks.length] ?? pkg.hooks[0]
-  const title = pkg.titles[cutdownIndex % pkg.titles.length] ?? pkg.topic
-  const framework = pkg.script
+  const lines = pkg.script
     .split('\n')
     .map((line) => line.replace(/^#+\s*/, '').replace(/^\d+\.\s*/, '').trim())
     .filter((line) => line.length > 12 && !line.startsWith('##'))
-    .slice(0, 2)
-  const body = framework[cutdownIndex % framework.length] ?? framework[0] ?? title
-  return `${hook} ${body} Follow for more ${GAME} Shorts.`
+  const body = lines[cutdownIndex % lines.length] ?? pkg.topic
+  const cta = `Learn more at ${PROJECT.site}.`
+  return `${hook} ${body} ${cta}`
 }
 
 function buildClipMeta(pkg: ScriptPackage, cutdownIndex: number, duration: number): PlannedClip {
   const title = (pkg.titles[cutdownIndex % pkg.titles.length] ?? pkg.topic).slice(0, 95)
   const hook = pkg.hooks[cutdownIndex % pkg.hooks.length] ?? pkg.hooks[0]
   const tags = [
-    GAME.replace(/[^a-zA-Z0-9]/g, ''),
-    ...(pkg.keywords ?? []).slice(0, 4),
-    ...HASHTAG_SETS[NICHE].map((t) => t.replace(/^#/, '')),
+    PROJECT.product,
+    PROJECT.brand.replace(/\s+/g, ''),
+    ...(pkg.keywords ?? []).slice(0, 5),
+    'Shorts',
+    'streaming',
   ].slice(0, 8)
-  const description = [hook, '', title, '', `Game: ${GAME}`, 'Subscribe for daily AI Shorts.', '', tags.map((t) => `#${t}`).join(' ')].join('\n')
+  const description = [
+    hook,
+    '',
+    title,
+    '',
+    `${PROJECT.product} by ${PROJECT.brand} — ${PROJECT.tagline}`,
+    PROJECT.siteUrl,
+    '',
+    'Tell us what to cover next in the comments.',
+    '',
+    tags.map((t) => `#${t.replace(/\s+/g, '')}`).join(' '),
+    '#Shorts',
+  ].join('\n')
 
   return {
     label: `ai_${String(cutdownIndex + 1).padStart(2, '0')}`,
@@ -124,9 +144,36 @@ function buildClipMeta(pkg: ScriptPackage, cutdownIndex: number, duration: numbe
     title,
     hook,
     description,
-    tags,
-    cta: 'Subscribe for daily Shorts',
+    tags: tags.map((t) => t.replace(/\s+/g, '')),
+    cta: `Visit ${PROJECT.site}`,
   }
+}
+
+export async function buildProjectTopicQueue(): Promise<TrendTopic[]> {
+  const feedback = await runFeedbackLoop()
+  const suggestions = new Set(feedback.next_topic_suggestions)
+
+  const ordered = [...PROJECT_TOPICS].sort((a, b) => {
+    const aBoost = suggestions.has(a.title) ? 1 : 0
+    const bBoost = suggestions.has(b.title) ? 1 : 0
+    return bBoost - aBoost
+  })
+
+  const topics: TrendTopic[] = ordered.map((t: ProjectTopic) => ({
+    id: t.id,
+    title: t.title,
+    keywords: t.keywords,
+    pillar: t.pillar,
+    cta: t.cta,
+    trend_score: suggestions.has(t.title) ? 99 : 70,
+  }))
+
+  await fs.mkdir(INBOX, { recursive: true })
+  await fs.writeFile(
+    PROJECT_QUEUE,
+    JSON.stringify({ generated_at: new Date().toISOString(), topics, feedback }, null, 2),
+  )
+  return topics
 }
 
 export async function runTrendRadar() {
@@ -134,7 +181,25 @@ export async function runTrendRadar() {
   await runPython('scripts/replit/trend_radar.py', ['--subreddit', SUBREDDIT, '--limit', '20'])
 }
 
+export async function runProjectScriptFactory(topic: TrendTopic) {
+  await log(`Project script → ${topic.title}`)
+  await runPython('scripts/ai/project_script_factory.py', [
+    '--topic-id',
+    topic.id,
+    '--title',
+    topic.title,
+    '--keywords',
+    (topic.keywords ?? []).join(','),
+    '--out',
+    SCRIPT_PACKAGE,
+  ])
+}
+
 export async function runScriptFactory(topic: TrendTopic) {
+  if (MODE === 'project') {
+    await runProjectScriptFactory(topic)
+    return
+  }
   const keywords = (topic.keywords ?? []).join(',')
   await log(`Script factory → ${topic.title}`)
   await runPython('scripts/ai/script_factory.py', [
@@ -147,7 +212,16 @@ export async function runScriptFactory(topic: TrendTopic) {
   ])
 }
 
-export async function loadTrendQueue(): Promise<TrendTopic[]> {
+export async function loadTopicQueue(): Promise<TrendTopic[]> {
+  if (MODE === 'project') {
+    try {
+      const raw = JSON.parse(await fs.readFile(PROJECT_QUEUE, 'utf8')) as { topics: TrendTopic[] }
+      if (raw.topics?.length) return raw.topics
+    } catch {
+      // rebuild below
+    }
+    return buildProjectTopicQueue()
+  }
   try {
     const raw = JSON.parse(await fs.readFile(TREND_QUEUE, 'utf8')) as { topics: TrendTopic[] }
     return raw.topics ?? []
@@ -174,7 +248,7 @@ export async function renderAndUploadTopic(topic: TrendTopic, state: AiPipelineS
   await runScriptFactory(topic)
   const pkg = await loadScriptPackage()
   if (!pkg) {
-    throw new Error('Script package missing after script_factory')
+    throw new Error('Script package missing after script factory')
   }
 
   const jobOut = path.join(AI_OUT, key.slice(0, 10))
@@ -193,16 +267,17 @@ export async function renderAndUploadTopic(topic: TrendTopic, state: AiPipelineS
     const duration = await probeDuration(voicePath)
     const clip = buildClipMeta(pkg, i, duration)
 
-    await log(`Rendering AI Short: ${clip.title}`)
+    await log(`Rendering ${PROJECT.product} Short: ${clip.title}`)
     await renderAiShort({
       title: clip.title,
       hook: clip.hook,
-      subtitle: pkg.shorts_cutdowns[i] ?? 'Gaming Short',
+      subtitle: `${PROJECT.product} · ${pkg.shorts_cutdowns[i] ?? 'Short'}`,
       audioPath: voicePath,
       outPath: videoPath,
+      brand: PROJECT.site,
     })
 
-    await log(`Uploading ${clip.title}`)
+    await log(`Uploading (${PRIVACY}): ${clip.title}`)
     const result = await uploadShort({
       filePath: videoPath,
       clip,
@@ -220,14 +295,19 @@ export async function renderAndUploadTopic(topic: TrendTopic, state: AiPipelineS
     }
   }
 
-  state.processedTopics[key] = { at: new Date().toISOString(), uploads }
+  state.processedTopics[key] = {
+    at: new Date().toISOString(),
+    uploads,
+    topicId: topic.id,
+  }
   state.lastRun = new Date().toISOString()
   state.lastError = null
+  state.mode = MODE
   await writeState(state)
 
   await fs.writeFile(
     path.join(jobOut, 'manifest.json'),
-    JSON.stringify({ topic, package: pkg, uploads }, null, 2),
+    JSON.stringify({ topic, package: pkg, uploads, privacy: PRIVACY }, null, 2),
   )
 }
 
@@ -237,10 +317,18 @@ export async function runAiPipelineOnce() {
   await writeState(state)
 
   try {
-    await runTrendRadar()
-    const topics = await loadTrendQueue()
+    await log(`AI pipeline mode: ${MODE}`)
+    await runFeedbackLoop()
+
+    if (MODE === 'project') {
+      await buildProjectTopicQueue()
+    } else {
+      await runTrendRadar()
+    }
+
+    const topics = await loadTopicQueue()
     if (!topics.length) {
-      await log('No topics in trend queue')
+      await log('No topics in queue')
       return state
     }
 
@@ -252,7 +340,8 @@ export async function runAiPipelineOnce() {
     }
 
     if (!batch.length) {
-      await log('All queued topics already processed — waiting for new trends')
+      await log('All project topics processed — feedback loop will suggest rotations')
+      await runFeedbackLoop()
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
