@@ -31,9 +31,10 @@ export const MONEY_NOW_ACTIONS: MoneyAction[] = [
     platform: 'YouTube',
     impact: 'high',
     eta: 'Today–this week',
-    status: 'todo',
+    status: 'doing',
     steps: [
-      'Finish OAuth refresh_token for Autopilot',
+      'OAuth refresh_token saved — channel Lamont Pittman is connected',
+      'Rename channel to Cutline Industries in YouTube Studio',
       'Post Shorts daily from inbox VODs (private first, then public schedule)',
       'Push toward YPP thresholds (subs + watch hours / Shorts views)',
       'When eligible: enable ads, Shorts ads, memberships, Super Thanks, Shopping',

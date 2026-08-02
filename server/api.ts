@@ -222,6 +222,87 @@ app.get('/api/deals', (_req, res) => {
   })
 })
 
+/** Operating blueprint + live YouTube / auth status for /blueprint UI. */
+app.get('/api/blueprint', async (_req, res) => {
+  try {
+    const google = await getGoogleCloudStatus()
+    let channel: Awaited<ReturnType<typeof getYoutubeChannel>> | null = null
+    let youtubeError: string | undefined
+    if (google.oauth.authorized) {
+      try {
+        channel = await getYoutubeChannel()
+      } catch (err) {
+        youtubeError = err instanceof Error ? err.message : String(err)
+      }
+    } else {
+      youtubeError = 'Not authorized — save refresh_token first'
+    }
+
+    const systems = [
+      {
+        id: 'youtube-oauth',
+        name: 'YouTube OAuth',
+        status: google.oauth.authorized ? 'live' : 'blocked',
+        detail: google.oauth.authorized
+          ? `Authorized · ${google.oauth.clientId}`
+          : 'Missing token.json refresh token',
+      },
+      {
+        id: 'youtube-channel',
+        name: 'YouTube channel',
+        status: channel ? 'live' : 'blocked',
+        detail: channel
+          ? `${channel.title} (${channel.customUrl || channel.id}) · ${channel.stats?.videoCount || 0} videos`
+          : youtubeError || 'No channel',
+      },
+      {
+        id: 'adsense',
+        name: 'AdSense',
+        status: google.site.adsenseClient ? 'live' : 'next',
+        detail: google.site.adsenseClient
+          ? `${google.site.adsenseClient} — add slot ID + confirm domain`
+          : 'Not configured',
+      },
+      {
+        id: 'site',
+        name: 'cutline-industries.studio',
+        status: 'next',
+        detail: 'Confirm Amplify + Route 53 nameservers (not Squarespace)',
+      },
+      {
+        id: 'deals',
+        name: 'Deal packages',
+        status: 'live',
+        detail: 'Spark $750 · Surge $2500 · Eclipse $5000+',
+      },
+      {
+        id: 'stripe',
+        name: 'Stripe pay links',
+        status: 'blocked',
+        detail: 'Create Spark + Surge payment links',
+      },
+    ]
+
+    res.json({
+      ok: true,
+      brand: 'Cutline Industries',
+      mission:
+        'Gaming VOD → Shorts factory → audience → cash. Stripe first, YPP second.',
+      doc: 'docs/CUTLINE-BLUEPRINT.md',
+      youtube: {
+        authorized: google.oauth.authorized,
+        channel,
+        error: youtubeError,
+      },
+      google,
+      systems,
+      offers: DEAL_PACKAGES,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
 app.get('/api/leads', async (_req, res) => {
   const leads = await readJsonSafe<Lead[]>(LEADS_PATH, [])
   res.json({ count: leads.length, leads })

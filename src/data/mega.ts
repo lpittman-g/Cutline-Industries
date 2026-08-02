@@ -19,6 +19,14 @@ export const PLATFORM_MODULES: PlatformModule[] = [
     group: 'ops',
   },
   {
+    id: 'blueprint',
+    name: 'Operating Blueprint',
+    blurb: 'Phases, pillars, cadence, offers, and live YouTube/system status.',
+    path: '/blueprint',
+    status: 'live',
+    group: 'ops',
+  },
+  {
     id: 'pipeline',
     name: 'Content Pipeline',
     blurb: 'AI + Replit + AWS + YouTube/AdSense execution loop from trends to cash.',
