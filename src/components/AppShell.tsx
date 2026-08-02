@@ -1,25 +1,25 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useCutline } from '../context/CutlineContext'
 
 const NAV = [
-  { to: '/command', label: 'Command' },
-  { to: '/blueprint', label: 'Blueprint' },
-  { to: '/sprint-73', label: '73h Sprint' },
-  { to: '/pipeline', label: 'Pipeline' },
-  { to: '/money-now', label: 'Money Now' },
-  { to: '/studio', label: 'Studio' },
-  { to: '/autopilot', label: 'Autopilot' },
-  { to: '/packs', label: 'Packs' },
-  { to: '/outreach', label: 'Outreach' },
-  { to: '/ads', label: 'Ads Lab' },
-  { to: '/monetize', label: 'Money' },
-  { to: '/deals', label: 'Deals' },
-  { to: '/analytics', label: 'Analytics' },
-  { to: '/media-kit', label: 'Media Kit' },
-  { to: '/blog', label: 'Blog' },
-  { to: '/export', label: 'Export' },
-  { to: '/projects', label: 'Projects' },
-  { to: '/playbook', label: 'Playbook' },
+  { to: '/os/command', label: 'Command' },
+  { to: '/os/blueprint', label: 'Blueprint' },
+  { to: '/os/sprint-73', label: '73h Sprint' },
+  { to: '/os/pipeline', label: 'Pipeline' },
+  { to: '/os/money-now', label: 'Money Now' },
+  { to: '/os/studio', label: 'Studio' },
+  { to: '/os/autopilot', label: 'Autopilot' },
+  { to: '/os/packs', label: 'Packs' },
+  { to: '/os/outreach', label: 'Outreach' },
+  { to: '/os/ads', label: 'Ads Lab' },
+  { to: '/os/monetize', label: 'Money' },
+  { to: '/os/deals', label: 'Deals' },
+  { to: '/os/analytics', label: 'Analytics' },
+  { to: '/os/media-kit', label: 'Media Kit' },
+  { to: '/os/blog', label: 'Blog' },
+  { to: '/os/export', label: 'Export' },
+  { to: '/os/projects', label: 'Projects' },
+  { to: '/os/playbook', label: 'Playbook' },
 ]
 
 export function AppShell() {
@@ -29,16 +29,21 @@ export function AppShell() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
+        <Link to="/os/command" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="brand-mark">C</div>
           <div className="brand-text">
             <strong>CUTLINE</strong>
-            <span>creator os</span>
+            <span>internal os</span>
           </div>
-        </div>
+        </Link>
+        <p className="os-badge">Internal tools — not the public site</p>
         <nav className="nav">
           {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => (isActive ? 'active' : '')}
+            >
               {item.label}
             </NavLink>
           ))}
@@ -48,6 +53,9 @@ export function AppShell() {
           <p>
             {projectClips.length} clips · {ready} ready · {projectPacks.length} packs
           </p>
+          <Link to="/" style={{ color: 'var(--cyan)', fontSize: '0.8rem' }}>
+            ← Public site
+          </Link>
         </div>
       </aside>
       <main className="main">

@@ -1,62 +1,52 @@
 import { Link } from 'react-router-dom'
 import { AdSlot } from '../components/AdSlot'
-import { MEGA_NORTH_STAR, PLATFORM_MODULES } from '../data/mega'
 
 export function LandingPage() {
   return (
     <div className="landing">
-      <header className="landing-nav">
-        <div className="brand">
-          <div className="brand-mark">C</div>
-          <div className="brand-text">
-            <strong>CUTLINE</strong>
-            <span>creator os</span>
-          </div>
+      <section className="hero public-hero">
+        <div className="hero-media" aria-hidden="true">
+          <img src="/cutline-logo.png" alt="" className="hero-logo-bg" />
         </div>
-        <div className="btn-row">
-          <Link className="btn btn-primary" to="/sprint-73">
-            73h money sprint
-          </Link>
-          <Link className="btn" to="/command">
-            Enter OS
-          </Link>
-        </div>
-      </header>
-
-      <section className="hero">
         <div className="hero-inner">
           <p className="hero-brand">CUTLINE</p>
-          <h2>{MEGA_NORTH_STAR.promise}</h2>
-          <p>
-            Not a single tool — a full gaming creator business machine: Studio, Autopilot, Outreach,
-            Ads Lab, Money Stack, Deal Desk, Analytics, and Media Kit under one roof at{' '}
-            {MEGA_NORTH_STAR.domain}. Powered by AdSense, AWS, Replit, GPT, Stripe, and YouTube.
+          <h1 className="hero-headline">Gaming footage, cut into Shorts that ship.</h1>
+          <p className="hero-support">
+            Cutline Industries is a gaming media studio — turning VODs into YouTube Shorts and
+            sponsor-ready packs for channels that need volume.
           </p>
           <div className="hero-actions">
-            <Link className="btn btn-primary" to="/sprint-73">
-              Start 73h sprint
-            </Link>
-            <Link className="btn" to="/command">
-              Open Command Center
-            </Link>
-            <Link className="btn" to="/studio">
-              Start cutting
+            <a
+              className="btn btn-primary"
+              href="https://www.youtube.com/@lamontpittman-f4q"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Watch on YouTube
+            </a>
+            <Link className="btn" to="/deals">
+              Work with us
             </Link>
           </div>
-          <div style={{ marginTop: '1.25rem' }}>
-            <AdSlot />
-          </div>
-          <div className="hero-rail">
-            {PLATFORM_MODULES.slice(0, 6).map((m) => (
-              <article key={m.id}>
-                <h3>{m.name}</h3>
-                <p>{m.blurb}</p>
-              </article>
-            ))}
-          </div>
-          <p style={{ marginTop: '2rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
-            {MEGA_NORTH_STAR.tagline} · {MEGA_NORTH_STAR.domain}
-          </p>
+        </div>
+      </section>
+
+      <section className="public-section">
+        <h2>What we ship</h2>
+        <p>
+          Vertical Shorts from gameplay, titles and hooks that land in the first second, and sponsor
+          packages brands can buy without a long pitch cycle.
+        </p>
+        <div className="public-cta-row">
+          <Link className="btn" to="/work">
+            See the work
+          </Link>
+          <Link className="btn" to="/media-kit">
+            Media kit
+          </Link>
+        </div>
+        <div style={{ marginTop: '1.5rem' }}>
+          <AdSlot />
         </div>
       </section>
     </div>

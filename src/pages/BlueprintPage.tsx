@@ -76,7 +76,7 @@ export function BlueprintPage() {
           <h1>Blueprint</h1>
           <p>{BLUEPRINT_MISSION}</p>
         </div>
-        <Link className="btn" to="/autopilot">
+        <Link className="btn" to="/os/autopilot">
           Open Autopilot
         </Link>
       </div>
@@ -184,7 +184,7 @@ export function BlueprintPage() {
                 <p style={{ color: 'var(--muted)', margin: '0.2rem 0 0' }}>{o.promise}</p>
               </div>
             ))}
-            <Link className="btn" to="/deals">
+            <Link className="btn" to="/os/deals">
               Open Deal Desk
             </Link>
           </section>
