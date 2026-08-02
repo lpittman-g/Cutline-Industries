@@ -351,6 +351,59 @@ app.post('/api/leads', async (req, res) => {
   }
 })
 
+/** Thermal core schema status (Postgres migration 001). */
+app.get('/api/thermal/schema', async (_req, res) => {
+  const databaseUrl = process.env.DATABASE_URL?.trim()
+  const migrationFile = 'db/migrations/001_thermal_core.sql'
+  const tables = ['streamers', 'heat_spikes', 'clips', 'retainers']
+
+  if (!databaseUrl) {
+    res.json({
+      ok: true,
+      platform: 'Thermal',
+      connected: false,
+      migrationFile,
+      tables,
+      next: 'Set DATABASE_URL then run npm run db:migrate',
+    })
+    return
+  }
+
+  try {
+    const pg = await import('pg')
+    const client = new pg.default.Client({ connectionString: databaseUrl })
+    await client.connect()
+    try {
+      const result = await client.query(
+        `SELECT table_name FROM information_schema.tables
+         WHERE table_schema = 'public' AND table_name = ANY($1::text[])
+         ORDER BY table_name`,
+        [tables],
+      )
+      const present = result.rows.map((r: { table_name: string }) => r.table_name)
+      res.json({
+        ok: true,
+        platform: 'Thermal',
+        connected: true,
+        migrationFile,
+        tables,
+        present,
+        migrated: tables.every((t) => present.includes(t)),
+      })
+    } finally {
+      await client.end()
+    }
+  } catch (err) {
+    res.status(500).json({
+      ok: false,
+      platform: 'Thermal',
+      connected: false,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Cutline Industries API on http://127.0.0.1:${PORT}`)
 })
+
