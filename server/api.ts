@@ -4,6 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
+import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
 import { ROOT, saveTokenFromRefresh, TOKEN_PATH, SECRET_PATH } from './youtubeAuth.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
@@ -101,6 +102,25 @@ app.post('/api/autopilot/run-once', async (_req, res) => {
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/google/status', async (_req, res) => {
+  try {
+    res.json(await getGoogleCloudStatus())
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/google/youtube/channel', async (_req, res) => {
+  try {
+    const channel = await getYoutubeChannel()
+    res.json({ ok: true, channel })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const status = message.includes('Not authorized') ? 401 : 500
+    res.status(status).json({ error: message })
   }
 })
 
