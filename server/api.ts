@@ -4,7 +4,15 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
-import { ROOT, saveTokenFromRefresh, TOKEN_PATH, SECRET_PATH } from './youtubeAuth.ts'
+import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
+import {
+  ROOT,
+  saveTokenFromRefresh,
+  saveTokenFromAuthorizationCode,
+  buildYoutubeAuthUrl,
+  TOKEN_PATH,
+  SECRET_PATH,
+} from './youtubeAuth.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -99,6 +107,245 @@ app.post('/api/autopilot/run-once', async (_req, res) => {
   try {
     await runOnce()
     res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/google/status', async (_req, res) => {
+  try {
+    res.json(await getGoogleCloudStatus())
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/google/youtube/channel', async (_req, res) => {
+  try {
+    const channel = await getYoutubeChannel()
+    res.json({ ok: true, channel })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const status = message.includes('Not authorized') ? 401 : 500
+    res.status(status).json({ error: message })
+  }
+})
+
+app.get('/api/google/oauth/url', async (_req, res) => {
+  try {
+    const url = await buildYoutubeAuthUrl()
+    res.json({
+      ok: true,
+      account: 'lpittman@cutline-industries.studio',
+      url,
+      instructions: [
+        'Open url and sign in as lpittman@cutline-industries.studio',
+        'Allow YouTube access',
+        'On the OAuth Playground page, copy the code= value from the browser URL or Step 2 authorization code',
+        'POST { "code": "4/..." } to /api/google/oauth/exchange',
+      ],
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.post('/api/google/oauth/exchange', async (req, res) => {
+  try {
+    const code = String(req.body?.code || '').trim()
+    if (!code) {
+      res.status(400).json({ error: 'code required (OAuth authorization code)' })
+      return
+    }
+    const tokens = await saveTokenFromAuthorizationCode(code)
+    let channel = null
+    try {
+      channel = await getYoutubeChannel()
+    } catch {
+      channel = null
+    }
+    res.json({
+      ok: true,
+      hasRefreshToken: Boolean(tokens.refresh_token),
+      scope: tokens.scope,
+      channel,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+/** Public deal packages for Spark / Surge / Eclipse. */
+const DEAL_PACKAGES = [
+  {
+    id: 'spark',
+    name: 'Spark Pack',
+    price: '$750',
+    priceCents: 75000,
+    includes: ['10 Shorts', 'Titles + hooks', '72h delivery', '1 revision'],
+  },
+  {
+    id: 'surge',
+    name: 'Surge Retainer',
+    price: '$2,500/mo',
+    priceCents: 250000,
+    includes: ['40 Shorts / month', 'Weekly strategy', 'Priority Autopilot', 'Monthly report'],
+  },
+  {
+    id: 'eclipse',
+    name: 'Eclipse Integration',
+    price: '$5,000+',
+    priceCents: 500000,
+    includes: ['Sponsored longform + Shorts', 'Custom CTA kit', 'Usage rights', 'Whitelisting add-on'],
+  },
+] as const
+
+const LEADS_PATH = path.join(ROOT, 'leads.json')
+
+type Lead = {
+  id: string
+  name: string
+  email: string
+  company?: string
+  packageId?: string
+  message?: string
+  source?: string
+  createdAt: string
+}
+
+app.get('/api/deals', (_req, res) => {
+  res.json({
+    brand: 'Cutline Industries',
+    currency: 'USD',
+    contact: 'lpittman@cutline-industries.studio',
+    packages: DEAL_PACKAGES,
+  })
+})
+
+/** Operating blueprint + live YouTube / auth status for /blueprint UI. */
+app.get('/api/blueprint', async (_req, res) => {
+  try {
+    const google = await getGoogleCloudStatus()
+    let channel: Awaited<ReturnType<typeof getYoutubeChannel>> | null = null
+    let youtubeError: string | undefined
+    if (google.oauth.authorized) {
+      try {
+        channel = await getYoutubeChannel()
+      } catch (err) {
+        youtubeError = err instanceof Error ? err.message : String(err)
+      }
+    } else {
+      youtubeError = 'Not authorized — save refresh_token first'
+    }
+
+    const systems = [
+      {
+        id: 'youtube-oauth',
+        name: 'YouTube OAuth',
+        status: google.oauth.authorized ? 'live' : 'blocked',
+        detail: google.oauth.authorized
+          ? `Authorized · ${google.oauth.clientId}`
+          : 'Missing token.json refresh token',
+      },
+      {
+        id: 'youtube-channel',
+        name: 'YouTube channel',
+        status: channel ? 'live' : 'blocked',
+        detail: channel
+          ? `${channel.title} (${channel.customUrl || channel.id}) · ${channel.stats?.videoCount || 0} videos`
+          : youtubeError || 'No channel',
+      },
+      {
+        id: 'adsense',
+        name: 'AdSense',
+        status: google.site.adsenseClient ? 'live' : 'next',
+        detail: google.site.adsenseClient
+          ? `${google.site.adsenseClient} — add slot ID + confirm domain`
+          : 'Not configured',
+      },
+      {
+        id: 'site',
+        name: 'cutline-industries.studio',
+        status: 'next',
+        detail: 'Confirm Amplify + Route 53 nameservers (not Squarespace)',
+      },
+      {
+        id: 'deals',
+        name: 'Deal packages',
+        status: 'live',
+        detail: 'Spark $750 · Surge $2500 · Eclipse $5000+',
+      },
+      {
+        id: 'stripe',
+        name: 'Stripe pay links',
+        status: 'blocked',
+        detail: 'Create Spark + Surge payment links',
+      },
+    ]
+
+    res.json({
+      ok: true,
+      brand: 'Cutline Industries',
+      mission:
+        'Gaming VOD → Shorts factory → audience → cash. Stripe first, YPP second.',
+      doc: 'docs/CUTLINE-BLUEPRINT.md',
+      youtube: {
+        authorized: google.oauth.authorized,
+        channel,
+        error: youtubeError,
+      },
+      google,
+      systems,
+      offers: DEAL_PACKAGES,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/leads', async (_req, res) => {
+  const leads = await readJsonSafe<Lead[]>(LEADS_PATH, [])
+  res.json({ count: leads.length, leads })
+})
+
+app.post('/api/leads', async (req, res) => {
+  try {
+    const name = String(req.body?.name || '').trim()
+    const email = String(req.body?.email || '').trim().toLowerCase()
+    const company = String(req.body?.company || '').trim() || undefined
+    const packageId = String(req.body?.packageId || req.body?.package || '').trim() || undefined
+    const message = String(req.body?.message || '').trim() || undefined
+    const source = String(req.body?.source || 'api').trim() || 'api'
+
+    if (!name || !email) {
+      res.status(400).json({ error: 'name and email required' })
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ error: 'valid email required' })
+      return
+    }
+    if (packageId && !DEAL_PACKAGES.some((p) => p.id === packageId)) {
+      res.status(400).json({ error: 'packageId must be spark, surge, or eclipse' })
+      return
+    }
+
+    const lead: Lead = {
+      id: `lead_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      email,
+      company,
+      packageId,
+      message,
+      source,
+      createdAt: new Date().toISOString(),
+    }
+
+    const existing = await readJsonSafe<Lead[]>(LEADS_PATH, [])
+    existing.unshift(lead)
+    await fs.writeFile(LEADS_PATH, JSON.stringify(existing, null, 2), 'utf8')
+
+    res.status(201).json({ ok: true, lead })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }

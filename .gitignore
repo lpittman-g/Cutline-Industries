@@ -20,6 +20,7 @@ token.json
 !.env.example
 autopilot-state.json
 autopilot.log
+leads.json
 
 # Autopilot media / outputs
 inbox/*
@@ -41,3 +42,6 @@ cutline-industries-web.zip
 *.njsproj
 *.sln
 *.sw?
+
+# Cursor MCP secrets
+.cursor/mcp.json

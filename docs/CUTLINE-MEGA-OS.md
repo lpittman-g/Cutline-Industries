@@ -18,6 +18,7 @@ Cutline Industries is not only a Shorts cutter. It is a **Creator Operating Syst
 | Module | Status | Job |
 |---|---|---|
 | Command Center | Live | Daily OS home |
+| Operating Blueprint | Live | Phases, cadence, offers, live systems |
 | Studio / Packs / Autopilot | Live | Content engine |
 | Outreach Engine | Live | 4-week buyer machine |
 | Ads Lab | Live | Google Ads copy + creative |
