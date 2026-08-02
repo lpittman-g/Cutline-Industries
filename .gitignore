@@ -42,3 +42,6 @@ cutline-industries-web.zip
 *.njsproj
 *.sln
 *.sw?
+
+# Cursor MCP secrets
+.cursor/mcp.json
