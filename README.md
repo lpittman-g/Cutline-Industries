@@ -32,11 +32,10 @@ Default uploads are **private** until you set `CUTLINE_PRIVACY=public` in `.env`
 
 ## Connect cutline-industries.studio
 
-1. Deploy the Vite `dist/` site (Vercel, Netlify, or AWS S3+CloudFront).
-2. In Squarespace Domains for `cutline-industries.studio`, point DNS:
-   - **A/CNAME** records your host provides, **or**
-   - Use the host’s “add domain” flow and verify
-3. Keep Google Workspace email on Squarespace/Google as already set up.
+1. Connect this repo to **Netlify** (the repo includes `netlify.toml` for Vite build output and SPA routing fallback).
+2. In Netlify, deploy the site and add `cutline-industries.studio` as a custom domain.
+3. In Squarespace Domains for `cutline-industries.studio`, point DNS to the Netlify records shown in Domain Management.
+4. Keep Google Workspace email on Squarespace/Google as already set up.
 
 ## Folders
 
