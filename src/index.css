@@ -1322,3 +1322,148 @@ video {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* FORCE MOBILE RESPONSIVENESS */
+@media screen and (max-width: 768px) {
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-y: auto !important;
+    height: auto !important;
+    background-attachment: scroll;
+  }
+
+  /* Legacy / external class hooks */
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .nav-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    height: auto !important;
+  }
+
+  .terminal-input-card,
+  .prompt-box {
+    width: 100% !important;
+  }
+
+  .spec-card {
+    width: 100% !important;
+    margin-bottom: 10px;
+  }
+
+  .editor-container {
+    width: 100% !important;
+    min-height: 400px;
+  }
+
+  .editor-body {
+    min-height: 300px;
+  }
+
+  /* Thermal / Cutline shells */
+  .app-shell,
+  .mission-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    border-right: none !important;
+    border-bottom: 2px solid var(--border-steel, var(--line, #2e3548));
+    padding: 16px !important;
+  }
+
+  .sidebar .nav {
+    max-height: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .main {
+    width: 100% !important;
+    padding: 12px !important;
+  }
+
+  .public-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .public-nav-links {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .public-hero {
+    min-height: auto;
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .public-section,
+  .public-page,
+  .public-main > :not(.landing) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bounty-grid,
+  .tier-grid,
+  .dev-compare,
+  .grid-2,
+  .grid-3,
+  .studio-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bounty-card,
+  .dev-pane,
+  .card-lite,
+  .tier-row {
+    width: 100% !important;
+  }
+
+  .public-cta-row,
+  .public-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn,
+  .public-yt {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .hero-brand {
+    font-size: clamp(2.4rem, 14vw, 3.5rem);
+  }
+}
