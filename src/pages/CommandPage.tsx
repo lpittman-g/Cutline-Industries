@@ -18,10 +18,10 @@ export function CommandPage() {
           </p>
         </div>
         <div className="btn-row">
-          <Link className="btn btn-primary" to="/studio">
+          <Link className="btn btn-primary" to="/os/studio">
             Open Studio
           </Link>
-          <Link className="btn" to="/autopilot">
+          <Link className="btn" to="/os/autopilot">
             Autopilot
           </Link>
         </div>
@@ -62,10 +62,10 @@ export function CommandPage() {
             ))}
           </div>
           <div className="btn-row" style={{ marginTop: '0.85rem' }}>
-            <Link className="btn" to="/monetize">
+            <Link className="btn" to="/os/monetize">
               Full money map
             </Link>
-            <Link className="btn" to="/deals">
+            <Link className="btn" to="/os/deals">
               Deal packages
             </Link>
           </div>

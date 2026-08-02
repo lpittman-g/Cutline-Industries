@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { PublicShell } from './components/PublicShell'
 import { CutlineProvider } from './context/CutlineContext'
 import { LandingPage } from './pages/LandingPage'
+import { WorkPage } from './pages/WorkPage'
 import { StudioPage } from './pages/StudioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { PacksPage } from './pages/PacksPage'
@@ -21,31 +23,64 @@ import { BlogPage } from './pages/BlogPage'
 import { Sprint73Page } from './pages/Sprint73Page'
 import { BlueprintPage } from './pages/BlueprintPage'
 
+/** Old public URLs that exposed internal OS tools → send home. */
+function HideInternal() {
+  return <Navigate to="/" replace />
+}
+
 export default function App() {
   return (
     <CutlineProvider>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route element={<AppShell />}>
-          <Route path="/command" element={<CommandPage />} />
-          <Route path="/blueprint" element={<BlueprintPage />} />
-          <Route path="/pipeline" element={<PipelinePage />} />
-          <Route path="/sprint-73" element={<Sprint73Page />} />
-          <Route path="/studio" element={<StudioPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/packs" element={<PacksPage />} />
-          <Route path="/export" element={<ExportPage />} />
-          <Route path="/playbook" element={<PlaybookPage />} />
-          <Route path="/autopilot" element={<AutopilotPage />} />
-          <Route path="/outreach" element={<OutreachPage />} />
-          <Route path="/monetize" element={<MonetizePage />} />
-          <Route path="/money-now" element={<MoneyNowPage />} />
-          <Route path="/ads" element={<AdsLabPage />} />
-          <Route path="/deals" element={<DealsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
+        {/* Public brand site */}
+        <Route element={<PublicShell />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/work" element={<WorkPage />} />
           <Route path="/media-kit" element={<MediaKitPage />} />
           <Route path="/blog" element={<BlogPage />} />
+          <Route path="/deals" element={<DealsPage />} />
         </Route>
+
+        {/* Internal Creator OS — not linked from the public site */}
+        <Route path="/os" element={<AppShell />}>
+          <Route index element={<Navigate to="/os/command" replace />} />
+          <Route path="command" element={<CommandPage />} />
+          <Route path="blueprint" element={<BlueprintPage />} />
+          <Route path="pipeline" element={<PipelinePage />} />
+          <Route path="sprint-73" element={<Sprint73Page />} />
+          <Route path="studio" element={<StudioPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="packs" element={<PacksPage />} />
+          <Route path="export" element={<ExportPage />} />
+          <Route path="playbook" element={<PlaybookPage />} />
+          <Route path="autopilot" element={<AutopilotPage />} />
+          <Route path="outreach" element={<OutreachPage />} />
+          <Route path="monetize" element={<MonetizePage />} />
+          <Route path="money-now" element={<MoneyNowPage />} />
+          <Route path="ads" element={<AdsLabPage />} />
+          <Route path="deals" element={<DealsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="media-kit" element={<MediaKitPage />} />
+          <Route path="blog" element={<BlogPage />} />
+        </Route>
+
+        {/* Legacy OS paths no longer on the public surface */}
+        <Route path="/command" element={<HideInternal />} />
+        <Route path="/blueprint" element={<HideInternal />} />
+        <Route path="/pipeline" element={<HideInternal />} />
+        <Route path="/sprint-73" element={<HideInternal />} />
+        <Route path="/studio" element={<HideInternal />} />
+        <Route path="/projects" element={<HideInternal />} />
+        <Route path="/packs" element={<HideInternal />} />
+        <Route path="/export" element={<HideInternal />} />
+        <Route path="/playbook" element={<HideInternal />} />
+        <Route path="/autopilot" element={<HideInternal />} />
+        <Route path="/outreach" element={<HideInternal />} />
+        <Route path="/monetize" element={<HideInternal />} />
+        <Route path="/money-now" element={<HideInternal />} />
+        <Route path="/ads" element={<HideInternal />} />
+        <Route path="/analytics" element={<HideInternal />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </CutlineProvider>
