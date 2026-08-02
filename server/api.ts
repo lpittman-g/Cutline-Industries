@@ -4,6 +4,8 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
+import { runAiPipelineOnce } from './aiPipeline.ts'
+import { loadFeedbackReport, runFeedbackLoop, saveAudienceInput } from './youtubeFeedback.ts'
 import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
 import {
   ROOT,
@@ -107,6 +109,72 @@ app.post('/api/autopilot/run-once', async (_req, res) => {
   try {
     await runOnce()
     res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/ai-pipeline/status', async (_req, res) => {
+  const state = await readJsonSafe(path.join(ROOT, 'ai-pipeline-state.json'), {
+    processedTopics: {},
+    lastRun: null,
+    lastError: null,
+    running: false,
+  })
+  const report = await loadFeedbackReport()
+  let logTail = ''
+  try {
+    const log = await fs.readFile(path.join(ROOT, 'ai-pipeline.log'), 'utf8')
+    logTail = log.trim().split('\n').slice(-30).join('\n')
+  } catch {
+    logTail = ''
+  }
+  res.json({
+    brand: 'Cutline Industries',
+    product: 'Thermal',
+    mode: process.env.CUTLINE_AI_MODE || 'project',
+    privacy: process.env.CUTLINE_AI_PRIVACY || process.env.CUTLINE_PRIVACY || 'public',
+    dryRun: process.env.CUTLINE_DRY_RUN === '1',
+    maxShorts: Number(process.env.CUTLINE_AI_MAX_SHORTS || 3),
+    state,
+    report,
+    logTail,
+  })
+})
+
+app.get('/api/ai-pipeline/feedback', async (_req, res) => {
+  const report = await loadFeedbackReport()
+  res.json({ ok: true, report })
+})
+
+app.post('/api/ai-pipeline/feedback', async (req, res) => {
+  try {
+    const message = String(req.body?.message || '').trim()
+    const source = (req.body?.source as 'site' | 'api') || 'api'
+    if (!message) {
+      res.status(400).json({ error: 'message required' })
+      return
+    }
+    const row = await saveAudienceInput(message, source)
+    res.json({ ok: true, input: row })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.post('/api/ai-pipeline/feedback/refresh', async (_req, res) => {
+  try {
+    const report = await runFeedbackLoop()
+    res.json({ ok: true, report })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.post('/api/ai-pipeline/run-once', async (_req, res) => {
+  try {
+    const state = await runAiPipelineOnce()
+    res.json({ ok: true, state })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }

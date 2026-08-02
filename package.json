@@ -14,6 +14,8 @@
     "api": "tsx server/api.ts",
     "autopilot": "tsx server/autopilot.ts",
     "autopilot:once": "tsx server/autopilot.ts --once",
+    "ai:pipeline": "tsx server/aiAutopilot.ts",
+    "ai:pipeline:once": "tsx server/aiAutopilot.ts --once",
     "auth:youtube": "tsx server/youtubeAuth.ts",
     "db:migrate": "tsx server/db/migrate.ts",
     "start": "concurrently -k \"npm:api\" \"npm:dev\""
