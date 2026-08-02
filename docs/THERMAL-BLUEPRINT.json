@@ -1,0 +1,108 @@
+{
+  "platform": {
+    "name": "Thermal",
+    "description": "Autonomous real-time media network and web command center that converts stream chat velocity into monetized short-form video content.",
+    "buyer_tiers": [
+      {
+        "tier": 1,
+        "target": "Streamers",
+        "description": "Real-time, unwatermarked clip unlocks delivered directly to Discord while live.",
+        "pricing": "$15 Live Unlock"
+      },
+      {
+        "tier": 2,
+        "target": "Fans & Community",
+        "description": "Self-serve clip bundles posted to a public social media Bounty Board.",
+        "pricing": "$50 Bounty Bundle"
+      },
+      {
+        "tier": 3,
+        "target": "Indie Game Developers",
+        "description": "Recurring monthly ad packs built from creator gameplay to drive Steam wishlists.",
+        "pricing": "$750 - $2,500/mo Retainer"
+      }
+    ]
+  },
+  "tech_stack_mapping": {
+    "frontend_framework": "React / Next.js (Replit)",
+    "backend_api": "Node.js / Express",
+    "storage_and_assets": "AWS S3",
+    "video_processing": "Cutline API + FFmpeg",
+    "database": "PostgreSQL / DynamoDB",
+    "payment_gateway": "Stripe API"
+  },
+  "website_structure": {
+    "public_frontend": {
+      "landing_page": {
+        "route": "/",
+        "hero_section": "Turn Live Stream Heat Into Instant Revenue. Interactive demo showing chat spike to Short conversion in 30 seconds.",
+        "call_to_action": "Add Thermal Bot to Discord",
+        "sections": [
+          "Indie Dev Showcase (TikTok/Shorts case studies driving Steam wishlists)",
+          "Pricing & Tiers table ($15 / $50 / $750+)"
+        ]
+      },
+      "public_bounty_board": {
+        "route": "/bounty",
+        "features": [
+          "Live Heat Feed (Searchable grid of recent high-velocity clips)",
+          "Watermarked Previews (Embedded video players with dynamic watermarks)",
+          "Instant Claim CTA ('Unlock Clean 4K Version' triggering Stripe Checkout drawer)"
+        ]
+      },
+      "indie_dev_engine": {
+        "route": "/developers",
+        "value_proposition": "Automatic TikTok Ad Packs From Creators Playing Your Game.",
+        "features": [
+          "Interactive Demo (Side-by-side comparison of raw VOD vs AI-captioned ad cut)",
+          "Retainer Onboarding (Direct booking link & $750/mo Stripe checkout portal)"
+        ]
+      },
+      "checkout_and_fulfillment": {
+        "route": "/checkout/:clip_id",
+        "payment_gateway": "Stripe Hosted Gateway (Apple Pay & Credit Card)",
+        "post_purchase": "Delivers unwatermarked 4K MP4 files, transcript text files, and pre-written social media captions"
+      }
+    },
+    "mission_control_app": {
+      "dashboard_command_center": {
+        "route": "/app/dashboard",
+        "components": [
+          "Real-time Alert Banner (HEAT DETECTED toasts based on msg/min)",
+          "High-Level KPIs (Total Revenue, Active Live Channels, Daily Clips Rendered, Pending Outreaches)"
+        ]
+      },
+      "stream_monitor": {
+        "route": "/app/streams",
+        "components": [
+          "Tracked Streamers Grid (Live status cards for variety streamers)",
+          "Live Velocity Graphs (Real-time messages-per-minute charts via Twitch/Kick webhooks)",
+          "Manual Trigger Button (Force Heat Spike for testing)"
+        ]
+      },
+      "clip_vault_and_processing": {
+        "route": "/app/clips",
+        "components": [
+          "Cutline Queue (Status list of active rendering, watermarking, and upload jobs)",
+          "Clip Editor View (Quick adjust for timestamps, captions, and watermarks)",
+          "Stripe Generator (1-click generation of unique metadata-tagged Stripe payment links)"
+        ]
+      },
+      "developer_pipeline_crm": {
+        "route": "/app/developers",
+        "components": [
+          "Game Detection Log (List of indie games identified during high-heat spikes)",
+          "Pitch Generator (Automated drawer outputting pre-written outreach with sample video links)",
+          "Retainer Status Board (Lead Identified -> Sample Sent -> Retainer Closed)"
+        ]
+      },
+      "revenue_analytics": {
+        "route": "/app/revenue",
+        "components": [
+          "Three-Tier Revenue Breakdown (Gateway $15 / Bounty $50 / Retainer $750+)",
+          "Payouts & Stripe Sync (Live ledger of completed transactions and pending payouts)"
+        ]
+      }
+    }
+  }
+}
