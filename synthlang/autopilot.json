@@ -1,0 +1,50 @@
+{
+  "$schema": "https://synthlang.dev/schemas/v1/autopilot.json",
+  "project": {
+    "name": "synthlang-pipeline",
+    "version": "1.0.0",
+    "mode": "fully_autonomous"
+  },
+  "runtime": {
+    "auto_execute": true,
+    "max_iterations_per_task": 5,
+    "timeout_seconds": 600
+  },
+  "authentication": {
+    "github": {
+      "auth_type": "bearer_token",
+      "token_env_var": "GITHUB_TOKEN",
+      "user_email_env_var": "GITHUB_EMAIL",
+      "api_base_url": "https://api.github.com"
+    }
+  },
+  "layer_1_intent_engine": {
+    "disambiguation": { "strategy": "auto_infer_defaults", "allow_user_prompting": false },
+    "context_resolution": { "index_codebase": true }
+  },
+  "layer_2_spec_engine": {
+    "parser": { "strict_ast_checking": true, "enforce_types": true }
+  },
+  "layer_3_synthesis_engine": {
+    "targets": { "default_language": "typescript" },
+    "verification_loop": {
+      "enabled": true,
+      "auto_fix_errors": true,
+      "steps": [
+        { "name": "lint", "command": "npm run lint -- --fix" },
+        { "name": "typecheck", "command": "npm run typecheck" },
+        { "name": "unit_test", "command": "npm test" }
+      ]
+    }
+  },
+  "deployment_autopilot": {
+    "github_actions": {
+      "auto_create_repo_if_missing": true,
+      "is_public": true,
+      "auto_commit": true,
+      "auto_push": true,
+      "commit_author_email": "{{GITHUB_EMAIL}}",
+      "target_branch": "main"
+    }
+  }
+}
