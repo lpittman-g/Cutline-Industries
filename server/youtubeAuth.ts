@@ -52,6 +52,56 @@ export async function saveTokenFromRefresh(refreshToken: string) {
   return merged
 }
 
+/** Exchange an OAuth Playground authorization code for tokens and persist token.json. */
+export async function saveTokenFromAuthorizationCode(code: string) {
+  const cfg = await loadClientSecret()
+  const redirectUri =
+    cfg.redirect_uris?.[0] || 'https://developers.google.com/oauthplayground'
+  const oauth2 = new google.auth.OAuth2(cfg.client_id, cfg.client_secret, redirectUri)
+  const { tokens } = await oauth2.getToken(code.trim())
+  if (!tokens.access_token) {
+    throw new Error('Token exchange failed — no access_token returned')
+  }
+  // Keep prior refresh_token if Google omits a new one on re-consent
+  let previousRefresh: string | undefined
+  try {
+    const prev = JSON.parse(await fs.readFile(TOKEN_PATH, 'utf8')) as { refresh_token?: string }
+    previousRefresh = prev.refresh_token
+  } catch {
+    previousRefresh = undefined
+  }
+  const merged = {
+    ...tokens,
+    refresh_token: tokens.refresh_token || previousRefresh,
+  }
+  if (!merged.refresh_token) {
+    throw new Error(
+      'No refresh_token returned. Revoke Cutline Autopilot access at myaccount.google.com/permissions, then authorize again with prompt=consent.',
+    )
+  }
+  await fs.writeFile(TOKEN_PATH, JSON.stringify(merged, null, 2))
+  return merged
+}
+
+export function getYoutubeAuthUrl() {
+  const redirectUri = 'https://developers.google.com/oauthplayground'
+  // sync helper used by API — callers should use async load when needed
+  return redirectUri
+}
+
+export async function buildYoutubeAuthUrl() {
+  const cfg = await loadClientSecret()
+  const redirectUri =
+    cfg.redirect_uris?.[0] || 'https://developers.google.com/oauthplayground'
+  const oauth2 = new google.auth.OAuth2(cfg.client_id, cfg.client_secret, redirectUri)
+  return oauth2.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    include_granted_scopes: true,
+    scope: SCOPES,
+  })
+}
+
 export async function runLocalAuthFlow() {
   const cfg = await loadClientSecret()
   const redirectUri = 'http://127.0.0.1:53682/oauth2callback'

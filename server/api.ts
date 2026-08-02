@@ -5,7 +5,14 @@ import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
 import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
-import { ROOT, saveTokenFromRefresh, TOKEN_PATH, SECRET_PATH } from './youtubeAuth.ts'
+import {
+  ROOT,
+  saveTokenFromRefresh,
+  saveTokenFromAuthorizationCode,
+  buildYoutubeAuthUrl,
+  TOKEN_PATH,
+  SECRET_PATH,
+} from './youtubeAuth.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -121,6 +128,50 @@ app.get('/api/google/youtube/channel', async (_req, res) => {
     const message = err instanceof Error ? err.message : String(err)
     const status = message.includes('Not authorized') ? 401 : 500
     res.status(status).json({ error: message })
+  }
+})
+
+app.get('/api/google/oauth/url', async (_req, res) => {
+  try {
+    const url = await buildYoutubeAuthUrl()
+    res.json({
+      ok: true,
+      account: 'lpittman@cutline-industries.studio',
+      url,
+      instructions: [
+        'Open url and sign in as lpittman@cutline-industries.studio',
+        'Allow YouTube access',
+        'On the OAuth Playground page, copy the code= value from the browser URL or Step 2 authorization code',
+        'POST { "code": "4/..." } to /api/google/oauth/exchange',
+      ],
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.post('/api/google/oauth/exchange', async (req, res) => {
+  try {
+    const code = String(req.body?.code || '').trim()
+    if (!code) {
+      res.status(400).json({ error: 'code required (OAuth authorization code)' })
+      return
+    }
+    const tokens = await saveTokenFromAuthorizationCode(code)
+    let channel = null
+    try {
+      channel = await getYoutubeChannel()
+    } catch {
+      channel = null
+    }
+    res.json({
+      ok: true,
+      hasRefreshToken: Boolean(tokens.refresh_token),
+      scope: tokens.scope,
+      channel,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
 })
 
