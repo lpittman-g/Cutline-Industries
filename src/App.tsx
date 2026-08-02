@@ -1,9 +1,17 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { MissionShell } from './components/MissionShell'
 import { PublicShell } from './components/PublicShell'
 import { CutlineProvider } from './context/CutlineContext'
 import { LandingPage } from './pages/LandingPage'
-import { WorkPage } from './pages/WorkPage'
+import { BountyPage } from './pages/thermal/BountyPage'
+import { DevelopersPage } from './pages/thermal/DevelopersPage'
+import { CheckoutPage } from './pages/thermal/CheckoutPage'
+import { DashboardPage } from './pages/app/DashboardPage'
+import { StreamsPage } from './pages/app/StreamsPage'
+import { ClipsPage } from './pages/app/ClipsPage'
+import { DevCrmPage } from './pages/app/DevCrmPage'
+import { RevenuePage } from './pages/app/RevenuePage'
 import { StudioPage } from './pages/StudioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { PacksPage } from './pages/PacksPage'
@@ -23,7 +31,6 @@ import { BlogPage } from './pages/BlogPage'
 import { Sprint73Page } from './pages/Sprint73Page'
 import { BlueprintPage } from './pages/BlueprintPage'
 
-/** Old public URLs that exposed internal OS tools → send home. */
 function HideInternal() {
   return <Navigate to="/" replace />
 }
@@ -32,16 +39,25 @@ export default function App() {
   return (
     <CutlineProvider>
       <Routes>
-        {/* Public brand site */}
+        {/* Thermal public product */}
         <Route element={<PublicShell />}>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/work" element={<WorkPage />} />
-          <Route path="/media-kit" element={<MediaKitPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/bounty" element={<BountyPage />} />
+          <Route path="/developers" element={<DevelopersPage />} />
+          <Route path="/checkout/:clipId" element={<CheckoutPage />} />
         </Route>
 
-        {/* Internal Creator OS — not linked from the public site */}
+        {/* Thermal Mission Control */}
+        <Route path="/app" element={<MissionShell />}>
+          <Route index element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="streams" element={<StreamsPage />} />
+          <Route path="clips" element={<ClipsPage />} />
+          <Route path="developers" element={<DevCrmPage />} />
+          <Route path="revenue" element={<RevenuePage />} />
+        </Route>
+
+        {/* Cutline processing / legacy Creator OS (engine tools) */}
         <Route path="/os" element={<AppShell />}>
           <Route index element={<Navigate to="/os/command" replace />} />
           <Route path="command" element={<CommandPage />} />
@@ -64,7 +80,6 @@ export default function App() {
           <Route path="blog" element={<BlogPage />} />
         </Route>
 
-        {/* Legacy OS paths no longer on the public surface */}
         <Route path="/command" element={<HideInternal />} />
         <Route path="/blueprint" element={<HideInternal />} />
         <Route path="/pipeline" element={<HideInternal />} />
@@ -80,6 +95,10 @@ export default function App() {
         <Route path="/money-now" element={<HideInternal />} />
         <Route path="/ads" element={<HideInternal />} />
         <Route path="/analytics" element={<HideInternal />} />
+        <Route path="/work" element={<HideInternal />} />
+        <Route path="/media-kit" element={<HideInternal />} />
+        <Route path="/blog" element={<HideInternal />} />
+        <Route path="/deals" element={<HideInternal />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

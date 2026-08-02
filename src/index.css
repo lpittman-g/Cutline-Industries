@@ -1120,3 +1120,205 @@ video {
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Thermal product surface */
+:root {
+  --heat: #ff6a3d;
+  --heat-2: #ffb347;
+}
+
+.thermal-mark {
+  background: linear-gradient(135deg, var(--heat), var(--heat-2)) !important;
+  color: #1a0a04 !important;
+}
+
+.thermal-hero {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(255, 106, 61, 0.22), transparent 45%),
+    radial-gradient(ellipse at 80% 60%, rgba(255, 179, 71, 0.14), transparent 40%),
+    linear-gradient(180deg, #120805 0%, var(--bg) 55%, #050a09 100%);
+}
+
+.thermal-heat {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 14px,
+      rgba(255, 106, 61, 0.04) 14px,
+      rgba(255, 106, 61, 0.04) 15px
+    );
+  animation: heroDrift 16s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.thermal-demo-note {
+  margin-top: 1.25rem;
+  color: var(--heat-2);
+  font-size: 0.85rem;
+  animation: titleIn 0.9s ease 0.3s both;
+}
+
+.tier-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tier-row {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.tier-row:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.tier-price {
+  color: var(--heat);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  margin-bottom: 0.25rem;
+}
+
+.tier-row h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+}
+
+.tier-row p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.bounty-search {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.bounty-search input {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+}
+
+.bounty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.bounty-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: var(--bg-panel);
+}
+
+.bounty-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0.65rem 0 0.25rem;
+}
+
+.bounty-card > p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.bounty-preview {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  max-height: 220px;
+  border-radius: 10px;
+  background:
+    linear-gradient(160deg, rgba(255, 106, 61, 0.35), rgba(5, 10, 9, 0.9)),
+    repeating-linear-gradient(45deg, #1a0f0c 0 8px, #120a08 8px 16px);
+  display: grid;
+  align-content: end;
+  padding: 0.75rem;
+  overflow: hidden;
+}
+
+.bounty-preview p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #ffe8d6;
+}
+
+.heat-pill {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  background: var(--heat);
+  color: #1a0a04;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+}
+
+.wm-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+  transform: rotate(-18deg);
+  pointer-events: none;
+}
+
+.dev-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.dev-pane {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dev-pane.hot {
+  border-color: rgba(255, 106, 61, 0.45);
+  background: rgba(255, 106, 61, 0.08);
+}
+
+.velocity-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.velocity-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: var(--v, 40%);
+  background: linear-gradient(90deg, var(--heat), var(--heat-2));
+}
+
+.heat-toast {
+  animation: titleIn 0.5s ease both;
+}
+
+@media (max-width: 720px) {
+  .dev-compare {
+    grid-template-columns: 1fr;
+  }
+}

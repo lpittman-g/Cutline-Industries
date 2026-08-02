@@ -1,49 +1,52 @@
 import { Link } from 'react-router-dom'
 import { AdSlot } from '../components/AdSlot'
+import { THERMAL, THERMAL_TIERS } from '../data/thermal'
 
 export function LandingPage() {
   return (
-    <div className="landing">
-      <section className="hero public-hero">
-        <div className="hero-media" aria-hidden="true">
-          <img src="/cutline-logo.png" alt="" className="hero-logo-bg" />
-        </div>
+    <div className="landing thermal-landing">
+      <section className="hero thermal-hero">
+        <div className="hero-media thermal-heat" aria-hidden="true" />
         <div className="hero-inner">
-          <p className="hero-brand">CUTLINE</p>
-          <h1 className="hero-headline">Gaming footage, cut into Shorts that ship.</h1>
+          <p className="hero-brand">THERMAL</p>
+          <h1 className="hero-headline">Turn live stream heat into instant revenue.</h1>
           <p className="hero-support">
-            Cutline Industries is a gaming media studio — turning VODs into YouTube Shorts and
-            sponsor-ready packs for channels that need volume.
+            Chat spikes become Shorts in seconds — unlocks for streamers, bounty clips for fans, ad
+            packs for indie game studios.
           </p>
           <div className="hero-actions">
-            <a
-              className="btn btn-primary"
-              href="https://www.youtube.com/@lamontpittman-f4q"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Watch on YouTube
+            <a className="btn btn-primary" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
+              {THERMAL.discordBotCta}
             </a>
-            <Link className="btn" to="/deals">
-              Work with us
+            <Link className="btn" to="/bounty">
+              Open Bounty Board
             </Link>
           </div>
+          <p className="thermal-demo-note">Demo: chat spike → Short conversion in ~30 seconds</p>
         </div>
       </section>
 
-      <section className="public-section">
-        <h2>What we ship</h2>
+      <section className="public-section thermal-section">
+        <h2>Indie Dev Showcase</h2>
         <p>
-          Vertical Shorts from gameplay, titles and hooks that land in the first second, and sponsor
-          packages brands can buy without a long pitch cycle.
+          Creators playing your game generate TikTok/Shorts heat. Thermal packages those moments into
+          wishlist-driving ad packs — built on Cutline cutting under the hood.
         </p>
-        <div className="public-cta-row">
-          <Link className="btn" to="/work">
-            See the work
-          </Link>
-          <Link className="btn" to="/media-kit">
-            Media kit
-          </Link>
+        <Link className="btn btn-primary" to="/developers">
+          For game developers
+        </Link>
+      </section>
+
+      <section className="public-section thermal-section">
+        <h2>Pricing & tiers</h2>
+        <div className="tier-grid">
+          {THERMAL_TIERS.map((t) => (
+            <article key={t.tier} className="tier-row">
+              <div className="tier-price">{t.pricing}</div>
+              <h3>{t.target}</h3>
+              <p>{t.description}</p>
+            </article>
+          ))}
         </div>
         <div style={{ marginTop: '1.5rem' }}>
           <AdSlot />

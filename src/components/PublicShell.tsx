@@ -1,11 +1,10 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { THERMAL } from '../data/thermal'
 
 const NAV = [
   { to: '/', label: 'Home', end: true },
-  { to: '/work', label: 'Work' },
-  { to: '/media-kit', label: 'Media Kit' },
-  { to: '/blog', label: 'Blog' },
-  { to: '/deals', label: 'Contact' },
+  { to: '/bounty', label: 'Bounty Board' },
+  { to: '/developers', label: 'Developers' },
 ]
 
 export function PublicShell() {
@@ -13,10 +12,10 @@ export function PublicShell() {
     <div className="public-shell">
       <header className="public-nav">
         <Link to="/" className="brand public-brand">
-          <div className="brand-mark">C</div>
+          <div className="brand-mark thermal-mark">T</div>
           <div className="brand-text">
-            <strong>CUTLINE</strong>
-            <span>industries</span>
+            <strong>THERMAL</strong>
+            <span>heat → shorts → cash</span>
           </div>
         </Link>
         <nav className="public-nav-links">
@@ -30,21 +29,19 @@ export function PublicShell() {
               {item.label}
             </NavLink>
           ))}
-          <a
-            className="btn btn-primary public-yt"
-            href="https://www.youtube.com/@lamontpittman-f4q"
-            target="_blank"
-            rel="noreferrer"
-          >
-            YouTube
+          <a className="btn btn-primary public-yt" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
+            {THERMAL.discordBotCta}
           </a>
+          <Link className="btn" to="/app/dashboard">
+            Mission Control
+          </Link>
         </nav>
       </header>
       <main className="public-main">
         <Outlet />
       </main>
       <footer className="public-footer">
-        <p>Cutline Industries · gaming media studio</p>
+        <p>Thermal · stream heat into monetized Shorts</p>
         <p>
           <a href="mailto:lpittman@cutline-industries.studio">lpittman@cutline-industries.studio</a>
         </p>
