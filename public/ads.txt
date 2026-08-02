@@ -1,5 +1,1 @@
-# Replace with values from your AdSense account after site approval.
-# Format example:
-# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
-
-google.com, pub-PLACEHOLDER, DIRECT, f08c47fec0942fa0
+google.com, pub-8439504069928032, DIRECT, f08c47fec0942fa0
