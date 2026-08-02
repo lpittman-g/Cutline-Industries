@@ -27,5 +27,14 @@ CUTLINE_MEDIA_BUCKET=your-bucket ./scripts/aws/media_bootstrap.sh sync-inbox
 ## End-to-end loop
 1. Replit/script trend radar → topics
 2. AI script factory → titles/script/Shorts plan
-3. AWS S3 + FFmpeg Autopilot → assets
-4. YouTube publish + site AdSense → money
+3. AI voice factory → MP3 narration (`pip install edge-tts`)
+4. FFmpeg render → vertical AI Short MP4
+5. YouTube publish + site AdSense → money
+
+### AI video (no VOD required)
+```bash
+pip install edge-tts
+npm run ai:pipeline:once   # one cycle
+npm run ai:pipeline        # continuous daemon
+```
+See `docs/AI-VIDEO-PIPELINE.md`.

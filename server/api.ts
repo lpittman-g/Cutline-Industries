@@ -4,6 +4,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
+import { runAiPipelineOnce } from './aiPipeline.ts'
 import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
 import {
   ROOT,
@@ -107,6 +108,39 @@ app.post('/api/autopilot/run-once', async (_req, res) => {
   try {
     await runOnce()
     res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/ai-pipeline/status', async (_req, res) => {
+  const state = await readJsonSafe(path.join(ROOT, 'ai-pipeline-state.json'), {
+    processedTopics: {},
+    lastRun: null,
+    lastError: null,
+    running: false,
+  })
+  let logTail = ''
+  try {
+    const log = await fs.readFile(path.join(ROOT, 'ai-pipeline.log'), 'utf8')
+    logTail = log.trim().split('\n').slice(-30).join('\n')
+  } catch {
+    logTail = ''
+  }
+  res.json({
+    brand: 'Cutline Industries',
+    mode: 'ai-video',
+    dryRun: process.env.CUTLINE_DRY_RUN === '1',
+    maxShorts: Number(process.env.CUTLINE_AI_MAX_SHORTS || 3),
+    state,
+    logTail,
+  })
+})
+
+app.post('/api/ai-pipeline/run-once', async (_req, res) => {
+  try {
+    const state = await runAiPipelineOnce()
+    res.json({ ok: true, state })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
