@@ -6,6 +6,8 @@ import {
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  ClipAlreadyClaimedError,
+  RetainerAlreadyActiveError,
   getBountyCaptionNotes,
   getClipById,
   localCleanDownloadUrl,
@@ -225,6 +227,15 @@ export function registerThermalRoutes(app: Express) {
       })
       res.json({ ok: true, ...session })
     } catch (err) {
+      if (err instanceof ClipAlreadyClaimedError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'clip_already_claimed',
+          clipId: err.clipId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
@@ -241,8 +252,34 @@ export function registerThermalRoutes(app: Express) {
         return
       }
       const result = await confirmCheckoutSession(sessionId)
+      if (
+        !result.ok &&
+        (result.status === 'clip_already_claimed' ||
+          result.status === 'retainer_already_active')
+      ) {
+        res.status(409).json(result)
+        return
+      }
       res.json(result)
     } catch (err) {
+      if (err instanceof ClipAlreadyClaimedError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'clip_already_claimed',
+          clipId: err.clipId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
+      if (err instanceof RetainerAlreadyActiveError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'retainer_already_active',
+          retainerId: err.retainerId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
