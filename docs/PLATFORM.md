@@ -91,6 +91,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
 | `DATABASE_URL` | Thermal Postgres |
+| `DISCORD_HEAT_WEBHOOK_URL` | Optional — heat + clip-drop webhooks (Server Settings → Integrations → Webhooks) |
 
 ## Google Cloud
 
@@ -117,6 +118,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
+| `DISCORD_HEAT_WEBHOOK_URL` | Heat alerts + $15 live clip drops (`server/discordNotify.ts`) |
 
 `npm audit` currently reports an RSC-only React Router advisory. This frontend
 is a Vite SPA and does not use React Server Components or server actions; the

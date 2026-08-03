@@ -235,3 +235,21 @@ npm run start   # UI + API
 Clips stored under `thermal_media/clips/{spikeId}/` and served at `/thermal-media/...`.
 
 ### Setup
+
+#### Discord
+
+- `DISCORD_HEAT_WEBHOOK_URL`
+
+There is no standalone credential dashboard. In Discord:
+
+1. Open the server that should receive heat alerts and $15 clip drops.
+2. **Server Settings → Integrations → Webhooks** (or **Edit Channel → Integrations → Webhooks**).
+3. **New Webhook** → name it (e.g. `Thermal Heat`) → pick the target channel.
+4. **Copy Webhook URL** (`https://discord.com/api/webhooks/...`).
+5. Paste into `.env`:
+
+```bash
+DISCORD_HEAT_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+Used by `server/discordNotify.ts` for heat detection and live clip-drop posts. If unset, Discord steps are skipped and the clip pipeline continues.
