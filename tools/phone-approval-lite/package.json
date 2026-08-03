@@ -1,0 +1,11 @@
+{
+  "name": "phone-approval-lite",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Cutline device approval via ntfy + web — no Apple Developer required",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "zod": "^4.3.6"
+  }
+}

@@ -2,6 +2,17 @@
 
 Standalone tools that extend Cursor Cloud Agents for Cutline operations.
 
+## phone-approval-lite (no Apple Developer)
+
+iPhone approvals via **ntfy** push + `/approve` web page. No serial numbers, no $99/yr Apple program.
+
+```bash
+cd tools/phone-approval-lite && npm install
+# See docs/SETUP-NO-APPLE-DEV.md
+```
+
+MCP: `tools/phone-approval-lite/mcp/server.js`
+
 ## phone-approval-apple
 
 iPhone push notifications when the agent needs sign-in approval (Squarespace 2FA, Apple Developer, etc.).

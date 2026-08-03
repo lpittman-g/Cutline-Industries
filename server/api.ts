@@ -5,6 +5,16 @@ import dotenv from 'dotenv'
 import express from 'express'
 import { runOnce } from './autopilot.ts'
 import { runAiPipelineOnce } from './aiPipeline.ts'
+import {
+  approvalPageUrl,
+  approvalStatus,
+  createApprovalRequest,
+  notifyViaNtfy,
+  readPending,
+  registerDevice,
+  resolvePending,
+  waitForApproval,
+} from './deviceApproval.ts'
 import { loadFeedbackReport, runFeedbackLoop, saveAudienceInput } from './youtubeFeedback.ts'
 import { getGoogleCloudStatus, getYoutubeChannel } from './googleCloud.ts'
 import {
@@ -175,6 +185,99 @@ app.post('/api/ai-pipeline/run-once', async (_req, res) => {
   try {
     const state = await runAiPipelineOnce()
     res.json({ ok: true, state })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/approval/status', (_req, res) => {
+  res.json(approvalStatus())
+})
+
+app.post('/api/approval/register-device', async (req, res) => {
+  try {
+    const deviceId = String(req.body?.deviceId || '').trim()
+    const label = String(req.body?.label || 'My iPhone').trim()
+    if (!deviceId) {
+      res.status(400).json({ error: 'deviceId required' })
+      return
+    }
+    const device = await registerDevice({
+      deviceId,
+      label,
+      userAgent: String(req.body?.userAgent || ''),
+    })
+    res.json({ ok: true, device })
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.get('/api/approval/:id', async (req, res) => {
+  const rec = await readPending(req.params.id)
+  if (!rec) {
+    res.status(404).json({ error: 'unknown approvalId' })
+    return
+  }
+  res.json(rec)
+})
+
+app.post('/api/approval/:id/decide', async (req, res) => {
+  try {
+    const decision = req.body?.decision
+    if (decision !== 'approved' && decision !== 'denied') {
+      res.status(400).json({ error: 'decision must be approved or denied' })
+      return
+    }
+    const rec = await resolvePending(req.params.id, decision)
+    if (!rec) {
+      res.status(404).json({ error: 'unknown approvalId' })
+      return
+    }
+    res.json(rec)
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+  }
+})
+
+app.post('/api/approval/request', async (req, res) => {
+  try {
+    const service = String(req.body?.service || '').trim()
+    if (!service) {
+      res.status(400).json({ error: 'service required' })
+      return
+    }
+    const waitSeconds = Number(req.body?.waitSeconds ?? 180)
+    const rec = await createApprovalRequest({
+      service,
+      detail: String(req.body?.detail || ''),
+      desktopUrl: req.body?.desktopUrl ? String(req.body.desktopUrl) : null,
+    })
+    const push = await notifyViaNtfy({
+      title: `Approve sign-in: ${service}`,
+      body: rec.detail || `Agent needs approval for ${service}`,
+      approvalId: rec.id,
+      service,
+      desktopUrl: rec.desktopUrl,
+    })
+    if (waitSeconds > 0) {
+      const final = await waitForApproval(rec.id, waitSeconds)
+      res.json({
+        ok: final?.status !== 'pending',
+        approvalId: rec.id,
+        status: final?.status ?? 'timeout',
+        push,
+        approveUrl: approvalPageUrl(rec.id),
+      })
+      return
+    }
+    res.json({
+      ok: true,
+      approvalId: rec.id,
+      status: 'pending',
+      push,
+      approveUrl: approvalPageUrl(rec.id),
+    })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }

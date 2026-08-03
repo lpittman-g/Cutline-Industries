@@ -38,6 +38,8 @@ cutline-industries-web.zip
 # Tool secrets
 tools/*/secrets/
 tools/*/.env
+secrets/approval-pending/
+secrets/approval-devices.json
 
 # Editor directories and files
 .vscode/*

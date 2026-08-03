@@ -8,6 +8,7 @@ import { BountyPage } from './pages/thermal/BountyPage'
 import { DevelopersPage } from './pages/thermal/DevelopersPage'
 import { CheckoutPage } from './pages/thermal/CheckoutPage'
 import { FeedbackPage } from './pages/FeedbackPage'
+import { ApprovePage } from './pages/ApprovePage'
 import { DashboardPage } from './pages/app/DashboardPage'
 import { StreamsPage } from './pages/app/StreamsPage'
 import { ClipsPage } from './pages/app/ClipsPage'
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/checkout/:clipId" element={<CheckoutPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/approve" element={<ApprovePage />} />
         </Route>
 
         {/* Thermal Mission Control */}
