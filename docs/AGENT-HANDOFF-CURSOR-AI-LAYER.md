@@ -1,6 +1,11 @@
 # Agent handoff — Cursor AI layer (NOT the gaming YouTube channel)
 
-**For a new Cursor Cloud Agent.** Do **not** work on Thermal Mission Control, VOD autopilot, AI Shorts, bounty, Stripe clips, or YouTube growth unless the user asks. That work stays with the Gaming YouTube / Thermal agent.
+**Workstream B** — see [WORKSTREAMS.md](WORKSTREAMS.md).
+
+**For a dedicated Cursor Cloud Agent** (not the “Gaming youtube channel” agent).  
+Do **not** work on Thermal Mission Control, VOD autopilot, AI Shorts, bounty, Stripe clips, or YouTube growth. That is **Workstream A**.
+
+**How this got mixed:** In the Gaming youtube channel Cursor chat, everything from the **mcp-server-excel Agent Task** line downward was Workstream B, unrelated to the gaming YouTube project. Keep it in this handoff / a separate agent.
 
 **Repo:** https://github.com/lpittman-g/Cutline-Industries  
 **Printer:** HP OfficeJet Pro 9120 · `192.168.1.157` · host `HPIAD66D5`  
