@@ -63,6 +63,9 @@ export default function App() {
           <Route path="revenue" element={<RevenuePage />} />
         </Route>
 
+        {/* Project terminal — public alias for Cutline OS command center */}
+        <Route path="/terminal" element={<Navigate to="/os/command" replace />} />
+
         {/* Cutline processing / legacy Creator OS (engine tools) */}
         <Route path="/os" element={<AppShell />}>
           <Route index element={<Navigate to="/os/command" replace />} />

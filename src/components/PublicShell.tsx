@@ -5,6 +5,7 @@ const NAV = [
   { to: '/', label: 'Home', end: true },
   { to: '/bounty', label: 'Bounty Board' },
   { to: '/developers', label: 'Developers' },
+  { to: '/terminal', label: 'Terminal' },
   { to: '/feedback', label: 'Content input' },
   { to: '/approve', label: 'Agent approve' },
 ]
@@ -14,10 +15,10 @@ export function PublicShell() {
     <div className="public-shell">
       <header className="public-nav">
         <Link to="/" className="brand public-brand">
-          <div className="brand-mark thermal-mark">T</div>
+          <div className="brand-mark">C</div>
           <div className="brand-text">
-            <strong>THERMAL</strong>
-            <span>heat → shorts → cash</span>
+            <strong>CUTLINE INDUSTRIES</strong>
+            <span>Thermal · heat → shorts → cash</span>
           </div>
         </Link>
         <nav className="public-nav-links">
@@ -43,7 +44,7 @@ export function PublicShell() {
         <Outlet />
       </main>
       <footer className="public-footer">
-        <p>Thermal · stream heat into monetized Shorts</p>
+        <p>Cutline Industries · Thermal turns stream heat into monetized Shorts</p>
         <p>
           <a href="mailto:lpittman@cutline-industries.studio">lpittman@cutline-industries.studio</a>
         </p>
