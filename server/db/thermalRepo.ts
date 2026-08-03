@@ -328,6 +328,13 @@ export async function getBountyPost(id: number): Promise<BountyPostWithClip | nu
   return res.rows[0] ? mapBountyPost(res.rows[0]) : null
 }
 
+/** Mirrors bounty queue ON CONFLICT status CASE — keep posted rows posted. */
+export function nextBountyStatusOnQueueRetry(
+  currentStatus: string | null | undefined,
+): 'posted' | 'queued' {
+  return currentStatus === 'posted' ? 'posted' : 'queued'
+}
+
 export async function queueBountyPost(input: {
   clip_id: number
   platform: BountyPlatform
@@ -369,6 +376,40 @@ export async function getBountyCaptionNotes(
     if (row.platform === 'tiktok') tiktok = notes
   }
   return { x, tiktok }
+}
+
+function trimCaption(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed || null
+}
+
+/**
+ * Paid download captions: prefer durable clip columns, then bounty notes.
+ * Blank/whitespace clip values fall through so queued notes still fulfill.
+ */
+export function resolveFulfillmentCaptions(
+  clip: {
+    ai_caption?: string | null
+    ai_tiktok_caption?: string | null
+    ai_discord_message?: string | null
+  },
+  bountyNotes: { x: string | null; tiktok: string | null },
+): {
+  social: string | null
+  x: string | null
+  tiktok: string | null
+  discord: string | null
+} {
+  const x = trimCaption(clip.ai_caption) ?? bountyNotes.x
+  const tiktok = trimCaption(clip.ai_tiktok_caption) ?? bountyNotes.tiktok
+  return {
+    // `social` aliases x for older checkout clients
+    social: x,
+    x,
+    tiktok,
+    discord: trimCaption(clip.ai_discord_message),
+  }
 }
 
 export async function markBountyPosted(input: {
