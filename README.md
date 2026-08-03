@@ -37,7 +37,8 @@ npm run start          # UI + API
 
 | URL | Purpose |
 |-----|---------|
-| http://127.0.0.1:5173 | Thermal site + `/os` command center |
+| http://127.0.0.1:5173 | Cutline Industries site + Thermal |
+| http://127.0.0.1:5173/terminal | Project terminal (Command Center) |
 | http://127.0.0.1:8787 | Cutline API |
 
 ## Content pipelines
@@ -89,7 +90,8 @@ Open this repo in **Cursor** — Copilot/VS Code optional.
 
 - **CI:** GitHub Actions on push to `main`
 - **Staging:** AWS Amplify (`staging.*.amplifyapp.com`)
-- **Production domain:** `cutline-industries.studio` (Route 53 + Amplify — DNS cutover pending)
+- **Production domain:** `cutline-industries.studio` — see [`docs/DOMAIN-CUTOVER.md`](docs/DOMAIN-CUTOVER.md) (Squarespace DNS → Amplify; do not host this app on Squarespace Site Builder)
+- **Project terminal:** `https://cutline-industries.studio/terminal` → `/os/command`
 
 ## Business docs
 

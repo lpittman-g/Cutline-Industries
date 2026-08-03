@@ -32,8 +32,8 @@ export function AppShell() {
         <Link to="/os/command" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
           <div className="brand-mark">C</div>
           <div className="brand-text">
-            <strong>CUTLINE</strong>
-            <span>internal os</span>
+            <strong>CUTLINE INDUSTRIES</strong>
+            <span>command terminal</span>
           </div>
         </Link>
         <p className="os-badge">Internal tools — not the public site</p>
