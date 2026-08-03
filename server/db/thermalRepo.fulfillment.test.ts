@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  canActivateRetainer,
   canClaimClip,
+  FulfillmentConflictError,
+  isFulfillmentConflictError,
   localCleanDownloadUrl,
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
@@ -94,5 +97,41 @@ describe('canClaimClip', () => {
       ),
       false,
     )
+  })
+})
+
+describe('canActivateRetainer', () => {
+  it('allows prospect and sample_sent rows', () => {
+    assert.equal(canActivateRetainer({ status: 'prospect' }, 'cs_1'), true)
+    assert.equal(canActivateRetainer({ status: 'sample_sent' }, 'cs_1'), true)
+  })
+
+  it('allows Stripe webhook retry for the same session', () => {
+    assert.equal(
+      canActivateRetainer(
+        { status: 'active', stripe_checkout_session_id: 'cs_1' },
+        'cs_1',
+      ),
+      true,
+    )
+  })
+
+  it('rejects a second buyer session on an active retainer', () => {
+    assert.equal(
+      canActivateRetainer(
+        { status: 'active', stripe_checkout_session_id: 'cs_1' },
+        'cs_2',
+      ),
+      false,
+    )
+  })
+})
+
+describe('FulfillmentConflictError', () => {
+  it('is detectable for Stripe webhook ACK paths', () => {
+    const err = new FulfillmentConflictError('already claimed')
+    assert.equal(isFulfillmentConflictError(err), true)
+    assert.equal(isFulfillmentConflictError(new Error('other')), false)
+    assert.equal(err.code, 'fulfillment_conflict')
   })
 })
