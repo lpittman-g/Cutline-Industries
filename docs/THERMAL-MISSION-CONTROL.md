@@ -212,7 +212,7 @@ TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
 
 # Optional Discord heat alerts + clip drops
-# Server Settings → Integrations → Webhooks → Copy URL (see Setup below)
+# Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL
 DISCORD_HEAT_WEBHOOK_URL=
 
 # VOD source for clips when live VOD unavailable
@@ -243,11 +243,9 @@ Clips stored under `thermal_media/clips/{spikeId}/` and served at `/thermal-medi
 
 There is no standalone credential dashboard. In Discord:
 
-1. Open the server that should receive heat alerts and $15 clip drops.
-2. **Server Settings → Integrations → Webhooks** (or **Edit Channel → Integrations → Webhooks**).
-3. **New Webhook** → name it (e.g. `Thermal Heat`) → pick the target channel.
-4. **Copy Webhook URL** (`https://discord.com/api/webhooks/...`).
-5. Paste into `.env`:
+**Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL**
+
+Paste into `.env`:
 
 ```bash
 DISCORD_HEAT_WEBHOOK_URL=https://discord.com/api/webhooks/...

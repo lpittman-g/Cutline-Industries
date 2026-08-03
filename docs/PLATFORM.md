@@ -91,7 +91,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
 | `DATABASE_URL` | Thermal Postgres |
-| `DISCORD_HEAT_WEBHOOK_URL` | Optional — heat + clip-drop webhooks (Server Settings → Integrations → Webhooks) |
+| `DISCORD_HEAT_WEBHOOK_URL` | Optional — heat + clip-drop webhooks (Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL) |
 
 ## Google Cloud
 
