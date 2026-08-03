@@ -2,11 +2,11 @@ import express, { type Express, type Request, type Response } from 'express'
 import path from 'node:path'
 import { thermalDbEnabled } from './db/pool.ts'
 import {
-  ClipAlreadyClaimedError,
   countClipsToday,
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  ClipAlreadyClaimedError,
   getBountyCaptionNotes,
   getClipById,
   localCleanDownloadUrl,
@@ -228,8 +228,7 @@ export function registerThermalRoutes(app: Express) {
     } catch (err) {
       if (err instanceof ClipAlreadyClaimedError) {
         res.status(409).json({
-          ok: false,
-          error: 'clip_already_claimed',
+          error: err.message,
           clipId: err.clipId,
           existingSessionId: err.existingSessionId,
         })
@@ -251,7 +250,7 @@ export function registerThermalRoutes(app: Express) {
         return
       }
       const result = await confirmCheckoutSession(sessionId)
-      if (!result.ok && 'error' in result && result.error === 'clip_already_claimed') {
+      if (!result.ok && result.status === 'clip_already_claimed') {
         res.status(409).json(result)
         return
       }
