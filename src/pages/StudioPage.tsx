@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { NICHE_LABELS } from '../data/catalog'
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 import type { GameNiche } from '../types'
 import { clamp, formatTime, parseTimestamp } from '../lib/utils'
 

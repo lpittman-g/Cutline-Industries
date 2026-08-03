@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 import {
   clipsToChapters,
   clipsToCsv,

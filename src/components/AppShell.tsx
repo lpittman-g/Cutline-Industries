@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 
 const NAV = [
   { to: '/os/command', label: 'Command' },

@@ -1,4 +1,4 @@
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 import { DEMO_LEADS } from '../data/mega'
 
 export function AnalyticsPage() {

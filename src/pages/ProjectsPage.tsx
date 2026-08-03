@@ -1,5 +1,5 @@
 import { NICHE_LABELS } from '../data/catalog'
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 import type { GameNiche } from '../types'
 
 export function ProjectsPage() {

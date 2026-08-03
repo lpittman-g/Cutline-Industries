@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useCutline } from '../context/CutlineContext'
+import { useCutline } from '../context/cutlineContextObject'
 import { DEMO_LEADS, DEAL_PACKAGES, MONEY_RAILS, PLATFORM_MODULES } from '../data/mega'
 
 export function CommandPage() {
