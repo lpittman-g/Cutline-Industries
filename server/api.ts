@@ -529,7 +529,7 @@ app.post('/api/leads', async (req, res) => {
 app.get('/api/thermal/schema', async (_req, res) => {
   const databaseUrl = process.env.DATABASE_URL?.trim()
   const migrationFile = 'db/migrations/001_thermal_core.sql'
-  const tables = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales']
+  const tables = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales', 'bounty_posts']
 
   if (!databaseUrl) {
     res.json({

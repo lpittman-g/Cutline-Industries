@@ -47,6 +47,44 @@ export type ThermalSale = {
   completed_at: string | null
 }
 
+async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    let message = await res.text()
+    try {
+      const parsed = JSON.parse(message) as { error?: string }
+      message = parsed.error ?? message
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(message || res.statusText)
+  }
+  return res.json() as Promise<T>
+}
+
+export type ThermalBountyPost = {
+  id: number
+  clip_id: number
+  platform: string
+  post_url: string | null
+  status: string
+  views: number
+  engagement: number
+  posted_at: string | null
+  notes: string | null
+  clip_title: string | null
+  streamer_username: string | null
+  game: string | null
+  thumbnail_url: string | null
+  media_url: string | null
+  clip_status: string
+  duration_sec: number | null
+}
+
 export type RevenueTimelinePoint = {
   date: string
   amountCents: number
@@ -88,6 +126,32 @@ export function fetchDashboardSummary() {
 
 export function fetchClips() {
   return getJson<{ clips: ThermalClip[] }>('/api/clips')
+}
+
+export function fetchBountyPosts() {
+  return getJson<{ posts: ThermalBountyPost[] }>('/api/bounty-posts')
+}
+
+export function queueBountyPost(clipId: number, platform: 'x' | 'tiktok', notes?: string) {
+  return postJson<{ ok: boolean; post: ThermalBountyPost }>('/api/bounty-posts', {
+    clipId,
+    platform,
+    notes,
+  })
+}
+
+export function markBountyPosted(
+  postId: number,
+  input: { postUrl: string; views?: number; engagement?: number; notes?: string },
+) {
+  return postJson<{ ok: boolean; post: ThermalBountyPost }>(
+    `/api/bounty-posts/${postId}/mark-posted`,
+    input,
+  )
+}
+
+export function updateBountyMetrics(postId: number, input: { views?: number; engagement?: number }) {
+  return patchJson<{ ok: boolean; post: ThermalBountyPost }>(`/api/bounty-posts/${postId}`, input)
 }
 
 export function fetchBountyClips() {

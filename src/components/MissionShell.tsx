@@ -4,7 +4,8 @@ const NAV = [
   { to: '/app/dashboard', label: 'Dashboard' },
   { to: '/app/streams', label: 'Streams' },
   { to: '/app/clips', label: 'Clips' },
-  { to: '/app/developers', label: 'Dev CRM' },
+  { to: '/app/bounty', label: 'Bounty Board' },
+  { to: '/app/developers', label: 'Developers' },
   { to: '/app/revenue', label: 'Revenue' },
 ]
 
