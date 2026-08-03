@@ -43,6 +43,8 @@ Claim CTA → POST /api/checkout/session
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/clips/:id` | GET | Single clip for checkout page |
+| `/api/clips/:id/autopilot` | POST | Retry AI copy + Discord / bounty / pitch (ops) |
+| `/api/clips/:id/download` | POST | Paid clean download + X/TikTok/Discord caption fulfillment |
 | `/api/bounty/clips` | GET | Public bounty board clips |
 | `/api/checkout/session` | POST | Create Stripe Checkout (`{ clipId }`) |
 | `/api/checkout/confirm` | POST | Confirm session after redirect (dev fallback) |
@@ -178,12 +180,15 @@ If `AWS_REGION` / `AWS_S3_BUCKET_NAME` are blank, the pipeline falls back to loc
 
 After FFmpeg + S3 completes, `thermalHeatAutopilot.ts`:
 
-1. Generates factual Discord, X/TikTok, and developer pitch copy with OpenAI
+1. Generates factual Discord, X, TikTok, and developer pitch copy with OpenAI
 2. Falls back to deterministic copy when `OPENAI_API_KEY` is absent
 3. Sends the $15 live-unlock drop to Discord
-4. Queues separate X and TikTok bounty posts (manual/API publish remains)
+4. Queues separate X and TikTok bounty posts with platform-specific captions
 5. Looks up a matching developer contact and sends the sample pitch with Gmail
-6. Persists generated copy, completion state, and errors on the clip
+6. Persists X (`ai_caption`) and TikTok (`ai_tiktok_caption`) copy, completion state, and errors on the clip
+7. Paid checkout fulfillment returns X + TikTok captions (clip columns, then bounty notes)
+8. Operators can retry distribution via `POST /api/clips/:id/autopilot` (Clip Vault);
+   retry refreshes bounty caption notes without un-posting live bounty rows
 
 No cron “keep alive” task is used. The existing Twitch monitor polls for live
 heat while the API process is running; production uptime belongs to the hosting

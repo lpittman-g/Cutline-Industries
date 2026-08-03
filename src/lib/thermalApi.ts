@@ -21,6 +21,7 @@ export type ThermalClip = {
   price_usd?: string
   sale_amount_cents?: number | null
   ai_caption?: string | null
+  ai_tiktok_caption?: string | null
   autopilot_status?: string | null
   autopilot_error?: string | null
 }
@@ -206,7 +207,17 @@ export function fetchClipDownload(clipId: number, sessionId: string) {
     url: string
     storage: 's3' | 'local'
     expiresIn?: number
+    captions?: {
+      social: string | null
+      x: string | null
+      tiktok: string | null
+      discord: string | null
+    }
   }>(`/api/clips/${clipId}/download`, { sessionId })
+}
+
+export function rerunClipAutopilot(clipId: number) {
+  return postJson<{ ok: boolean; clip: ThermalClip | null }>(`/api/clips/${clipId}/autopilot`, {})
 }
 
 export type ThermalRetainerStatus = 'prospect' | 'sample_sent' | 'active' | 'cancelled'

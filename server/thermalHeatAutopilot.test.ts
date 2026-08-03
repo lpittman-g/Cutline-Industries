@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { afterEach, describe, it } from 'node:test'
 import { publicBaseUrl } from './auth/authCrypto.ts'
-import { asCopy, fallbackCopy } from './thermalHeatAutopilot.ts'
+import { buildFallbackCopy, normalizeAutopilotCopy } from './thermalHeatAutopilot.ts'
 
 const URL_KEYS = ['THERMAL_PUBLIC_URL', 'CUTLINE_PUBLIC_URL'] as const
 const saved: Partial<Record<(typeof URL_KEYS)[number], string | undefined>> = {}
@@ -21,38 +21,62 @@ function restoreUrlEnv() {
   }
 }
 
-describe('thermalHeatAutopilot copy helpers', () => {
-  it('builds deterministic fallback copy', () => {
-    const copy = fallbackCopy({
-      streamerName: 'nova_fps',
-      gameTitle: 'Hollow Paths',
-      msgPerMin: 186,
+describe('buildFallbackCopy', () => {
+  it('includes streamer, game, and heat in every channel', () => {
+    const copy = buildFallbackCopy({
+      streamerName: 'nox',
+      gameTitle: 'Starforge',
+      msgPerMin: 180,
     })
-    assert.match(copy.discordHypeMessage, /186/)
-    assert.match(copy.xCaption, /@nova_fps/)
-    assert.match(copy.tiktokCaption, /Hollow Paths/)
-    assert.match(copy.devEmailSubject, /Hollow Paths/)
-    assert.ok(copy.devEmailBody.includes('Steam wishlist'))
+    assert.match(copy.discordHypeMessage, /180/)
+    assert.match(copy.discordHypeMessage, /Starforge/)
+    assert.match(copy.xCaption, /@nox/)
+    assert.match(copy.tiktokCaption, /Starforge/)
+    assert.match(copy.devEmailSubject, /Starforge/)
+    assert.match(copy.devEmailBody, /@nox/)
+    assert.notEqual(copy.xCaption, copy.tiktokCaption)
+  })
+})
+
+describe('normalizeAutopilotCopy', () => {
+  it('fills missing keys from fallback', () => {
+    const fallback = buildFallbackCopy({
+      streamerName: 'a',
+      gameTitle: 'b',
+      msgPerMin: 10,
+    })
+    const copy = normalizeAutopilotCopy(
+      { xCaption: 'custom x', tiktokCaption: '   ' },
+      fallback,
+    )
+    assert.equal(copy.xCaption, 'custom x')
+    assert.equal(copy.tiktokCaption, fallback.tiktokCaption)
+    assert.equal(copy.discordHypeMessage, fallback.discordHypeMessage)
   })
 
-  it('fills missing OpenAI JSON fields from fallback', () => {
-    const fallback = fallbackCopy({
-      streamerName: 'pixelrift',
-      gameTitle: 'Neon Circuit',
-      msgPerMin: 140,
+  it('accepts a full OpenAI-shaped payload', () => {
+    const fallback = buildFallbackCopy({
+      streamerName: 'a',
+      gameTitle: 'b',
+      msgPerMin: 10,
     })
-    const copy = asCopy(
+    const copy = normalizeAutopilotCopy(
       {
-        discordHypeMessage: '  Custom hype  ',
-        xCaption: '',
-        tiktokCaption: 'TikTok only',
+        discordHypeMessage: 'd',
+        xCaption: 'x',
+        tiktokCaption: 't',
+        devEmailSubject: 's',
+        devEmailBody: 'body',
       },
       fallback,
     )
-    assert.equal(copy.discordHypeMessage, 'Custom hype')
-    assert.equal(copy.xCaption, fallback.xCaption)
-    assert.equal(copy.tiktokCaption, 'TikTok only')
-    assert.equal(copy.devEmailSubject, fallback.devEmailSubject)
+    assert.deepEqual(copy, {
+      discordHypeMessage: 'd',
+      xCaption: 'x',
+      tiktokCaption: 't',
+      devEmailSubject: 's',
+      devEmailBody: 'body',
+    })
   })
 })
 

@@ -2,6 +2,8 @@ import OpenAI from 'openai'
 import { publicBaseUrl } from './auth/authCrypto.ts'
 import {
   findRetainerByGameTitle,
+  getClipById,
+  getHeatSpike,
   queueBountyPost,
   updateClipAutopilot,
   updateRetainer,
@@ -17,25 +19,29 @@ export type ThermalAutopilotCopy = {
   devEmailBody: string
 }
 
-export function fallbackCopy(input: {
+export function buildFallbackCopy(input: {
   streamerName: string
   gameTitle: string
   msgPerMin: number
 }): ThermalAutopilotCopy {
-  const xCaption = `Chat exploded during @${input.streamerName}'s ${input.gameTitle} run 🔥 #Gaming #IndieGames #Shorts`
   return {
     discordHypeMessage: `Chat hit ${input.msgPerMin} messages/min while you played ${input.gameTitle}. Thermal cut the moment while it was hot.`,
-    xCaption,
-    tiktokCaption: `Chat went nuclear on ${input.gameTitle} 🔥 Clip cut live by Thermal. #Gaming #IndieGames #FYP`,
+    xCaption: `Chat exploded during @${input.streamerName}'s ${input.gameTitle} run 🔥 #Gaming #IndieGames #Shorts`,
+    tiktokCaption: `${input.gameTitle} heat check — @${input.streamerName} chat went wild. #fyp #gaming #indiegames #shorts`,
     devEmailSubject: `${input.gameTitle} creator heat → wishlist-ready Shorts`,
     devEmailBody: `Thermal detected a high-engagement moment from @${input.streamerName} playing ${input.gameTitle}. We turn creator reactions into vertical ad cuts designed for TikTok and YouTube Shorts, with a clear Steam wishlist call to action. Would you like a monthly creator gameplay pack?`,
   }
 }
 
-export function asCopy(value: unknown, fallback: ThermalAutopilotCopy): ThermalAutopilotCopy {
+export function normalizeAutopilotCopy(
+  value: unknown,
+  fallback: ThermalAutopilotCopy,
+): ThermalAutopilotCopy {
   const row = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
   const text = (key: keyof ThermalAutopilotCopy) =>
-    typeof row[key] === 'string' && row[key].trim() ? row[key].trim() : fallback[key]
+    typeof row[key] === 'string' && String(row[key]).trim()
+      ? String(row[key]).trim()
+      : fallback[key]
   return {
     discordHypeMessage: text('discordHypeMessage'),
     xCaption: text('xCaption'),
@@ -51,7 +57,7 @@ async function generateCopy(input: {
   msgPerMin: number
   clipTitle: string
 }) {
-  const fallback = fallbackCopy(input)
+  const fallback = buildFallbackCopy(input)
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
     return {
@@ -82,7 +88,7 @@ Clip title: ${input.clipTitle}
 Return JSON string keys:
 - discordHypeMessage: energetic but factual heat alert
 - xCaption: short X/Twitter caption with 2-4 relevant hashtags
-- tiktokCaption: short TikTok caption with 2-4 relevant hashtags
+- tiktokCaption: short TikTok caption with 2-4 relevant hashtags (can differ from xCaption)
 - devEmailSubject: concise indie developer outreach subject
 - devEmailBody: short cold email about turning creator gameplay into vertical ads that support Steam wishlist campaigns`,
         },
@@ -90,7 +96,11 @@ Return JSON string keys:
     })
     const raw = response.choices[0]?.message.content
     const parsed = raw ? JSON.parse(raw) : {}
-    return { copy: asCopy(parsed, fallback), source: 'openai' as const, warning: null }
+    return {
+      copy: normalizeAutopilotCopy(parsed, fallback),
+      source: 'openai' as const,
+      warning: null,
+    }
   } catch (err) {
     return {
       copy: fallback,
@@ -184,12 +194,13 @@ export async function processHeatSpikeAutopilot(input: {
       clipId: input.clipId,
       status: 'completed',
       caption: copy.xCaption,
+      tiktokCaption: copy.tiktokCaption,
       discordMessage: copy.discordHypeMessage,
       devEmailSubject: copy.devEmailSubject,
       devEmailBody: copy.devEmailBody,
       error: warnings.length ? warnings.join('; ') : null,
     })
-    return { ok: true, copy, source, warnings }
+    return { ok: true as const, copy, source, warnings }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     await updateClipAutopilot({
@@ -199,4 +210,28 @@ export async function processHeatSpikeAutopilot(input: {
     })
     throw err
   }
+}
+
+/**
+ * Re-run AI copy + distribution for an already-rendered clip (failed / pending /
+ * completed). Does not re-cut FFmpeg or re-upload S3 assets.
+ */
+export async function rerunClipAutopilot(clipId: number) {
+  const clip = await getClipById(clipId)
+  if (!clip) throw new Error(`Clip ${clipId} not found`)
+  if (!clip.media_url) {
+    throw new Error('Clip must have rendered media before Thermal autopilot can run')
+  }
+
+  const spike = clip.spike_id ? await getHeatSpike(clip.spike_id) : null
+  return processHeatSpikeAutopilot({
+    spikeId: clip.spike_id ?? 0,
+    clipId: clip.id,
+    streamerId: spike?.streamer_id ?? 0,
+    streamerName: clip.streamer_username ?? spike?.streamer_username ?? 'streamer',
+    gameTitle: clip.game ?? spike?.game ?? 'Live',
+    msgPerMin: spike?.msg_per_min ?? 0,
+    clipTitle: clip.title ?? `Clip #${clip.id}`,
+    previewUrl: clip.media_url,
+  })
 }

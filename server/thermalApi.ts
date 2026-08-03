@@ -6,6 +6,7 @@ import {
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  getBountyCaptionNotes,
   getClipById,
   getRetainerById,
   insertRetainer,
@@ -31,6 +32,7 @@ import {
   updateRetainer,
 } from './db/thermalRepo.ts'
 import { triggerHeatEvent } from './heatPipeline.ts'
+import { rerunClipAutopilot } from './thermalHeatAutopilot.ts'
 import {
   confirmCheckoutSession,
   createCheckoutSession,
@@ -151,11 +153,22 @@ export function registerThermalRoutes(app: Express) {
         res.status(403).json({ error: 'Paid checkout session required' })
         return
       }
+      const bountyCaptions = await getBountyCaptionNotes(id)
+      const fulfillment = {
+        captions: {
+          // `social` aliases x for older checkout clients
+          social: clip.ai_caption ?? bountyCaptions.x ?? null,
+          x: clip.ai_caption ?? bountyCaptions.x ?? null,
+          tiktok: clip.ai_tiktok_caption ?? bountyCaptions.tiktok ?? null,
+          discord: clip.ai_discord_message ?? null,
+        },
+      }
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
         res.json({
           ok: true,
           url: `/thermal-media/clips/${id}/heat_clip.mp4`,
           storage: 'local',
+          ...fulfillment,
         })
         return
       }
@@ -164,6 +177,27 @@ export function registerThermalRoutes(app: Express) {
         url: await createPrivateDownloadUrl(clip.s3_clean_url),
         storage: 's3',
         expiresIn: 900,
+        ...fulfillment,
+      })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  /** Re-run AI copy + Discord / bounty / pitch for a rendered clip (no FFmpeg re-cut). */
+  app.post('/api/clips/:id/autopilot', ...ops, async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      if (!id) {
+        res.status(400).json({ error: 'Invalid clip id' })
+        return
+      }
+      const result = await rerunClipAutopilot(id)
+      const clip = await getClipById(id)
+      res.json({
+        ok: true,
+        autopilot: result,
+        clip: clip ? publicClip(clip as unknown as Record<string, unknown>) : null,
       })
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
