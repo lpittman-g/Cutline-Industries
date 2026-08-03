@@ -91,7 +91,7 @@ export function AutopilotPage() {
           <h1>Autopilot</h1>
           <p>
             Cutline Industries hands-off pipeline: drop VODs in <code>inbox/</code>, Autopilot cuts
-            Shorts and uploads to your YouTube channel.
+            Shorts and uploads when distribution is enabled.
           </p>
         </div>
         <div className="btn-row">

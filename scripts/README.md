@@ -2,7 +2,7 @@
 
 ## Replit — trend radar
 ```bash
-python scripts/replit/trend_radar.py --subreddit gaming --limit 20
+python scripts/replit/trend_radar.py --subreddit technology --limit 20
 ```
 Writes `inbox/trend_queue.json`.
 

@@ -2,22 +2,22 @@ import { AdSlot } from '../components/AdSlot'
 
 const POSTS = [
   {
-    slug: 'rank-reset-survival-guide',
-    title: 'Rank Reset Survival Guide: What to Do in Your First 10 Games',
+    slug: 'cutline-terminal-quickstart',
+    title: 'Cutline Terminal Quickstart: Command Center in Five Minutes',
     excerpt:
-      'A practical climb framework you can film as an 8–10 minute video and cut into Shorts the same day.',
+      'Open /terminal, orient on Command Center, and run the daily ops checklist.',
   },
   {
-    slug: 'patch-notes-that-break-meta',
-    title: 'Patch Notes That Break the Meta (And How to Content Them Fast)',
+    slug: 'mission-control-overview',
+    title: 'Mission Control Overview: Clips, Bounty, and Revenue',
     excerpt:
-      'Turn every patch drop into longform + Shorts without waiting for the algorithm to move on.',
+      'How the /app surfaces fit together for Cutline Industries operators.',
   },
   {
-    slug: 'youtube-shorts-to-adsense',
-    title: 'From Shorts Views to AdSense: Cutline Monetization Stack',
+    slug: 'cutline-monetization-stack',
+    title: 'Cutline Monetization Stack: Site, Sponsors, and Stripe',
     excerpt:
-      'How YPP, site AdSense, sponsors, and Stripe packs work together for gaming channels.',
+      'How site AdSense, sponsors, and Stripe packs work together for Cutline Industries.',
   },
 ]
 
@@ -28,8 +28,8 @@ export function BlogPage() {
         <div>
           <h1>Guides Blog</h1>
           <p>
-            Companion monetization layer for search traffic outside YouTube — AdSense-ready gaming
-            guides hosted with the Cutline OS.
+            Companion monetization layer for search traffic — AdSense-ready guides hosted with the
+            Cutline OS.
           </p>
         </div>
       </div>

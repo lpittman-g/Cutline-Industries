@@ -1,8 +1,8 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { THERMAL } from '../data/thermal'
 
 const NAV = [
   { to: '/', label: 'Home', end: true },
+  { to: '/terminal', label: 'Terminal' },
   { to: '/bounty', label: 'Bounty Board' },
   { to: '/developers', label: 'Developers' },
   { to: '/feedback', label: 'Content input' },
@@ -14,10 +14,10 @@ export function PublicShell() {
     <div className="public-shell">
       <header className="public-nav">
         <Link to="/" className="brand public-brand">
-          <div className="brand-mark thermal-mark">T</div>
+          <div className="brand-mark">C</div>
           <div className="brand-text">
-            <strong>THERMAL</strong>
-            <span>heat → shorts → cash</span>
+            <strong>CUTLINE INDUSTRIES</strong>
+            <span>platform · terminal · ops</span>
           </div>
         </Link>
         <nav className="public-nav-links">
@@ -31,9 +31,9 @@ export function PublicShell() {
               {item.label}
             </NavLink>
           ))}
-          <a className="btn btn-primary public-yt" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
-            {THERMAL.discordBotCta}
-          </a>
+          <Link className="btn btn-primary" to="/terminal">
+            Open terminal
+          </Link>
           <Link className="btn" to="/app/dashboard">
             Mission Control
           </Link>
@@ -43,7 +43,7 @@ export function PublicShell() {
         <Outlet />
       </main>
       <footer className="public-footer">
-        <p>Thermal · stream heat into monetized Shorts</p>
+        <p>Cutline Industries · cutline-industries.studio</p>
         <p>
           <a href="mailto:lpittman@cutline-industries.studio">lpittman@cutline-industries.studio</a>
         </p>

@@ -30,7 +30,7 @@ export async function uploadShort(opts: {
         title: opts.clip.title.slice(0, 100),
         description: description.slice(0, 5000),
         tags,
-        categoryId: '20', // Gaming
+        categoryId: '28', // Science & Technology
       },
       status: {
         privacyStatus: opts.privacyStatus ?? 'private',

@@ -21,7 +21,7 @@ function buildScript(topic: TrendTopic): string {
     '',
     '## Framework (2:00-7:00)',
     '1. Diagnose the mistake',
-    '2. Show the correct habit with gameplay',
+    '2. Show the correct habit with clear visuals',
     '3. Give a drill viewers can run today',
     '',
     '## Payoff (7:00-8:30)',

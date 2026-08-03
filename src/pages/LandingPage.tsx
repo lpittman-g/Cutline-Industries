@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { AdSlot } from '../components/AdSlot'
-import { THERMAL, THERMAL_TIERS } from '../data/thermal'
 
 export function LandingPage() {
   return (
@@ -8,45 +7,51 @@ export function LandingPage() {
       <section className="hero thermal-hero">
         <div className="hero-media thermal-heat" aria-hidden="true" />
         <div className="hero-inner">
-          <p className="hero-brand">THERMAL</p>
-          <h1 className="hero-headline">Turn live stream heat into instant revenue.</h1>
+          <p className="hero-brand">CUTLINE INDUSTRIES</p>
+          <h1 className="hero-headline">Tools, terminal, and ops for shipping media products.</h1>
           <p className="hero-support">
-            Chat spikes become Shorts in seconds — unlocks for streamers, bounty clips for fans, ad
-            packs for indie game studios.
+            Command center, Mission Control, and creator workflows under one brand — cutline-industries.studio.
           </p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
-              {THERMAL.discordBotCta}
-            </a>
-            <Link className="btn" to="/bounty">
-              Open Bounty Board
+            <Link className="btn btn-primary" to="/terminal">
+              Open terminal
+            </Link>
+            <Link className="btn" to="/app/dashboard">
+              Mission Control
             </Link>
           </div>
-          <p className="thermal-demo-note">Demo: chat spike → Short conversion in ~30 seconds</p>
         </div>
       </section>
 
       <section className="public-section thermal-section">
-        <h2>Indie Dev Showcase</h2>
+        <h2>Platform</h2>
         <p>
-          Creators playing your game generate TikTok/Shorts heat. Thermal packages those moments into
-          wishlist-driving ad packs — built on Cutline cutting under the hood.
+          Cutline Industries runs the public site, internal Creator OS, and operator tools from a single
+          repo — not a channel brand.
         </p>
-        <Link className="btn btn-primary" to="/developers">
-          For game developers
+        <Link className="btn btn-primary" to="/os/command">
+          Creator OS
         </Link>
       </section>
 
       <section className="public-section thermal-section">
-        <h2>Pricing & tiers</h2>
+        <h2>Operator links</h2>
         <div className="tier-grid">
-          {THERMAL_TIERS.map((t) => (
-            <article key={t.tier} className="tier-row">
-              <div className="tier-price">{t.pricing}</div>
-              <h3>{t.target}</h3>
-              <p>{t.description}</p>
-            </article>
-          ))}
+          <article className="tier-row">
+            <div className="tier-price">/terminal</div>
+            <h3>Command terminal</h3>
+            <p>Project terminal alias into the Cutline OS command center.</p>
+          </article>
+          <article className="tier-row">
+            <div className="tier-price">/app</div>
+            <h3>Mission Control</h3>
+            <p>Dashboard for clips, bounty board, developers, and revenue.</p>
+          </article>
+          <article className="tier-row">
+            <div className="tier-price">/approve</div>
+            <h3>Agent approve</h3>
+            <p>Phone-friendly approval surface for agent actions.</p>
+          </article>
         </div>
         <div style={{ marginTop: '1.5rem' }}>
           <AdSlot />

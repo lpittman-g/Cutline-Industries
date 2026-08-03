@@ -2,16 +2,16 @@
 
 **Brand:** Cutline Industries  
 **Domain:** cutline-industries.studio  
-**Channel:** Lamont Pittman (`@lamontpittman-f4q`) → rename target: Cutline Industries  
-**North star:** Gaming VOD → Shorts factory → audience → cash (Stripe first, YPP second)
+**North star:** Platform → terminal → ops → revenue
 
-This blueprint is the single operating picture for content, growth, money, and systems.
+This blueprint is the single operating picture for product, growth, money, and systems.  
+Cutline Industries is **not** a gaming YouTube channel brand.
 
 ---
 
 ## 1. Mission
 
-Cutline turns gameplay VODs into a daily Shorts machine, a sponsor-ready media brand, and cashflow — without waiting on YouTube Partner Program alone.
+Cutline Industries ships a platform (site, Mission Control, Creator OS terminal) and operator tools that turn media workflows into cashflow.
 
 We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as leverage.
 
@@ -32,9 +32,8 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 
 | System | Status | Notes |
 |---|---|---|
-| YouTube OAuth + Autopilot API | **Live** | Refresh token saved; channel readable |
-| YouTube channel | **Live** | `UC-aJkWw9BBXutlxITXcNdRw` · 0 videos |
 | Creator OS (Amplify) | Partial | Staging Amplify OK; custom DNS may need Route 53 NS restore |
+| Media Autopilot API | Optional | Present in repo; not the company identity |
 | AdSense site tag | Wired | `ca-pub-8439504069928032` — needs slot ID + domain on Amplify |
 | Deals / leads API | Live locally | Spark $750 · Surge $2500 · Eclipse $5000+ |
 | Stripe pay links | Missing | Blocker for first cash |
@@ -47,18 +46,13 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 ### Phase 0 — Foundation (done / almost done)
 - [x] Brand + Creator OS shell
 - [x] Google Analytics + AdSense client wiring
-- [x] YouTube Data API + OAuth refresh token
-- [x] Channel created on Workspace account
-- [ ] Rename channel → **Cutline Industries**
-- [ ] Restore `cutline-industries.studio` → Amplify (Route 53 NS)
-- [ ] Recreate GitHub `main` + open PRs
+- [ ] Restore `cutline-industries.studio` → Amplify (see `docs/DOMAIN-CUTOVER.md`)
+- [ ] Confirm `/terminal` on the live domain
 
-### Phase 1 — Ship content daily (now)
-1. Drop VODs in `inbox/`
-2. Set `CUTLINE_DRY_RUN=0` when ready for real uploads
-3. Run `npm run autopilot` (or Autopilot page → run once)
-4. Cadence: **3–10 Shorts / day**, private first 24h, then public
-5. Same-day cross-post TikTok + Reels when capacity allows
+### Phase 1 — Ship the platform (now)
+1. Finish DNS cutover to Amplify
+2. Smoke-test `/`, `/terminal`, `/app`
+3. Keep optional media Autopilot off the public brand story
 
 ### Phase 2 — Money this week (parallel)
 1. Stripe pay links: Spark $750 + Surge $2,500
@@ -67,15 +61,15 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 4. AdSense: confirm site + `ads.txt` on production domain
 5. Publish 2–3 Blog guides for search + display RPM
 
-### Phase 3 — YPP track (30–90 days)
-- Shorts views + subs toward Partner thresholds
-- Enable ads, memberships, Super Thanks, Shopping when eligible
-- Keep Stripe/sponsors as primary cash until YPP stabilizes
+### Phase 3 — Distribution (30–90 days)
+- Grow owned audience and site traffic
+- Keep Stripe/sponsors as primary cash
+- Treat social uploads as optional distribution, not the brand
 
 ### Phase 4 — Scale
 - EC2/Lightsail Autopilot worker 24/7
 - Discord community + comment bots
-- Multi-channel cross-post automation
+- Multi-surface distribution automation
 - Agency mode: client seats / portals
 
 ---
@@ -98,7 +92,7 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 2. Vertical 9:16 framing on the action  
 3. Captions on  
 4. Title under 70 chars, outcome-first  
-5. 3–5 niche hashtags + `#GamingShorts`  
+5. 3–5 niche hashtags  
 6. CTA after payoff  
 7. Reply to first 10 comments in the first hour  
 
@@ -125,18 +119,18 @@ Contact: `lpittman@cutline-industries.studio`
 | Qualified replies | 5+ | 20+ |
 | Cash closed (Stripe) | $750+ | $2,500+ |
 | Site AdSense impressions | Tracking on | Growing WoW |
-| Channel subs | 50+ | 500+ |
+| Qualified site sessions | Tracking on | Growing WoW |
 
 ---
 
 ## 9. Next 7 actions (execute in order)
 
-1. Rename YouTube channel → Cutline Industries  
-2. Drop first VOD in `inbox/` and run Autopilot once (private)  
+1. Point `cutline-industries.studio` DNS at Amplify  
+2. Smoke-test `/terminal` → Command Center  
 3. Create Stripe pay links for Spark + Surge  
 4. Send 20 outreaches with Media Kit + pay link  
-5. Fix DNS so studio domain hits Amplify  
-6. Push blueprint + API branches; restore GitHub `main`  
+5. Confirm public brand copy is Cutline Industries (not a channel)  
+6. Keep GitHub `main` green via SynthLang CI  
 7. Add AdSense slot ID (`VITE_ADSENSE_SLOT`) and redeploy  
 
 Live checklist UI: `/blueprint` in Creator OS.  

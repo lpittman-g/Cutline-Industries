@@ -1,6 +1,6 @@
 # AI video pipeline
 
-Cutline creates **Thermal / Cutline Industries** Shorts — not generic gaming content.
+Cutline creates **Cutline Industries** Shorts as optional distribution — not a gaming channel brand.
 
 ## Project mode (default)
 

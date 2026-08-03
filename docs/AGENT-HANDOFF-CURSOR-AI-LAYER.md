@@ -1,11 +1,11 @@
-# Agent handoff — Cursor AI layer (NOT the gaming YouTube channel)
+# Agent handoff — Cursor AI layer (Workstream B)
 
 **Workstream B** — see [WORKSTREAMS.md](WORKSTREAMS.md).
 
-**For a dedicated Cursor Cloud Agent** (not the “Gaming youtube channel” agent).  
-Do **not** work on Thermal Mission Control, VOD autopilot, AI Shorts, bounty, Stripe clips, or YouTube growth. That is **Workstream A**.
+**For a dedicated Cursor Cloud Agent** focused on the Cursor AI layer.  
+Do **not** expand into Mission Control product features, media autopilot, bounty, or Stripe clip flows unless the user asks. That is **Workstream A** (Cutline Industries product platform).
 
-**How this got mixed:** In the Gaming youtube channel Cursor chat, everything from the **mcp-server-excel Agent Task** line downward was Workstream B, unrelated to the gaming YouTube project. Keep it in this handoff / a separate agent.
+**How this got mixed:** In an earlier Cursor chat, everything from the **mcp-server-excel Agent Task** line downward was Workstream B. Keep it in this handoff / a separate agent.
 
 **Repo:** https://github.com/lpittman-g/Cutline-Industries  
 **Printer:** HP OfficeJet Pro 9120 · `192.168.1.157` · host `HPIAD66D5`  
@@ -41,9 +41,9 @@ Runtime host is **Cursor**. GitHub is only for repos/PRs/Actions.
 ## Out of scope (do not pick up unless asked)
 
 - Thermal Mission Control heat → clip → bounty → Stripe
-- YouTube Shorts / VOD autopilot / AI video pipeline
-- Gaming channel content strategy, outreach, AdSense
-- SynthLang / gaming product features
+- Media autopilot / AI video pipeline product work
+- Outreach content strategy and AdSense campaigns
+- SynthLang product-feature work beyond CI health
 
 ---
 
@@ -53,43 +53,18 @@ Runtime host is **Cursor**. GitHub is only for repos/PRs/Actions.
    - Local Cursor on PC + voice-print MCP → chat **`print`**
    - PC `npm start` in `tools/voice-print` → phone `http://<PC-IP>:8791/mobile.html`
 2. **Cannot add buttons inside Cursor mobile chat UI** (Composer bar). Workaround = home-screen Cutline Ops PWA (`/mobile.html`).
-3. **GitHub Application Card** = responsible-AI transparency doc, not a UI widget. Cutline version is the printable blueprint.
-4. **Copilot is optional.** Prefer Cursor; keep `.github/` mirrors in sync only when changing shared behavior.
-5. Branches: `cursor/<descriptive-name>-6543`
+3. Prefer **Cursor** over Copilot for day-to-day; Copilot configs are optional mirrors.
+4. Cloud agents cannot reach `192.168.1.157`.
+5. Do **not** expand into unrelated Workstream A product work unless asked.
 
 ---
 
-## Related PRs (already merged)
-
-| PR | Topic |
-|----|--------|
-| #24–#27 | Voice print tool, chat print, Copilot MCP, phone LAN UI |
-| #31 | Unify Cursor + Copilot `@voice-print` |
-| #32–#33 | Cursor primary for general repo |
-| #34 | COPILOT-VS-CURSOR.md + mobile Ops bar |
-| #35–#36 | AI Application Card blueprint |
-| #37–#38 | Runtime = Cursor in architecture flow |
-
----
-
-## Suggested next work (pick up here)
-
-1. ~~Harden voice-print HTML→PDF on Windows (Edge path, timeouts).~~ — done: multi-path Edge/Chrome discovery, temp `--user-data-dir`, `VOICE_PRINT_PDF_TIMEOUT_MS`, `npm run browsers`.
-2. ~~Improve Cutline Ops `/mobile.html`~~ — done: ◀/▶ cycle, ⋯ sheet (refresh · AI Card · list · Mission Control).
-3. Keep Application Card + COPILOT-VS-CURSOR in sync when MCP/rules change.
-4. Optional: MCP App / interactive card **only if** host supports it — Cursor mobile still cannot inject toolbar buttons.
-5. Do **not** expand into Thermal/YouTube unless user redirects.
-
----
-
-## Quick verify
+## Quick start for the new agent
 
 ```bash
-git pull origin main
-cd tools/voice-print && npm install && npm run list
-# Expect ai-application-card-blueprint in catalog
-npm run browsers
-npm run to-pdf -- docs/ai-application-card-blueprint.html   # HTML→PDF dry-run (no printer)
+# On the operator PC (LAN)
+cd tools/voice-print && npm start
+# Phone: http://<PC-IP>:8791/mobile.html  → Add to Home Screen
 ```
 
-Docs to read first: `CURSOR-PRIMARY.md` → `COPILOT-VS-CURSOR.md` → `AI-APPLICATION-CARD-BLUEPRINT.md` → `tools/voice-print/README.md`
+Repo docs: `docs/CURSOR-PRIMARY.md`, `docs/COPILOT-VS-CURSOR.md`, `docs/AI-APPLICATION-CARD-BLUEPRINT.md`.
