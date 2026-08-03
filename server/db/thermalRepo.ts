@@ -98,10 +98,20 @@ export async function upsertStreamer(input: {
   return mapStreamer(res.rows[0])
 }
 
-export async function updateStreamerVelocity(id: number, mpm: number, isLive: boolean) {
+export async function updateStreamerVelocity(
+  id: number,
+  mpm: number,
+  isLive: boolean,
+  game?: string | null,
+) {
   await getPool().query(
-    `UPDATE streamers SET current_msg_per_min = $2, is_live = $3, avg_chat_velocity = GREATEST(avg_chat_velocity, $2) WHERE id = $1`,
-    [id, mpm, isLive],
+    `UPDATE streamers
+     SET current_msg_per_min = $2,
+         is_live = $3,
+         avg_chat_velocity = GREATEST(avg_chat_velocity, $2),
+         game = COALESCE($4, game)
+     WHERE id = $1`,
+    [id, mpm, isLive, game?.trim() || null],
   )
 }
 
@@ -211,6 +221,7 @@ export async function updateClipAutopilot(input: {
   clipId: number
   status: 'processing' | 'completed' | 'failed'
   caption?: string
+  tiktokCaption?: string
   discordMessage?: string
   devEmailSubject?: string
   devEmailBody?: string
@@ -220,10 +231,11 @@ export async function updateClipAutopilot(input: {
     `UPDATE clips SET
        autopilot_status = $2,
        ai_caption = COALESCE($3, ai_caption),
-       ai_discord_message = COALESCE($4, ai_discord_message),
-       ai_dev_email_subject = COALESCE($5, ai_dev_email_subject),
-       ai_dev_email_body = COALESCE($6, ai_dev_email_body),
-       autopilot_error = $7,
+       ai_tiktok_caption = COALESCE($4, ai_tiktok_caption),
+       ai_discord_message = COALESCE($5, ai_discord_message),
+       ai_dev_email_subject = COALESCE($6, ai_dev_email_subject),
+       ai_dev_email_body = COALESCE($7, ai_dev_email_body),
+       autopilot_error = $8,
        autopilot_completed_at =
          CASE WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP
               ELSE autopilot_completed_at END
@@ -232,6 +244,7 @@ export async function updateClipAutopilot(input: {
       input.clipId,
       input.status,
       input.caption ?? null,
+      input.tiktokCaption ?? null,
       input.discordMessage ?? null,
       input.devEmailSubject ?? null,
       input.devEmailBody ?? null,
@@ -649,42 +662,58 @@ export async function countPendingRetainerOutreaches(): Promise<number> {
   return res.rows[0]?.n ?? 0
 }
 
+const DEMO_RETAINER_SEEDS: Array<{
+  dev_name: string
+  game_title: string
+  status: RetainerStatus
+  monthly_mrr: number
+  contact_email: string
+  notes: string
+}> = [
+  {
+    dev_name: 'Northbark Games',
+    game_title: 'Hollow Paths',
+    status: 'sample_sent',
+    monthly_mrr: 750,
+    contact_email: 'northbark@example.com',
+    notes: 'High-heat variety coverage — sample ad pack sent',
+  },
+  {
+    dev_name: 'Arc Byte',
+    game_title: 'Neon Circuit',
+    status: 'prospect',
+    monthly_mrr: 1250,
+    contact_email: 'arcbyte@example.com',
+    notes: 'Detected in heat window — awaiting pitch',
+  },
+  {
+    dev_name: 'Saltpixel',
+    game_title: 'Tideforge',
+    status: 'active',
+    monthly_mrr: 2000,
+    contact_email: 'saltpixel@example.com',
+    notes: 'Monthly TikTok/Shorts wishlist pack',
+  },
+]
+
 export async function seedRetainersIfEmpty() {
   const count = await getPool().query(`SELECT COUNT(*)::int AS n FROM retainers`)
-  if ((count.rows[0]?.n ?? 0) > 0) return
+  if ((count.rows[0]?.n ?? 0) === 0) {
+    for (const s of DEMO_RETAINER_SEEDS) {
+      await insertRetainer(s)
+    }
+    return
+  }
 
-  const seeds: Array<{
-    dev_name: string
-    game_title: string
-    status: RetainerStatus
-    monthly_mrr: number
-    notes: string
-  }> = [
-    {
-      dev_name: 'Northbark Games',
-      game_title: 'Hollow Paths',
-      status: 'sample_sent',
-      monthly_mrr: 750,
-      notes: 'High-heat variety coverage — sample ad pack sent',
-    },
-    {
-      dev_name: 'Arc Byte',
-      game_title: 'Neon Circuit',
-      status: 'prospect',
-      monthly_mrr: 1250,
-      notes: 'Detected in heat window — awaiting pitch',
-    },
-    {
-      dev_name: 'Saltpixel',
-      game_title: 'Tideforge',
-      status: 'active',
-      monthly_mrr: 2000,
-      notes: 'Monthly TikTok/Shorts wishlist pack',
-    },
-  ]
-
-  for (const s of seeds) {
-    await insertRetainer(s)
+  // Existing DBs may predate demo emails; fill only blank contact_email rows.
+  for (const s of DEMO_RETAINER_SEEDS) {
+    await getPool().query(
+      `UPDATE retainers
+       SET contact_email = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE LOWER(game_title) = LOWER($1)
+         AND (contact_email IS NULL OR BTRIM(contact_email) = '')`,
+      [s.game_title, s.contact_email],
+    )
   }
 }
 

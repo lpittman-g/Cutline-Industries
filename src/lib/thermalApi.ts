@@ -21,6 +21,7 @@ export type ThermalClip = {
   price_usd?: string
   sale_amount_cents?: number | null
   ai_caption?: string | null
+  ai_tiktok_caption?: string | null
   autopilot_status?: string | null
   autopilot_error?: string | null
 }

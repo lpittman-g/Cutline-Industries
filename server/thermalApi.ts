@@ -156,9 +156,10 @@ export function registerThermalRoutes(app: Express) {
       const bountyCaptions = await getBountyCaptionNotes(id)
       const fulfillment = {
         captions: {
+          // `social` aliases x for older checkout clients
           social: clip.ai_caption ?? bountyCaptions.x ?? null,
           x: clip.ai_caption ?? bountyCaptions.x ?? null,
-          tiktok: bountyCaptions.tiktok ?? null,
+          tiktok: clip.ai_tiktok_caption ?? bountyCaptions.tiktok ?? null,
           discord: clip.ai_discord_message ?? null,
         },
       }

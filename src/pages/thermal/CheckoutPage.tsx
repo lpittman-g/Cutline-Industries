@@ -6,6 +6,7 @@ import {
   fetchClip,
   fetchClipDownload,
   formatUsd,
+  mediaUrl,
   tierPriceLabel,
   type ThermalClip,
 } from '../../lib/thermalApi'
@@ -46,7 +47,7 @@ export function CheckoutPage() {
           return Promise.all([
             fetchClip(numericId).then((data) => setClip(data.clip)),
             fetchClipDownload(numericId, sessionId).then((data) => {
-              setDownloadUrl(data.url)
+              setDownloadUrl(mediaUrl(data.url) ?? data.url)
               setFulfillmentCaptions({
                 x: data.captions?.x ?? data.captions?.social ?? null,
                 tiktok: data.captions?.tiktok ?? null,
@@ -101,7 +102,7 @@ export function CheckoutPage() {
             <ul style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
               <li>Unwatermarked vertical MP4</li>
               <li>Private download after verified payment</li>
-              <li>Pre-written social caption from Thermal autopilot</li>
+              <li>Pre-written X and TikTok captions from Thermal autopilot</li>
               <li>15-minute secure S3 link when cloud storage is enabled</li>
             </ul>
             {clip.status === 'claimed' ? (
@@ -111,13 +112,13 @@ export function CheckoutPage() {
             )}
             {(fulfillmentCaptions?.x ||
               fulfillmentCaptions?.tiktok ||
-              (paid && clip.ai_caption)) && (
+              (paid && (clip.ai_caption || clip.ai_tiktok_caption))) && (
               <div style={{ color: 'var(--muted)', marginTop: '1rem', lineHeight: 1.7 }}>
                 {(fulfillmentCaptions?.x || clip.ai_caption) && (
                   <p>X caption: {fulfillmentCaptions?.x || clip.ai_caption}</p>
                 )}
-                {fulfillmentCaptions?.tiktok && (
-                  <p>TikTok caption: {fulfillmentCaptions.tiktok}</p>
+                {(fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption) && (
+                  <p>TikTok caption: {fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption}</p>
                 )}
               </div>
             )}

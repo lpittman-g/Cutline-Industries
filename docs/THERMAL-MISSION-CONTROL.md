@@ -44,7 +44,7 @@ Claim CTA → POST /api/checkout/session
 |-------|--------|---------|
 | `/api/clips/:id` | GET | Single clip for checkout page |
 | `/api/clips/:id/autopilot` | POST | Retry AI copy + Discord / bounty / pitch (ops) |
-| `/api/clips/:id/download` | POST | Paid clean download + social caption fulfillment |
+| `/api/clips/:id/download` | POST | Paid clean download + X/TikTok/Discord caption fulfillment |
 | `/api/bounty/clips` | GET | Public bounty board clips |
 | `/api/checkout/session` | POST | Create Stripe Checkout (`{ clipId }`) |
 | `/api/checkout/confirm` | POST | Confirm session after redirect (dev fallback) |
@@ -187,6 +187,7 @@ After FFmpeg + S3 completes, `thermalHeatAutopilot.ts`:
 5. Looks up a matching developer contact and sends the sample pitch with Gmail
 6. Persists generated copy, completion state, and errors on the clip
 7. Paid checkout fulfillment returns X + TikTok captions with the clean download
+   (clip `ai_caption` / `ai_tiktok_caption`, falling back to bounty notes)
 8. Operators can retry distribution via `POST /api/clips/:id/autopilot` (Clip Vault);
    retry refreshes bounty caption notes without un-posting live bounty rows
 

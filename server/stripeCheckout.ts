@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express'
 import express from 'express'
 import Stripe from 'stripe'
+import { publicBaseUrl } from './auth/authCrypto.ts'
 import {
   activateRetainer,
   claimClip,
@@ -17,14 +18,6 @@ const TIER_AMOUNTS: Record<SaleTier, number> = {
   gateway: 1500,
   bounty: 5000,
   retainer: 75000,
-}
-
-function publicBaseUrl() {
-  return (
-    process.env.THERMAL_PUBLIC_URL ||
-    process.env.CUTLINE_PUBLIC_URL ||
-    'http://127.0.0.1:5173'
-  ).replace(/\/$/, '')
 }
 
 export function stripeConfigured() {
