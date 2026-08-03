@@ -9,6 +9,9 @@ import { DevelopersPage } from './pages/thermal/DevelopersPage'
 import { CheckoutPage } from './pages/thermal/CheckoutPage'
 import { FeedbackPage } from './pages/FeedbackPage'
 import { ApprovePage } from './pages/ApprovePage'
+import { SignupPage } from './pages/auth/SignupPage'
+import { SigninPage } from './pages/auth/SigninPage'
+import { VerifyEmailPage } from './pages/auth/VerifyEmailPage'
 import { DashboardPage } from './pages/app/DashboardPage'
 import { StreamsPage } from './pages/app/StreamsPage'
 import { ClipsPage } from './pages/app/ClipsPage'
@@ -50,6 +53,9 @@ export default function App() {
           <Route path="/checkout/:clipId" element={<CheckoutPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/approve" element={<ApprovePage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/signin" element={<SigninPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Route>
 
         {/* Thermal Mission Control */}
