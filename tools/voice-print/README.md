@@ -86,6 +86,8 @@ Open **http://127.0.0.1:8791** if you prefer a browser mic instead of chat.
 
 ```bash
 npm run list
+npm run browsers          # which Edge/Chrome paths will be tried
+npm run to-pdf -- docs/ai-application-card-blueprint.html   # HTML→PDF only (no IPP)
 npm run print -- docs/architecture-blueprint.html
 npm run print -- docs/combined-print.html
 ```
@@ -103,14 +105,21 @@ npm run print -- docs/combined-print.html
 
 HTML files are converted to PDF via headless Chrome/Edge before IPP print.
 
+On **Windows**, voice-print probes common Edge then Chrome install paths, uses a private `--user-data-dir` (avoids profile locks), and times out after **60s** (`VOICE_PRINT_PDF_TIMEOUT_MS`). Check discovery with:
+
+```bash
+npm run browsers
+```
+
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | Printer offline | Confirm printer IP at http://192.168.1.157 on your LAN |
 | Mic not working | Use Chrome or Edge; allow microphone permission |
-| HTML won't print | Install Edge/Chrome; or print a PDF version |
-| Cloud agent can't print | Local VS Code / Copilot CLI / Cursor only — not GitHub cloud Copilot |
+| HTML won't print / times out | `npm run browsers` → set `VOICE_PRINT_EDGE_PATH` if Edge is elsewhere; raise `VOICE_PRINT_PDF_TIMEOUT_MS`; or print a PDF |
+| Edge "profile in use" | Fixed by temp user-data-dir; update `tools/voice-print` if you still see hangs |
+| Cloud agent can't print | Local Cursor on PC / phone Ops bar only — not cloud chat |
 
 ## Wi‑Fi Direct (optional)
 

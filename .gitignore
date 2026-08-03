@@ -42,6 +42,9 @@ tools/*/.env
 secrets/approval-pending/
 secrets/approval-devices.json
 
+# voice-print HTML→PDF scratch files (written next to source HTML)
+**/.voice-print-*.pdf
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
