@@ -241,11 +241,16 @@ npm run start   # UI + API
 
 ### Mission Control
 
+- **Automation / Progress** — durable implementation map, safe configuration readiness, and PR/CI/Automation links (`/app/mission-control`)
 - **Streams** — live velocity, **Force heat spike** → real clip
 - **Dashboard** — real heat toast from latest `heat_spikes` row
 - **Clips** — thumbnails + video playback from `/thermal-media/`
 - **Developers** — retainer CRM + Stripe subscription checkout
 - **Revenue** — gateway / bounty / retainer ledger
+
+The progress view reads `GET /api/mission-control/status` (operator+) and returns
+only implementation metadata and readiness booleans. It never returns environment
+values, tokens, database URLs, webhook URLs, or credentials.
 
 ### Media storage
 

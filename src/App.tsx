@@ -19,6 +19,7 @@ import { ClipsPage } from './pages/app/ClipsPage'
 import { BountyBoardPage } from './pages/app/BountyBoardPage'
 import { DevCrmPage } from './pages/app/DevCrmPage'
 import { RevenuePage } from './pages/app/RevenuePage'
+import { MissionControlPage } from './pages/app/MissionControlPage'
 import { StudioPage } from './pages/StudioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { PacksPage } from './pages/PacksPage'
@@ -70,6 +71,7 @@ export default function App() {
         >
           <Route index element={<Navigate to="/app/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="mission-control" element={<MissionControlPage />} />
           <Route path="streams" element={<StreamsPage />} />
           <Route path="clips" element={<ClipsPage />} />
           <Route path="bounty" element={<BountyBoardPage />} />

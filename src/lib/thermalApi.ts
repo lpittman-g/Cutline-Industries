@@ -40,6 +40,38 @@ export type DashboardSummary = {
   stripeMode?: string
 }
 
+export type MissionControlStatus = {
+  generatedAt: string
+  summary: {
+    implemented: number
+    ready: number
+    total: number
+  }
+  phases: {
+    id: string
+    name: string
+    status: 'ready' | 'needs_config'
+    implemented: boolean
+    description: string
+    checks: {
+      label: string
+      ready: boolean
+      required: boolean
+    }[]
+  }[]
+  nextActions: {
+    phaseId: string
+    label: string
+    detail: string
+  }[]
+  links: {
+    id: string
+    label: string
+    href: string
+    kind: 'github' | 'cursor'
+  }[]
+}
+
 export type ThermalSale = {
   id: number
   clip_id: number | null
@@ -128,6 +160,10 @@ export function fetchStreamers() {
 
 export function fetchDashboardSummary() {
   return getJson<DashboardSummary>('/api/dashboard/summary')
+}
+
+export function fetchMissionControlStatus() {
+  return getJson<MissionControlStatus>('/api/mission-control/status')
 }
 
 export function fetchClips() {
