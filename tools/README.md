@@ -50,6 +50,19 @@ Kept in repo for reference only. Use **phone-approval-lite** instead.
 
 ---
 
+## Voice Print — say “print”
+
+Send blueprints and docs to your **HP OfficeJet Pro 9120** (`192.168.1.157`) via voice.
+
+```bash
+cd tools/voice-print && npm install && npm start
+# Open http://127.0.0.1:8791 → pick file → say "print"
+```
+
+Setup: [`voice-print/README.md`](voice-print/README.md)
+
+---
+
 ## email-to-cursor
 
 Forward email to `cursor@cutline-industries.studio` → triggers a Cursor Cloud Agent run.

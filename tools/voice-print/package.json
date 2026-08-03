@@ -1,0 +1,17 @@
+{
+  "name": "voice-print",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Say \"print\" to send Cutline blueprints and files to your HP printer",
+  "scripts": {
+    "start": "node server.js",
+    "print": "node print.js",
+    "list": "node print.js --list"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ipp": "^2.0.1"
+  }
+}

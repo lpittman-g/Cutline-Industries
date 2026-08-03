@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cutline Voice Print</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, sans-serif;
+        background: #0b0f14;
+        color: #e8eef5;
+      }
+      body {
+        max-width: 640px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.25rem;
+      }
+      p {
+        color: #9fb0c3;
+        line-height: 1.5;
+      }
+      select,
+      button {
+        font: inherit;
+        padding: 0.6rem 0.9rem;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #111827;
+        color: inherit;
+        width: 100%;
+        margin: 0.5rem 0;
+      }
+      button.primary {
+        background: #0ea5e9;
+        border-color: #0ea5e9;
+        color: #001018;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        background: #111827;
+        min-height: 3rem;
+      }
+      .listening {
+        box-shadow: 0 0 0 2px #22c55e;
+      }
+      .chip {
+        display: inline-block;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        background: #1e293b;
+        font-size: 0.85rem;
+        margin-right: 0.35rem;
+      }
+      .ok {
+        color: #4ade80;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+      .err {
+        color: #f87171;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Voice Print</h1>
+    <p>
+      Say <strong id="wakeWord">print</strong> to send the selected blueprint to your HP OfficeJet.
+      Runs on your local network — keep this tab open on the same Wi‑Fi as the printer.
+    </p>
+
+    <label for="file">Blueprint / file</label>
+    <select id="file"></select>
+
+    <button id="listenBtn" class="primary" type="button">Start listening for “print”</button>
+    <button id="printNowBtn" type="button">Print now (no voice)</button>
+
+    <div id="status" class="status">Loading catalog…</div>
+
+    <script>
+      const wakeWordEl = document.getElementById('wakeWord')
+      const fileEl = document.getElementById('file')
+      const listenBtn = document.getElementById('listenBtn')
+      const printNowBtn = document.getElementById('printNowBtn')
+      const statusEl = document.getElementById('status')
+
+      let recognition = null
+      let listening = false
+      let wakeWord = 'print'
+      let lastHeard = ''
+      let lastPrintAt = 0
+      const PRINT_COOLDOWN_MS = 4000
+
+      function setStatus(html, className = '') {
+        statusEl.innerHTML = html
+        statusEl.className = 'status ' + className
+      }
+
+      async function loadCatalog() {
+        const res = await fetch('/api/catalog')
+        const data = await res.json()
+        fileEl.innerHTML = ''
+        for (const item of data.items) {
+          const opt = document.createElement('option')
+          opt.value = item.path
+          opt.textContent = `${item.label} (${item.kind})`
+          fileEl.appendChild(opt)
+        }
+        setStatus(`Loaded ${data.items.length} printable files.`)
+      }
+
+      async function printSelected(source) {
+        const file = fileEl.value
+        if (!file) {
+          setStatus('<span class="err">Pick a file first.</span>')
+          return
+        }
+        setStatus(`<span class="warn">Sending to printer…</span> (${source})`)
+        try {
+          const res = await fetch('/api/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file }),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || res.statusText)
+          setStatus(`<span class="ok">Printed:</span> ${data.file}`, 'listening')
+        } catch (err) {
+          setStatus(`<span class="err">${err.message}</span>`)
+        }
+      }
+
+      function containsWakeWord(text) {
+        const words = text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean)
+        return words.includes(wakeWord)
+      }
+
+      function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+        if (!SpeechRecognition) {
+          setStatus('<span class="err">Speech recognition not supported. Use Chrome or Edge.</span>')
+          return
+        }
+
+        if (recognition) recognition.stop()
+
+        recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'en-US'
+
+        recognition.onstart = () => {
+          listening = true
+          listenBtn.textContent = 'Stop listening'
+          setStatus(
+            `<span class="chip listening">MIC ON</span> Say <strong>${wakeWord}</strong> to print the selected file.`,
+            'listening',
+          )
+        }
+
+        recognition.onend = () => {
+          listening = false
+          listenBtn.textContent = 'Start listening for “print”'
+          if (listenBtn.dataset.autoRestart === '1') {
+            recognition.start()
+          }
+        }
+
+        recognition.onresult = (event) => {
+          let transcript = ''
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript
+          }
+          lastHeard = transcript.trim()
+          setStatus(
+            `<span class="chip listening">MIC ON</span> Heard: “${lastHeard}”<br/>Say <strong>${wakeWord}</strong> to print.`,
+            'listening',
+          )
+
+          if (containsWakeWord(transcript) && Date.now() - lastPrintAt > PRINT_COOLDOWN_MS) {
+            lastPrintAt = Date.now()
+            printSelected('voice')
+          }
+        }
+
+        recognition.onerror = (event) => {
+          setStatus(`<span class="err">Mic error: ${event.error}</span>`)
+        }
+
+        listenBtn.dataset.autoRestart = '1'
+        recognition.start()
+      }
+
+      function stopListening() {
+        listenBtn.dataset.autoRestart = '0'
+        if (recognition) recognition.stop()
+      }
+
+      listenBtn.addEventListener('click', () => {
+        if (listening) stopListening()
+        else startListening()
+      })
+
+      printNowBtn.addEventListener('click', () => printSelected('button'))
+
+      fetch('/api/health')
+        .then((r) => r.json())
+        .then((h) => {
+          wakeWord = h.wakeWord || 'print'
+          wakeWordEl.textContent = wakeWord
+        })
+        .finally(loadCatalog)
+    </script>
+  </body>
+</html>
