@@ -86,18 +86,21 @@ Copy `.env.example` → `.env`. Key variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `GOOGLE_CLOUD_PROJECT` | GCP project for YouTube OAuth |
+| `GOOGLE_CLOUD_PROJECT` | GCP project for YouTube / Gmail OAuth |
+| `GOOGLE_WORKSPACE_SENDER_EMAIL` | From-address for Gmail send |
 | `CUTLINE_AI_MODE` | `project` (Thermal Shorts) or `trends` (Reddit) |
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
-| `DATABASE_URL` | Thermal Postgres |
+| `DATABASE_URL` | Thermal Postgres (user+password in URI; SSL for Neon/Supabase/RDS) |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Optional — Helix live poll ([console](https://dev.twitch.tv/console/apps), [register](https://dev.twitch.tv/docs/authentication/register-app)) |
 | `DISCORD_HEAT_WEBHOOK_URL` | Optional — heat + clip-drop webhooks (Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL) |
-
 ## Google Cloud
 
 - Account: `lpittman@cutline-industries.studio`
 - Project: `utility-mapper-504300-d6`
-- APIs: YouTube Data API v3, OAuth
+- APIs: YouTube Data API v3, Gmail API (`gmail.send`), OAuth
+- Secrets: `client_secret.json`, `token.json` (gitignored)
+- Setup: [`docs/GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md)
 
 ## AWS
 
@@ -108,18 +111,35 @@ Copy `.env.example` → `.env`. Key variables:
 - Clean masters stay private; paid buyers receive 15-minute presigned URLs
 - Preview MP4 + thumbnail use `AWS_CLOUDFRONT_DOMAIN` when configured
 - Never commit AWS, Stripe, or OpenAI keys; inject them as deployment secrets
+- Prefer an **IAM role** on the host (EC2/ECS/Lambda/Amplify) instead of permanent access keys
+
+### Clip storage env
+
+| Variable | Kind | Notes |
+|----------|------|-------|
+| `AWS_ACCESS_KEY_ID` | secret | Local/dev only; omit when using an IAM role |
+| `AWS_SECRET_ACCESS_KEY` | secret | Local/dev only; omit when using an IAM role |
+| `AWS_REGION` | config | e.g. `us-east-1` |
+| `AWS_S3_BUCKET_NAME` | config | recommended: `thermal-video-clips` |
+| `AWS_CLOUDFRONT_DOMAIN` | config (optional) | CDN base URL for previews + thumbs |
+
+Console links:
+
+- [Create IAM user / access key](https://console.aws.amazon.com/iam/home#/users)
+- [S3 buckets](https://s3.console.aws.amazon.com/s3/buckets)
+- [CloudFront distributions](https://console.aws.amazon.com/cloudfront/v4/home#/distributions)
 
 ### Production secrets
 
 | Secret | Used by |
 |--------|---------|
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | S3 media uploads |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional) | S3 media uploads when no IAM role |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
 | `OPENAI_API_KEY` | AI video pipeline |
-| `DATABASE_URL` | Thermal state + auth |
+| `DATABASE_URL` | Thermal state + auth (Neon / Supabase / RDS; use SSL in production) |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Twitch Helix monitor (`server/twitchMonitor.ts`) |
 | `DISCORD_HEAT_WEBHOOK_URL` | Heat alerts + $15 live clip drops (`server/discordNotify.ts`) |
-
 `npm audit` currently reports an RSC-only React Router advisory. This frontend
 is a Vite SPA and does not use React Server Components or server actions; the
 repo stays on the latest router release to retain fixes for older XSS advisories.

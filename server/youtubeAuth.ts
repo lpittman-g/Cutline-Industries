@@ -9,11 +9,14 @@ export const ROOT = path.resolve(__dirname, '..')
 export const SECRET_PATH = path.join(ROOT, 'client_secret.json')
 export const TOKEN_PATH = path.join(ROOT, 'token.json')
 
-const SCOPES = [
+/** YouTube upload + Gmail send — both required for Autopilot + Thermal pitch. */
+export const GOOGLE_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube',
   'https://www.googleapis.com/auth/gmail.send',
-]
+] as const
+
+const SCOPES = [...GOOGLE_OAUTH_SCOPES]
 
 type ClientSecretFile = {
   installed?: { client_id: string; client_secret: string; redirect_uris?: string[] }

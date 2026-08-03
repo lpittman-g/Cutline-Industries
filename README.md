@@ -65,12 +65,22 @@ Public audience input: `/feedback` on the site.
 
 Docs: [`docs/AI-VIDEO-PIPELINE.md`](docs/AI-VIDEO-PIPELINE.md)
 
-## YouTube (one-time)
+## Google OAuth — YouTube + Gmail (one-time)
+
+Full guide: [`docs/GOOGLE-OAUTH.md`](docs/GOOGLE-OAUTH.md)
 
 1. OAuth client → `client_secret.json`
-2. Enable **YouTube Data API v3** on Google Cloud project `utility-mapper-504300-d6`
-3. Authorize via [OAuth Playground](https://developers.google.com/oauthplayground/) → save `token.json`
-4. AI Shorts default to **public** (`CUTLINE_AI_PRIVACY=public`)
+2. Enable **YouTube Data API v3** and **Gmail API** on project `utility-mapper-504300-d6`
+3. Set `GOOGLE_CLOUD_PROJECT` + `GOOGLE_WORKSPACE_SENDER_EMAIL` in `.env`
+4. Authorize YouTube + `gmail.send` scopes (Playground or Autopilot **Open OAuth**) → save `token.json`
+5. AI Shorts default to **public** (`CUTLINE_AI_PRIVACY=public`)
+
+| Secret / config | Purpose |
+|-----------------|---------|
+| `client_secret.json` | OAuth client ID + secret |
+| `token.json` | Refresh/access tokens after authorization |
+| `GOOGLE_CLOUD_PROJECT` | GCP project id |
+| `GOOGLE_WORKSPACE_SENDER_EMAIL` | Gmail from-address |
 
 ## Agent tools (Cursor primary)
 
@@ -106,8 +116,8 @@ AI Application Card (Cursor primary): [`docs/AI-APPLICATION-CARD-BLUEPRINT.md`](
 | File | Purpose |
 |------|---------|
 | `.env` | Runtime config |
-| `client_secret.json` | Google OAuth |
-| `token.json` | YouTube refresh token |
+| `client_secret.json` | Google OAuth client ID + secret |
+| `token.json` | YouTube + Gmail refresh/access tokens |
 | `tools/*/secrets/` | ntfy pair secret, device tokens |
 
 ## Brand

@@ -1,13 +1,30 @@
 import { google } from 'googleapis'
-import { getAuthorizedClient, SECRET_PATH, TOKEN_PATH } from './youtubeAuth.ts'
+import {
+  getAuthorizedClient,
+  GOOGLE_OAUTH_SCOPES,
+  SECRET_PATH,
+  TOKEN_PATH,
+} from './youtubeAuth.ts'
 import { promises as fs } from 'node:fs'
+
+const PROJECT = process.env.GOOGLE_CLOUD_PROJECT || 'utility-mapper-504300-d6'
+
+/** Console deep-links for one-time OAuth setup. */
+export const GOOGLE_SETUP_LINKS = {
+  oauthCredentials: `https://console.cloud.google.com/apis/credentials?project=${PROJECT}`,
+  oauthConsentScreen: `https://console.cloud.google.com/apis/credentials/consent?project=${PROJECT}`,
+  enableYoutubeDataApi: `https://console.cloud.google.com/apis/library/youtube.googleapis.com?project=${PROJECT}`,
+  enableGmailApi: `https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=${PROJECT}`,
+  oauthPlayground: 'https://developers.google.com/oauthplayground/',
+  docs: 'docs/GOOGLE-OAUTH.md',
+} as const
 
 /** Google Cloud / Google APIs Cutline uses. */
 export const GOOGLE_APIS = [
   {
     id: 'youtube-data-v3',
     name: 'YouTube Data API v3',
-    consoleUrl: 'https://console.cloud.google.com/apis/library/youtube.googleapis.com',
+    consoleUrl: GOOGLE_SETUP_LINKS.enableYoutubeDataApi,
     required: true,
     purpose: 'Upload Shorts + read channel metadata for Autopilot',
   },
@@ -28,8 +45,8 @@ export const GOOGLE_APIS = [
   {
     id: 'gmail-send',
     name: 'Gmail API (send only)',
-    consoleUrl: 'https://console.cloud.google.com/apis/library/gmail.googleapis.com',
-    required: false,
+    consoleUrl: GOOGLE_SETUP_LINKS.enableGmailApi,
+    required: true,
     purpose: 'Send Thermal sample pitch emails from Google Workspace',
   },
 ] as const
@@ -61,16 +78,31 @@ export async function getGoogleCloudStatus() {
     hasToken = false
   }
 
+  const senderEmail =
+    process.env.GOOGLE_WORKSPACE_SENDER_EMAIL?.trim() || 'lpittman@cutline-industries.studio'
+
   return {
     brand: 'Cutline Industries',
-    accountEmailHint: 'lpittman@cutline-industries.studio',
-    projectId: projectHint,
+    accountEmailHint: senderEmail,
+    projectId: projectHint || PROJECT,
+    env: {
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT || null,
+      GOOGLE_WORKSPACE_SENDER_EMAIL: process.env.GOOGLE_WORKSPACE_SENDER_EMAIL || null,
+    },
+    secrets: {
+      clientSecretPath: 'client_secret.json',
+      tokenPath: 'token.json',
+      hasClientSecret: hasSecret,
+      hasToken,
+    },
     oauth: {
       hasClientSecret: hasSecret,
       hasRefreshToken: hasToken,
       clientId,
       authorized: hasSecret && hasToken,
+      scopes: [...GOOGLE_OAUTH_SCOPES],
     },
+    links: GOOGLE_SETUP_LINKS,
     site: {
       domain: 'cutline-industries.studio',
       adsenseClient: process.env.VITE_ADSENSE_CLIENT || 'ca-pub-8439504069928032',
@@ -79,15 +111,17 @@ export async function getGoogleCloudStatus() {
     apis: GOOGLE_APIS,
     nextSteps: !hasSecret
       ? [
-          'Create a Google Cloud project',
-          'Enable YouTube Data API v3',
+          `Open project ${PROJECT} in Google Cloud Console`,
+          'Enable YouTube Data API v3 and Gmail API',
           'Create OAuth Web client + download client_secret.json into project root',
+          'Set GOOGLE_CLOUD_PROJECT and GOOGLE_WORKSPACE_SENDER_EMAIL in .env',
         ]
       : !hasToken
         ? [
-            'Add OAuth test user (your Gmail / Workspace email)',
-            'Authorize YouTube scopes in OAuth Playground',
-            'POST refresh_token to /api/autopilot/token',
+            `Add OAuth test user (${senderEmail})`,
+            'Authorize YouTube + Gmail scopes (youtube, youtube.upload, gmail.send)',
+            'Exchange code via /api/google/oauth/exchange or paste refresh_token on Autopilot',
+            'Save token.json (gitignored)',
           ]
         : ['Google OAuth ready — call /api/google/youtube/channel to verify'],
   }

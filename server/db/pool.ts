@@ -1,6 +1,7 @@
 import pg from 'pg'
 import dotenv from 'dotenv'
 import { ROOT } from '../youtubeAuth.ts'
+import { createPgConfig } from './pgConfig.ts'
 
 dotenv.config({ path: `${ROOT}/.env` })
 
@@ -15,7 +16,7 @@ export function getPool(): pg.Pool {
     throw new Error('DATABASE_URL is not configured')
   }
   if (!pool) {
-    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+    pool = new pg.Pool(createPgConfig(process.env.DATABASE_URL!.trim()))
   }
   return pool
 }

@@ -20,19 +20,44 @@ type Status = {
   logTail: string
 }
 
+type GoogleStatus = {
+  accountEmailHint?: string
+  projectId?: string | null
+  oauth?: {
+    hasClientSecret: boolean
+    hasRefreshToken: boolean
+    authorized: boolean
+    scopes?: string[]
+  }
+  links?: {
+    oauthCredentials: string
+    oauthConsentScreen: string
+    enableYoutubeDataApi: string
+    enableGmailApi: string
+    oauthPlayground: string
+  }
+  nextSteps?: string[]
+}
+
 const API = import.meta.env.VITE_API_URL || ''
 
 export function AutopilotPage() {
   const [status, setStatus] = useState<Status | null>(null)
+  const [google, setGoogle] = useState<GoogleStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshToken, setRefreshToken] = useState('')
+  const [authCode, setAuthCode] = useState('')
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/api/autopilot/status`)
-      if (!res.ok) throw new Error(`API ${res.status}`)
-      setStatus((await res.json()) as Status)
+      const [statusRes, googleRes] = await Promise.all([
+        fetch(`${API}/api/autopilot/status`),
+        fetch(`${API}/api/google/status`),
+      ])
+      if (!statusRes.ok) throw new Error(`API ${statusRes.status}`)
+      setStatus((await statusRes.json()) as Status)
+      if (googleRes.ok) setGoogle((await googleRes.json()) as GoogleStatus)
       setError(null)
     } catch (err) {
       setError(
@@ -68,6 +93,39 @@ export function AutopilotPage() {
     }
   }
 
+  async function exchangeCode() {
+    setBusy(true)
+    try {
+      const res = await fetch(`${API}/api/google/oauth/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: authCode.trim() }),
+      })
+      const body = (await res.json()) as { ok?: boolean; error?: string; hasRefreshToken?: boolean }
+      if (!res.ok) throw new Error(body.error || 'Code exchange failed')
+      setAuthCode('')
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function openOAuth() {
+    setBusy(true)
+    try {
+      const res = await fetch(`${API}/api/google/oauth/url`)
+      const body = (await res.json()) as { ok?: boolean; url?: string; error?: string }
+      if (!res.ok || !body.url) throw new Error(body.error || 'Could not build OAuth URL')
+      window.open(body.url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function runOnce() {
     setBusy(true)
     try {
@@ -83,6 +141,7 @@ export function AutopilotPage() {
   }
 
   const processedCount = status ? Object.keys(status.state.processed).length : 0
+  const links = google?.links
 
   return (
     <div>
@@ -129,13 +188,74 @@ export function AutopilotPage() {
 
       <div className="grid-2">
         <section className="panel panel-pad">
-          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Connect channel</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Connect YouTube + Gmail</h3>
           <p style={{ color: 'var(--muted)' }}>
-            After OAuth Playground, paste the <strong>refresh_token</strong> once. Autopilot posts
-            after that with no more clicks.
+            Authorize <strong>YouTube</strong> and <strong>gmail.send</strong> scopes, then save the
+            refresh token to <code>token.json</code>. Sign in as{' '}
+            {google?.accountEmailHint || 'lpittman@cutline-industries.studio'}.
           </p>
+
+          {links ? (
+            <ul style={{ color: 'var(--muted)', paddingLeft: '1.1rem', lineHeight: 1.7, fontSize: '0.9rem' }}>
+              <li>
+                <a href={links.oauthCredentials} target="_blank" rel="noreferrer">
+                  OAuth credentials
+                </a>
+              </li>
+              <li>
+                <a href={links.oauthConsentScreen} target="_blank" rel="noreferrer">
+                  OAuth consent screen
+                </a>
+              </li>
+              <li>
+                <a href={links.enableYoutubeDataApi} target="_blank" rel="noreferrer">
+                  Enable YouTube Data API
+                </a>
+              </li>
+              <li>
+                <a href={links.enableGmailApi} target="_blank" rel="noreferrer">
+                  Enable Gmail API
+                </a>
+              </li>
+              <li>
+                <a href={links.oauthPlayground} target="_blank" rel="noreferrer">
+                  OAuth Playground
+                </a>
+              </li>
+            </ul>
+          ) : null}
+
+          <div className="btn-row" style={{ marginBottom: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              disabled={busy || !status?.hasSecret}
+              onClick={() => void openOAuth()}
+            >
+              Open OAuth
+            </button>
+          </div>
+
           <div className="field">
-            <label>refresh_token</label>
+            <label>Authorization code</label>
+            <textarea
+              value={authCode}
+              onChange={(e) => setAuthCode(e.target.value)}
+              placeholder="4/0A..."
+            />
+          </div>
+          <button
+            className="btn"
+            type="button"
+            disabled={busy || !authCode.trim()}
+            onClick={() => void exchangeCode()}
+            style={{ marginBottom: '1rem' }}
+          >
+            Exchange code → token.json
+          </button>
+
+          <div className="field">
+            <label>refresh_token (alternate)</label>
             <textarea
               value={refreshToken}
               onChange={(e) => setRefreshToken(e.target.value)}
@@ -160,12 +280,21 @@ export function AutopilotPage() {
             <span className="chip">{status?.dryRun ? 'dry-run mode' : 'live upload'}</span>
             <span className="chip">{status?.privacy ?? 'private'}</span>
           </div>
+          {google?.nextSteps?.length ? (
+            <ol style={{ color: 'var(--muted)', paddingLeft: '1.1rem', lineHeight: 1.6, fontSize: '0.85rem' }}>
+              {google.nextSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          ) : null}
         </section>
 
         <section className="panel panel-pad">
           <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Runtime</h3>
           <p style={{ color: 'var(--muted)', marginTop: 0 }}>
             Domain: <strong>{status?.domain ?? 'cutline-industries.studio'}</strong>
+            <br />
+            Project: {google?.projectId ?? '—'}
             <br />
             Game/niche: {status?.game ?? '—'} / {status?.niche ?? '—'}
             <br />
@@ -198,7 +327,7 @@ export function AutopilotPage() {
             fontSize: '0.78rem',
           }}
         >
-          {status?.logTail || 'No log yet. Start with npm run autopilot'}
+          {status?.logTail || 'No log yet'}
         </pre>
       </section>
     </div>
