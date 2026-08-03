@@ -76,4 +76,31 @@ export type RetainerRow = {
   status: RetainerStatus
 }
 
-export const THERMAL_TABLES = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales'] as const
+export type BountyPlatform = 'x' | 'tiktok'
+export type BountyPostStatus = 'queued' | 'posted' | 'failed'
+
+export type BountyPostRow = {
+  id: number
+  clip_id: number
+  platform: BountyPlatform
+  post_url: string | null
+  status: BountyPostStatus
+  views: number
+  engagement: number
+  posted_at: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type BountyPostWithClip = BountyPostRow & {
+  clip_title: string | null
+  streamer_username: string | null
+  game: string | null
+  thumbnail_url: string | null
+  media_url: string | null
+  clip_status: string
+  duration_sec: number | null
+}
+
+export const THERMAL_TABLES = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales', 'bounty_posts'] as const

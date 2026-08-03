@@ -1,4 +1,7 @@
 import type {
+  BountyPlatform,
+  BountyPostStatus,
+  BountyPostWithClip,
   ClipRow,
   HeatSpikeRow,
   HeatSpikeStatus,
@@ -226,12 +229,138 @@ export async function getClipById(id: number): Promise<ClipWithMeta | null> {
 
 export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
   const res = await getPool().query(
-    `SELECT * FROM clips
-     WHERE media_url IS NOT NULL AND tier IN ('gateway', 'bounty')
-     ORDER BY created_at DESC LIMIT $1`,
+    `SELECT DISTINCT c.*
+     FROM clips c
+     INNER JOIN bounty_posts bp ON bp.clip_id = c.id
+     WHERE c.media_url IS NOT NULL AND bp.status = 'posted'
+     ORDER BY bp.posted_at DESC NULLS LAST, c.created_at DESC
+     LIMIT $1`,
     [limit],
   )
   return res.rows.map(mapClip)
+}
+
+function mapBountyPost(row: Record<string, unknown>): BountyPostWithClip {
+  return row as unknown as BountyPostWithClip
+}
+
+export async function listBountyPosts(limit = 100): Promise<BountyPostWithClip[]> {
+  const res = await getPool().query(
+    `SELECT bp.*,
+            c.title AS clip_title,
+            c.streamer_username,
+            c.game,
+            c.thumbnail_url,
+            c.media_url,
+            c.status AS clip_status,
+            c.duration_sec
+     FROM bounty_posts bp
+     JOIN clips c ON c.id = bp.clip_id
+     ORDER BY bp.created_at DESC
+     LIMIT $1`,
+    [limit],
+  )
+  return res.rows.map(mapBountyPost)
+}
+
+export async function getBountyPost(id: number): Promise<BountyPostWithClip | null> {
+  const res = await getPool().query(
+    `SELECT bp.*,
+            c.title AS clip_title,
+            c.streamer_username,
+            c.game,
+            c.thumbnail_url,
+            c.media_url,
+            c.status AS clip_status,
+            c.duration_sec
+     FROM bounty_posts bp
+     JOIN clips c ON c.id = bp.clip_id
+     WHERE bp.id = $1`,
+    [id],
+  )
+  return res.rows[0] ? mapBountyPost(res.rows[0]) : null
+}
+
+export async function queueBountyPost(input: {
+  clip_id: number
+  platform: BountyPlatform
+  notes?: string
+}): Promise<BountyPostWithClip> {
+  await getPool().query(
+    `UPDATE clips SET tier = 'bounty', price_usd = 50.00 WHERE id = $1`,
+    [input.clip_id],
+  )
+  const res = await getPool().query(
+    `INSERT INTO bounty_posts (clip_id, platform, status, notes)
+     VALUES ($1, $2, 'queued', $3)
+     ON CONFLICT (clip_id, platform) DO UPDATE SET
+       status = 'queued',
+       notes = COALESCE(EXCLUDED.notes, bounty_posts.notes),
+       updated_at = CURRENT_TIMESTAMP
+     RETURNING id`,
+    [input.clip_id, input.platform, input.notes ?? null],
+  )
+  const id = res.rows[0].id as number
+  const post = await getBountyPost(id)
+  if (!post) throw new Error('Failed to create bounty post')
+  return post
+}
+
+export async function markBountyPosted(input: {
+  id: number
+  post_url: string
+  posted_at?: Date
+  views?: number
+  engagement?: number
+  notes?: string
+}): Promise<BountyPostWithClip> {
+  await getPool().query(
+    `UPDATE bounty_posts SET
+       post_url = $2,
+       status = 'posted',
+       posted_at = COALESCE($3, CURRENT_TIMESTAMP),
+       views = COALESCE($4, views),
+       engagement = COALESCE($5, engagement),
+       notes = COALESCE($6, notes),
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [
+      input.id,
+      input.post_url,
+      input.posted_at ?? null,
+      input.views ?? null,
+      input.engagement ?? null,
+      input.notes ?? null,
+    ],
+  )
+  const post = await getBountyPost(input.id)
+  if (!post) throw new Error('Bounty post not found')
+  return post
+}
+
+export async function updateBountyMetrics(input: {
+  id: number
+  views?: number
+  engagement?: number
+}): Promise<BountyPostWithClip> {
+  await getPool().query(
+    `UPDATE bounty_posts SET
+       views = COALESCE($2, views),
+       engagement = COALESCE($3, engagement),
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [input.id, input.views ?? null, input.engagement ?? null],
+  )
+  const post = await getBountyPost(input.id)
+  if (!post) throw new Error('Bounty post not found')
+  return post
+}
+
+export async function countQueuedBountyPosts(): Promise<number> {
+  const res = await getPool().query(
+    `SELECT COUNT(*)::int AS n FROM bounty_posts WHERE status = 'queued'`,
+  )
+  return res.rows[0]?.n ?? 0
 }
 
 export async function setClipCheckoutSession(clipId: number, sessionId: string) {

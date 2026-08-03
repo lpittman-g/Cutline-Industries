@@ -61,9 +61,30 @@ THERMAL_PUBLIC_URL=http://127.0.0.1:5173
 
 Without `STRIPE_SECRET_KEY`, checkout returns 503; seed/demo UI still loads.
 
+## Step 3 (implemented): Bounty distribution
+
+### Flow
+
+```
+Clip ready → POST /api/bounty-posts (queue X/TikTok)
+  → ops mark posted with real postUrl
+  → public /bounty shows posted bounties
+  → claim via Stripe Checkout ($50)
+```
+
+### API routes (added)
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/bounty-posts` | GET | All bounty posts with clip metadata |
+| `/api/bounty-posts` | POST | Queue clip `{ clipId, platform: x\|tiktok }` |
+| `/api/bounty-posts/:id` | PATCH | Update views/engagement |
+| `/api/bounty-posts/:id/mark-posted` | POST | Set postUrl + posted status |
+
+Mission Control: `/app/bounty` — queue, mark posted, update metrics.
+
 ## Next steps
 
-3. Bounty post URLs + claim flow
 4. S3 persistence (optional)
 5. Auth + roles
 6. Developer CRM + retainers

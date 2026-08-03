@@ -12,6 +12,7 @@ import { ApprovePage } from './pages/ApprovePage'
 import { DashboardPage } from './pages/app/DashboardPage'
 import { StreamsPage } from './pages/app/StreamsPage'
 import { ClipsPage } from './pages/app/ClipsPage'
+import { BountyBoardPage } from './pages/app/BountyBoardPage'
 import { DevCrmPage } from './pages/app/DevCrmPage'
 import { RevenuePage } from './pages/app/RevenuePage'
 import { StudioPage } from './pages/StudioPage'
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="streams" element={<StreamsPage />} />
           <Route path="clips" element={<ClipsPage />} />
+          <Route path="bounty" element={<BountyBoardPage />} />
           <Route path="developers" element={<DevCrmPage />} />
           <Route path="revenue" element={<RevenuePage />} />
         </Route>

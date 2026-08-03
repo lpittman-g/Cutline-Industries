@@ -4,18 +4,23 @@ import { thermalDbEnabled } from './db/pool.ts'
 import {
   countClipsToday,
   countLiveStreamers,
+  countQueuedBountyPosts,
   getClipById,
   listBountyClips,
+  listBountyPosts,
   listClips,
   listHeatEvents,
   listRecentHeatAlert,
   listSales,
   listStreamers,
   listTopClips,
+  markBountyPosted,
+  queueBountyPost,
   revenueByTier,
   revenueTimeline,
   seedStreamersIfEmpty,
   totalRevenueCents,
+  updateBountyMetrics,
 } from './db/thermalRepo.ts'
 import { triggerHeatEvent } from './heatPipeline.ts'
 import {
@@ -154,6 +159,7 @@ export function registerThermalRoutes(app: Express) {
     const clipsToday = await countClipsToday()
     const liveChannels = await countLiveStreamers()
     const revenueCents = await totalRevenueCents()
+    const pendingBounty = await countQueuedBountyPosts()
     res.json({
       heatAlert: alert
         ? {
@@ -166,7 +172,7 @@ export function registerThermalRoutes(app: Express) {
       activeLiveChannels: liveChannels,
       dailyClipsRendered: clipsToday,
       totalRevenueCents: revenueCents,
-      pendingOutreaches: 0,
+      pendingOutreaches: pendingBounty,
       stripeMode: stripeModeLabel(),
     })
   })
@@ -192,7 +198,87 @@ export function registerThermalRoutes(app: Express) {
   })
 
   app.get('/api/bounty-posts', dbRequired, async (_req, res) => {
-    res.json({ posts: [], note: 'Bounty distribution step 3' })
+    res.json({ posts: await listBountyPosts() })
+  })
+
+  app.post('/api/bounty-posts', dbRequired, async (req, res) => {
+    try {
+      const clipId = Number(req.body?.clipId)
+      const platform = String(req.body?.platform ?? '').toLowerCase()
+      if (!clipId) {
+        res.status(400).json({ error: 'clipId required' })
+        return
+      }
+      if (platform !== 'x' && platform !== 'tiktok') {
+        res.status(400).json({ error: 'platform must be x or tiktok' })
+        return
+      }
+      const clip = await getClipById(clipId)
+      if (!clip?.media_url) {
+        res.status(400).json({ error: 'Clip must have rendered media before bounty queue' })
+        return
+      }
+      const post = await queueBountyPost({
+        clip_id: clipId,
+        platform: platform as 'x' | 'tiktok',
+        notes: req.body?.notes,
+      })
+      res.json({ ok: true, post })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.patch('/api/bounty-posts/:id', dbRequired, async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      if (!id) {
+        res.status(400).json({ error: 'Invalid id' })
+        return
+      }
+      if (req.body?.postUrl) {
+        const post = await markBountyPosted({
+          id,
+          post_url: String(req.body.postUrl),
+          posted_at: req.body?.postedAt ? new Date(req.body.postedAt) : undefined,
+          views: req.body?.views != null ? Number(req.body.views) : undefined,
+          engagement: req.body?.engagement != null ? Number(req.body.engagement) : undefined,
+          notes: req.body?.notes,
+        })
+        res.json({ ok: true, post })
+        return
+      }
+      const post = await updateBountyMetrics({
+        id,
+        views: req.body?.views != null ? Number(req.body.views) : undefined,
+        engagement: req.body?.engagement != null ? Number(req.body.engagement) : undefined,
+      })
+      res.json({ ok: true, post })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.post('/api/bounty-posts/:id/mark-posted', dbRequired, async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      const postUrl = String(req.body?.postUrl ?? '')
+      if (!id || !postUrl) {
+        res.status(400).json({ error: 'postUrl required' })
+        return
+      }
+      const post = await markBountyPosted({
+        id,
+        post_url: postUrl,
+        posted_at: req.body?.postedAt ? new Date(req.body.postedAt) : undefined,
+        views: req.body?.views != null ? Number(req.body.views) : undefined,
+        engagement: req.body?.engagement != null ? Number(req.body.engagement) : undefined,
+        notes: req.body?.notes,
+      })
+      res.json({ ok: true, post })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
   })
 
   app.get('/api/bounty/clips', dbRequired, async (_req, res) => {

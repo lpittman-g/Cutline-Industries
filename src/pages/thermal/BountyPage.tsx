@@ -2,98 +2,114 @@ import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { DEMO_BOUNTY_CLIPS } from '../../data/thermal'
 import {
-  fetchBountyClips,
+  fetchBountyPosts,
+  formatUsd,
   mediaUrl,
-  tierPriceLabel,
-  type ThermalClip,
+  type ThermalBountyPost,
 } from '../../lib/thermalApi'
 
-type BoardClip = {
-  id: string
+type BoardItem = {
+  clipId: number
   title: string
   streamer: string
   game: string
-  heatScore: number
-  msgPerMin: number
   durationSec: number
-  priceLabel: string
   thumbnailUrl: string | null
-  status: string
+  clipStatus: string
+  platform: string
+  postUrl: string | null
+  views: number
+  engagement: number
 }
 
-function fromDemo(clip: (typeof DEMO_BOUNTY_CLIPS)[number]): BoardClip {
+function fromPost(post: ThermalBountyPost): BoardItem {
   return {
-    id: clip.id,
-    title: clip.title,
-    streamer: clip.streamer,
-    game: clip.game,
-    heatScore: clip.heatScore,
-    msgPerMin: clip.msgPerMin,
-    durationSec: clip.durationSec,
-    priceLabel: clip.priceLabel,
-    thumbnailUrl: null,
-    status: 'unclaimed',
-  }
-}
-
-function fromApi(clip: ThermalClip): BoardClip {
-  return {
-    id: String(clip.id),
-    title: clip.title ?? `Clip #${clip.id}`,
-    streamer: clip.streamer_username ?? 'unknown',
-    game: clip.game ?? '—',
-    heatScore: Math.min(99, 70 + (clip.duration_sec ?? 20)),
-    msgPerMin: 120,
-    durationSec: clip.duration_sec ?? 22,
-    priceLabel: tierPriceLabel(clip.tier),
-    thumbnailUrl: mediaUrl(clip.thumbnail_url),
-    status: clip.status,
+    clipId: post.clip_id,
+    title: post.clip_title ?? `Clip #${post.clip_id}`,
+    streamer: post.streamer_username ?? 'unknown',
+    game: post.game ?? '—',
+    durationSec: post.duration_sec ?? 22,
+    thumbnailUrl: mediaUrl(post.thumbnail_url),
+    clipStatus: post.clip_status,
+    platform: post.platform,
+    postUrl: post.post_url,
+    views: post.views,
+    engagement: post.engagement,
   }
 }
 
 export function BountyPage() {
   const [q, setQ] = useState('')
-  const [clips, setClips] = useState<BoardClip[]>([])
+  const [items, setItems] = useState<BoardItem[]>([])
   const [source, setSource] = useState<'live' | 'demo'>('demo')
 
   useEffect(() => {
-    fetchBountyClips()
+    fetchBountyPosts()
       .then((data) => {
-        if (data.clips.length) {
-          setClips(data.clips.map(fromApi))
+        const posted = data.posts.filter((p) => p.status === 'posted')
+        if (posted.length) {
+          setItems(posted.map(fromPost))
           setSource('live')
         } else {
-          setClips(DEMO_BOUNTY_CLIPS.map(fromDemo))
+          setItems(
+            DEMO_BOUNTY_CLIPS.map((c) => ({
+              clipId: Number(c.id.replace(/\D/g, '')) || 0,
+              title: c.title,
+              streamer: c.streamer,
+              game: c.game,
+              durationSec: c.durationSec,
+              thumbnailUrl: null,
+              clipStatus: 'unclaimed',
+              platform: 'x',
+              postUrl: null,
+              views: 0,
+              engagement: 0,
+            })),
+          )
           setSource('demo')
         }
       })
       .catch(() => {
-        setClips(DEMO_BOUNTY_CLIPS.map(fromDemo))
         setSource('demo')
+        setItems(
+          DEMO_BOUNTY_CLIPS.map((c) => ({
+            clipId: 0,
+            title: c.title,
+            streamer: c.streamer,
+            game: c.game,
+            durationSec: c.durationSec,
+            thumbnailUrl: null,
+            clipStatus: 'unclaimed',
+            platform: 'x',
+            postUrl: null,
+            views: 0,
+            engagement: 0,
+          })),
+        )
       })
   }, [])
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
-    if (!needle) return clips
-    return clips.filter(
+    if (!needle) return items
+    return items.filter(
       (c) =>
         c.title.toLowerCase().includes(needle) ||
         c.streamer.toLowerCase().includes(needle) ||
         c.game.toLowerCase().includes(needle),
     )
-  }, [q, clips])
+  }, [q, items])
 
   return (
     <div className="public-page thermal-page">
       <div className="page-head">
         <div>
           <h1>Bounty Board</h1>
-          <p>Live heat feed — watermarked previews. Unlock clean 4K when you’re ready to claim.</p>
+          <p>Posted heat clips on X and TikTok — unlock clean 4K for {formatUsd(5000)}.</p>
         </div>
         {source === 'demo' && (
           <p className="chip warn" style={{ alignSelf: 'flex-start' }}>
-            Demo clips — connect DATABASE_URL for live heat clips
+            Demo clips — ops must mark bounty posts live in Mission Control
           </p>
         )}
       </div>
@@ -108,32 +124,41 @@ export function BountyPage() {
       </label>
 
       <div className="bounty-grid">
-        {filtered.map((clip) => (
-          <article key={clip.id} className="bounty-card">
+        {filtered.map((item) => (
+          <article key={`${item.clipId}-${item.platform}`} className="bounty-card">
             <div className="bounty-preview">
-              {clip.thumbnailUrl ? (
+              {item.thumbnailUrl ? (
                 <img
-                  src={clip.thumbnailUrl}
-                  alt={clip.title}
+                  src={item.thumbnailUrl}
+                  alt={item.title}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
                 />
               ) : null}
-              <span className="heat-pill">HEAT {clip.heatScore}</span>
+              <span className="heat-pill">{item.platform.toUpperCase()}</span>
               <span className="wm-label">THERMAL PREVIEW</span>
               <p>
-                {clip.msgPerMin} msg/min · {clip.durationSec}s · {clip.priceLabel}
+                {item.durationSec}s · {item.views} views · {formatUsd(5000)} bounty
               </p>
             </div>
-            <h3>{clip.title}</h3>
+            <h3>{item.title}</h3>
             <p>
-              @{clip.streamer} · {clip.game}
+              @{item.streamer} · {item.game}
             </p>
-            {clip.status === 'claimed' ? (
+            {item.postUrl && (
+              <p style={{ fontSize: '0.85rem' }}>
+                <a href={item.postUrl} target="_blank" rel="noreferrer">
+                  View post
+                </a>
+              </p>
+            )}
+            {item.clipStatus === 'claimed' ? (
               <span className="chip ok">Claimed</span>
-            ) : (
-              <Link className="btn btn-primary" to={`/checkout/${clip.id}`}>
+            ) : item.clipId ? (
+              <Link className="btn btn-primary" to={`/checkout/${item.clipId}`}>
                 Unlock Clean 4K Version
               </Link>
+            ) : (
+              <span className="chip warn">Demo only</span>
             )}
           </article>
         ))}
