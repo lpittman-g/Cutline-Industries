@@ -9,6 +9,10 @@ export type StreamerRow = {
   is_live: boolean
   avg_chat_velocity: number
   created_at: string
+  game?: string
+  current_msg_per_min?: number
+  profile_image_url?: string | null
+  vod_fallback_url?: string | null
 }
 
 export type HeatSpikeRow = {
@@ -18,6 +22,10 @@ export type HeatSpikeRow = {
   timestamp_start: string
   vod_url: string | null
   status: HeatSpikeStatus
+  title?: string | null
+  game?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 export type ClipRow = {
@@ -29,6 +37,13 @@ export type ClipRow = {
   price_usd: string
   status: ClipStatus
   created_at: string
+  title?: string | null
+  duration_sec?: number | null
+  game?: string | null
+  streamer_username?: string | null
+  thumbnail_url?: string | null
+  media_url?: string | null
+  tier?: string
 }
 
 export type RetainerRow = {

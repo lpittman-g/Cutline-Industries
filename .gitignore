@@ -32,6 +32,7 @@ shorts_out/*
 uploaded/*
 !uploaded/.gitkeep
 ai_out/
+thermal_media/
 *.zip
 cutline-industries-web.zip
 
