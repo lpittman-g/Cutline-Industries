@@ -1,0 +1,58 @@
+---
+description: Cutline Industries — use Cursor as the primary agent for all repo work (Copilot optional).
+alwaysApply: true
+---
+
+# Cutline — Cursor is primary
+
+This repo is built for **Cursor**, not GitHub Copilot. Do repo work here. Do **not** tell the user to switch to Copilot unless they explicitly ask.
+
+## Start here
+
+| Doc | When |
+|-----|------|
+| [docs/PLATFORM.md](../docs/PLATFORM.md) | Architecture, routes, env |
+| [docs/THERMAL-MISSION-CONTROL.md](../docs/THERMAL-MISSION-CONTROL.md) | Heat → clip → Stripe → bounty |
+| [docs/CURSOR-PRIMARY.md](../docs/CURSOR-PRIMARY.md) | Cursor setup (MCP, cloud vs local) |
+| [tools/README.md](../tools/README.md) | MCP tools |
+
+## Stack
+
+- **Frontend:** `src/` — React + Vite (`:5173`)
+- **API:** `server/` — Express (`:8787`)
+- **DB:** Postgres + `db/migrations/` → `npm run db:migrate`
+- **Pipelines:** VOD autopilot, AI video, SynthLang CI
+
+## Common commands
+
+```bash
+npm install && cp .env.example .env
+npm run start              # UI + API
+npm run db:migrate         # Thermal schema
+npm run autopilot:once     # VOD → Shorts
+npm run ai:pipeline:once   # AI Thermal Shorts
+```
+
+## MCP (enable in `~/.cursor/mcp.json` — see `.cursor/mcp.json.example`)
+
+| Server | Use |
+|--------|-----|
+| `phone-approval-lite` | ntfy + `/approve` device sign-in |
+| `voice-print` | Chat **`print`** → HP OfficeJet (local PC only) |
+
+## Workflow rules
+
+- Feature branches: `cursor/<descriptive-name>-6543`
+- Minimal diffs; match existing conventions in `server/` and `src/`
+- Stripe webhook registered **before** `express.json()` in `server/api.ts`
+- Phone approval: **phone-approval-lite** only (not Apple APNs path)
+
+## Cloud vs local
+
+| Task | Where |
+|------|--------|
+| Code, PRs, Thermal API, docs | **Cursor** (cloud or local) |
+| LAN printer, local MCP to HP | **Cursor on PC** + same Wi‑Fi |
+| Phone print | PC `npm start` in `tools/voice-print` → phone URL |
+
+Copilot configs (`.github/copilot-instructions.md`, `.github/agents/`) are **optional mirrors** — keep in sync only when changing shared behavior.

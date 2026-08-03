@@ -1,6 +1,8 @@
-# Cutline Industries — GitHub Copilot instructions
+# Cutline Industries — GitHub Copilot instructions (optional)
 
-## Voice Print — shared with Cursor
+> **Primary agent:** [Cursor](../docs/CURSOR-PRIMARY.md) — `.cursor/rules/cutline-primary.mdc`. Use Copilot only if you prefer VS Code.
+
+## Voice Print
 
 Follow [tools/voice-print/CHAT-PRINT.md](../tools/voice-print/CHAT-PRINT.md).
 
