@@ -11,13 +11,18 @@ the private automation in the Cursor dashboard:
 
 1. Connect only `lpittman-g/Cutline-Industries` in
    [Cursor Integrations](https://cursor.com/dashboard/integrations).
-2. Create the GitHub label `thermal-autopilot` on this repo (exact spelling).
+2. Ensure the GitHub label `thermal-autopilot` exists on this repo (exact
+   spelling — already created).
 3. Open [New Automation](https://cursor.com/automations/new), or rename the
-   existing private automation
-   [`cutline industries`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce).
+   existing private automation still named
+   [`cutline industries`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce)
+   (id `26c7e362-8eff-11f1-a7d1-d6b4613131ce`). There is **no MCP create/rename
+   API** — this step is dashboard-only.
 4. Name it **Cutline Industries — Thermal Autopilot**.
 5. Use a GitHub pull-request label trigger for the exact label
-   `thermal-autopilot`, **added only** (not on PR closed / every label event).
+   `thermal-autopilot`, **added only**. Do **not** trigger on PR opened,
+   synchronized, or closed (the current automation still fires on those
+   events until reconfigured).
 6. Select **Grok 4.5**, **High**, **Fast**, make it private, and disable memory.
 7. Add the safe MCP connections below in **Dashboard → Integrations & MCP**.
 

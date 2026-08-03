@@ -74,6 +74,41 @@ function publicClip<T extends Record<string, unknown>>(clip: T) {
   return safe
 }
 
+/**
+ * Public URL for local (non-S3) paid clean downloads.
+ * Heat pipeline writes under spike id: thermal_media/clips/{spikeId}/heat_clip.mp4
+ * — never under clip id.
+ */
+export function localCleanDownloadUrl(clip: {
+  spike_id?: number | null
+  media_url?: string | null
+  s3_clean_url?: string | null
+}): string | null {
+  const media = typeof clip.media_url === 'string' ? clip.media_url.trim() : ''
+  if (media) {
+    const fromWm = media.match(/^(\/thermal-media\/clips\/\d+\/)(.+)_wm(\.mp4)$/i)
+    if (fromWm) return `${fromWm[1]}${fromWm[2]}${fromWm[3]}`
+  }
+
+  if (clip.spike_id && Number.isFinite(clip.spike_id) && clip.spike_id > 0) {
+    return `/thermal-media/clips/${clip.spike_id}/heat_clip.mp4`
+  }
+
+  const clean = typeof clip.s3_clean_url === 'string' ? clip.s3_clean_url.trim() : ''
+  if (clean && !clean.startsWith('s3://')) {
+    const normalized = clean.replace(/\\/g, '/')
+    const marker = '/thermal_media/'
+    const idx = normalized.lastIndexOf(marker)
+    if (idx >= 0) {
+      return `/thermal-media/${normalized.slice(idx + marker.length)}`
+    }
+    const clipsMatch = normalized.match(/\/clips\/(\d+)\/([^/]+\.mp4)$/i)
+    if (clipsMatch) return `/thermal-media/clips/${clipsMatch[1]}/${clipsMatch[2]}`
+  }
+
+  return null
+}
+
 export function registerThermalRoutes(app: Express) {
   const defaultVod = path.join(ROOT, 'inbox', 'cutline_test_vod.mp4')
   const ops = [dbRequired, requireRole('operator')] as const
@@ -159,9 +194,14 @@ export function registerThermalRoutes(app: Express) {
         captions: resolveFulfillmentCaptions(clip, bountyCaptions),
       }
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
+        const url = localCleanDownloadUrl(clip)
+        if (!url) {
+          res.status(404).json({ error: 'Clean media not available locally' })
+          return
+        }
         res.json({
           ok: true,
-          url: `/thermal-media/clips/${id}/heat_clip.mp4`,
+          url,
           storage: 'local',
           ...fulfillment,
         })

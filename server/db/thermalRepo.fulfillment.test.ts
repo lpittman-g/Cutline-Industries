@@ -39,6 +39,19 @@ describe('resolveFulfillmentCaptions', () => {
       discord: null,
     })
   })
+
+  it('returns nulls when both clip columns and bounty notes are blank', () => {
+    const captions = resolveFulfillmentCaptions(
+      { ai_caption: '', ai_tiktok_caption: '  ', ai_discord_message: null },
+      { x: '   ', tiktok: null },
+    )
+    assert.deepEqual(captions, {
+      social: null,
+      x: null,
+      tiktok: null,
+      discord: null,
+    })
+  })
 })
 
 describe('nextBountyStatusOnQueueRetry', () => {
@@ -46,5 +59,7 @@ describe('nextBountyStatusOnQueueRetry', () => {
     assert.equal(nextBountyStatusOnQueueRetry('posted'), 'posted')
     assert.equal(nextBountyStatusOnQueueRetry('queued'), 'queued')
     assert.equal(nextBountyStatusOnQueueRetry('failed'), 'queued')
+    assert.equal(nextBountyStatusOnQueueRetry(null), 'queued')
+    assert.equal(nextBountyStatusOnQueueRetry(undefined), 'queued')
   })
 })
