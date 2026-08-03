@@ -76,8 +76,14 @@ Surfaces (Cursor desktop · Cloud · Phone Ops)
 | `phone-approval-lite` | `.cursor/mcp.json.example` | Device approval via ntfy |
 | `voice-print` | same | **`print`** in chat → HP OfficeJet |
 | `openaiDeveloperDocs` | same | Live OpenAI platform docs |
+| `discordDeveloperDocs` | `.cursor/mcp.automation.example.json` | Discord docs for cloud Automation |
 
-Requires **Cursor on your PC** for local MCP (LAN tools). `openaiDeveloperDocs` is HTTP and works wherever egress allows.
+Remote HTTP MCP works with Cloud Agents and Automations. Local stdio tools run
+where their MCP process is started: `phone-approval-lite` and `voice-print`
+therefore require **Cursor on your PC** and must not be attached to cloud
+Automations. See
+[`THERMAL-AUTOMATION-MCP.md`](THERMAL-AUTOMATION-MCP.md) for the restricted
+cloud connection pack.
 
 **OpenAI Developers plugin:** install on desktop via Settings → Plugins → paste `https://github.com/openai/openai-developers-for-cursor`. Full guide: [OPENAI-DEVELOPERS-PLUGIN.md](OPENAI-DEVELOPERS-PLUGIN.md).
 
