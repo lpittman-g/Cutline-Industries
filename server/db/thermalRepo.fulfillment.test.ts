@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  canClaimClip,
+  ClipAlreadyClaimedError,
   localCleanDownloadUrl,
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
@@ -102,5 +104,39 @@ describe('localCleanDownloadUrl', () => {
       }),
       null,
     )
+  })
+})
+
+describe('canClaimClip', () => {
+  it('allows unclaimed clips', () => {
+    assert.equal(canClaimClip({ status: 'unclaimed' }, 'cs_1'), true)
+  })
+
+  it('allows Stripe webhook retry for the same session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_1',
+      ),
+      true,
+    )
+  })
+
+  it('rejects a second buyer session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_2',
+      ),
+      false,
+    )
+  })
+
+  it('ClipAlreadyClaimedError carries clip and session ids', () => {
+    const err = new ClipAlreadyClaimedError(42, 'cs_winner')
+    assert.equal(err.name, 'ClipAlreadyClaimedError')
+    assert.equal(err.clipId, 42)
+    assert.equal(err.existingSessionId, 'cs_winner')
+    assert.match(err.message, /42/)
   })
 })
