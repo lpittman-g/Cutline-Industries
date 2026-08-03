@@ -25,6 +25,7 @@ import {
   TOKEN_PATH,
   SECRET_PATH,
 } from './youtubeAuth.ts'
+import { registerThermalRoutes } from './thermalApi.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -573,6 +574,8 @@ app.get('/api/thermal/schema', async (_req, res) => {
     })
   }
 })
+
+registerThermalRoutes(app)
 
 app.listen(PORT, () => {
   console.log(`Cutline Industries API on http://127.0.0.1:${PORT}`)
