@@ -32,6 +32,16 @@ Cloud Agent absolute path example:
 
 ---
 
+## Excel MCP (sister repo)
+
+Spreadsheet automation for revenue ledgers, deal desk exports, and developer pitch packets.
+
+- Fork: https://github.com/lpittman-g/mcp-server-excel
+- Integration guide: [`docs/cutline-integration.md`](https://github.com/lpittman-g/mcp-server-excel/blob/main/docs/cutline-integration.md)
+- Set `CUTLINE_API_URL=http://127.0.0.1:8787` when using Excel MCP alongside Mission Control
+
+---
+
 ## phone-approval-apple (archived — not used)
 
 Requires paid Apple Developer Program + Mac/Xcode. **We are not using this path.**
