@@ -327,9 +327,9 @@ export async function queueBountyPost(input: {
     `INSERT INTO bounty_posts (clip_id, platform, status, notes)
      VALUES ($1, $2, 'queued', $3)
      ON CONFLICT (clip_id, platform) DO UPDATE SET
-       -- Autopilot retry refreshes caption notes without un-posting live bounties
+       -- Keep posted rows posted (see nextBountyStatusOnQueueRetry); refresh notes only
        status = CASE
-         WHEN bounty_posts.status = 'posted' THEN bounty_posts.status
+         WHEN bounty_posts.status = 'posted' THEN 'posted'
          ELSE 'queued'
        END,
        notes = COALESCE(EXCLUDED.notes, bounty_posts.notes),
