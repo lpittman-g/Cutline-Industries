@@ -44,7 +44,7 @@ Claim CTA → POST /api/checkout/session
 |-------|--------|---------|
 | `/api/clips/:id` | GET | Single clip for checkout page |
 | `/api/clips/:id/autopilot` | POST | Retry AI copy + Discord / bounty / pitch (ops) |
-| `/api/clips/:id/download` | POST | Paid clean download + social caption fulfillment |
+| `/api/clips/:id/download` | POST | Paid clean download + X/TikTok/Discord caption fulfillment |
 | `/api/bounty/clips` | GET | Public bounty board clips |
 | `/api/checkout/session` | POST | Create Stripe Checkout (`{ clipId }`) |
 | `/api/checkout/confirm` | POST | Confirm session after redirect (dev fallback) |

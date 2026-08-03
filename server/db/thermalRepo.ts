@@ -211,6 +211,7 @@ export async function updateClipAutopilot(input: {
   clipId: number
   status: 'processing' | 'completed' | 'failed'
   caption?: string
+  tiktokCaption?: string
   discordMessage?: string
   devEmailSubject?: string
   devEmailBody?: string
@@ -220,10 +221,11 @@ export async function updateClipAutopilot(input: {
     `UPDATE clips SET
        autopilot_status = $2,
        ai_caption = COALESCE($3, ai_caption),
-       ai_discord_message = COALESCE($4, ai_discord_message),
-       ai_dev_email_subject = COALESCE($5, ai_dev_email_subject),
-       ai_dev_email_body = COALESCE($6, ai_dev_email_body),
-       autopilot_error = $7,
+       ai_tiktok_caption = COALESCE($4, ai_tiktok_caption),
+       ai_discord_message = COALESCE($5, ai_discord_message),
+       ai_dev_email_subject = COALESCE($6, ai_dev_email_subject),
+       ai_dev_email_body = COALESCE($7, ai_dev_email_body),
+       autopilot_error = $8,
        autopilot_completed_at =
          CASE WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP
               ELSE autopilot_completed_at END
@@ -232,6 +234,7 @@ export async function updateClipAutopilot(input: {
       input.clipId,
       input.status,
       input.caption ?? null,
+      input.tiktokCaption ?? null,
       input.discordMessage ?? null,
       input.devEmailSubject ?? null,
       input.devEmailBody ?? null,

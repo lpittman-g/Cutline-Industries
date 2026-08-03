@@ -174,6 +174,7 @@ export async function processHeatSpikeAutopilot(input: {
       clipId: input.clipId,
       status: 'completed',
       caption: copy.xCaption,
+      tiktokCaption: copy.tiktokCaption,
       discordMessage: copy.discordHypeMessage,
       devEmailSubject: copy.devEmailSubject,
       devEmailBody: copy.devEmailBody,

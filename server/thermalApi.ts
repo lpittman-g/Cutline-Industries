@@ -154,7 +154,10 @@ export function registerThermalRoutes(app: Express) {
       }
       const fulfillment = {
         captions: {
+          // `social` aliases x for older checkout clients
           social: clip.ai_caption ?? null,
+          x: clip.ai_caption ?? null,
+          tiktok: clip.ai_tiktok_caption ?? null,
           discord: clip.ai_discord_message ?? null,
         },
       }

@@ -18,7 +18,10 @@ export function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [fulfillmentCaption, setFulfillmentCaption] = useState<string | null>(null)
+  const [fulfillmentCaptions, setFulfillmentCaptions] = useState<{
+    x: string | null
+    tiktok: string | null
+  } | null>(null)
   const paid = search.get('paid') === '1'
   const canceled = search.get('canceled') === '1'
   const requestedTier = search.get('tier')
@@ -44,7 +47,10 @@ export function CheckoutPage() {
             fetchClip(numericId).then((data) => setClip(data.clip)),
             fetchClipDownload(numericId, sessionId).then((data) => {
               setDownloadUrl(data.url)
-              setFulfillmentCaption(data.captions?.social ?? null)
+              setFulfillmentCaptions({
+                x: data.captions?.x ?? data.captions?.social ?? null,
+                tiktok: data.captions?.tiktok ?? null,
+              })
             }),
           ])
         }
@@ -95,7 +101,7 @@ export function CheckoutPage() {
             <ul style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
               <li>Unwatermarked vertical MP4</li>
               <li>Private download after verified payment</li>
-              <li>Pre-written social caption from Thermal autopilot</li>
+              <li>Pre-written X and TikTok captions from Thermal autopilot</li>
               <li>15-minute secure S3 link when cloud storage is enabled</li>
             </ul>
             {clip.status === 'claimed' ? (
@@ -103,9 +109,14 @@ export function CheckoutPage() {
             ) : (
               <p className="chip">Stripe Checkout — live when STRIPE_SECRET_KEY is set</p>
             )}
-            {(fulfillmentCaption || (paid && clip.ai_caption)) && (
+            {(fulfillmentCaptions?.x || (paid && clip.ai_caption)) && (
               <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
-                Social caption: {fulfillmentCaption || clip.ai_caption}
+                X caption: {fulfillmentCaptions?.x || clip.ai_caption}
+              </p>
+            )}
+            {(fulfillmentCaptions?.tiktok || (paid && clip.ai_tiktok_caption)) && (
+              <p style={{ color: 'var(--muted)', marginTop: '0.5rem' }}>
+                TikTok caption: {fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption}
               </p>
             )}
             <div className="btn-row" style={{ marginTop: '1rem' }}>

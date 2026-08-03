@@ -84,7 +84,12 @@ export function ClipsPage() {
                   )}
                   {clip.ai_caption && (
                     <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                      {clip.ai_caption}
+                      X: {clip.ai_caption}
+                    </p>
+                  )}
+                  {clip.ai_tiktok_caption && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                      TikTok: {clip.ai_tiktok_caption}
                     </p>
                   )}
                   <div className="btn-row">
