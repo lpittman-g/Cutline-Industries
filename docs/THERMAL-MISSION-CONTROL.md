@@ -118,10 +118,30 @@ STRIPE_PRICE_RETAINER=price_...   # optional recurring Price
 
 Without `STRIPE_SECRET_KEY`, retainer checkout returns 503; CRM CRUD still works.
 
+## Step 5 (implemented): Auth signup / sign-in
+
+Config: [`server/auth/auth.config.json`](../server/auth/auth.config.json)
+
+| Rule | Value |
+|------|-------|
+| Email verification | required |
+| Public registration | allowed |
+| Blocked domains | tempmail.com, throwaway.com |
+| Password | min 8, upper, number, special |
+| Lockout | 5 attempts / 15 min |
+| Session | 24h cookie |
+| MFA | optional |
+
+Routes: `/signup`, `/signin`, `/verify-email` · API `/api/auth/*`
+
+```bash
+npm run db:migrate   # applies 006_thermal_auth.sql
+```
+
 ## Next steps
 
-5. S3 persistence (optional)
-6. Auth + roles
+6. S3 persistence (optional)
+7. Auth roles / protect Mission Control
 
 ```bash
 # Postgres

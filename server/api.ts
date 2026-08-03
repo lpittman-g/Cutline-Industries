@@ -27,13 +27,19 @@ import {
 } from './youtubeAuth.ts'
 import { registerThermalRoutes } from './thermalApi.ts'
 import { registerStripeWebhookRoute } from './stripeCheckout.ts'
+import { registerAuthRoutes } from './auth/authRoutes.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
 const app = express()
 const PORT = Number(process.env.CUTLINE_API_PORT || 8787)
 
-app.use(cors())
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  }),
+)
 registerStripeWebhookRoute(app)
 app.use(express.json({ limit: '1mb' }))
 
@@ -577,6 +583,7 @@ app.get('/api/thermal/schema', async (_req, res) => {
   }
 })
 
+registerAuthRoutes(app)
 registerThermalRoutes(app)
 
 app.listen(PORT, () => {

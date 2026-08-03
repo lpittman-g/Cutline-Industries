@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { fetchAuthUser, logout, type AuthUser } from '../lib/authApi'
 import { THERMAL } from '../data/thermal'
 
 const NAV = [
@@ -10,6 +12,23 @@ const NAV = [
 ]
 
 export function PublicShell() {
+  const [user, setUser] = useState<AuthUser | null>(null)
+
+  useEffect(() => {
+    void fetchAuthUser()
+      .then((r) => setUser(r.user))
+      .catch(() => setUser(null))
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch {
+      /* ignore */
+    }
+    setUser(null)
+  }
+
   return (
     <div className="public-shell">
       <header className="public-nav">
@@ -31,7 +50,24 @@ export function PublicShell() {
               {item.label}
             </NavLink>
           ))}
-          <a className="btn btn-primary public-yt" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
+          {user ? (
+            <>
+              <span className="chip ready">{user.displayName || user.email}</span>
+              <button type="button" className="btn" onClick={() => void handleLogout()}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link className="btn" to="/signin">
+                Sign in
+              </Link>
+              <Link className="btn btn-primary" to="/signup">
+                Sign up
+              </Link>
+            </>
+          )}
+          <a className="btn" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
             {THERMAL.discordBotCta}
           </a>
           <Link className="btn" to="/app/dashboard">

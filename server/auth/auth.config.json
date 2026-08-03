@@ -1,0 +1,21 @@
+{
+  "auth_configuration": {
+    "sign_up_rules": {
+      "require_email_verification": true,
+      "allow_public_registration": true,
+      "blocked_domains": ["tempmail.com", "throwaway.com"],
+      "password_policy": {
+        "min_length": 8,
+        "require_uppercase": true,
+        "require_numbers": true,
+        "require_special_characters": true
+      }
+    },
+    "sign_in_rules": {
+      "max_login_attempts": 5,
+      "lockout_duration_minutes": 15,
+      "session_timeout_hours": 24,
+      "multi_factor_authentication": "optional"
+    }
+  }
+}

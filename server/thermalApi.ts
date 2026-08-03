@@ -195,18 +195,6 @@ export function registerThermalRoutes(app: Express) {
     })
   })
 
-  app.get('/api/auth/user', (_req, res) => {
-    res.json({ user: null, note: 'Auth wired in step 5' })
-  })
-
-  app.post('/api/login', (_req, res) => {
-    res.status(501).json({ error: 'Login not implemented yet (step 5)' })
-  })
-
-  app.post('/api/logout', (_req, res) => {
-    res.json({ ok: true })
-  })
-
   app.get('/api/bounty-posts', dbRequired, async (_req, res) => {
     res.json({ posts: await listBountyPosts() })
   })
