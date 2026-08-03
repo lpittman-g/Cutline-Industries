@@ -1,6 +1,6 @@
 # Voice Print — which app to use
 
-One workflow, different apps depending on where you are.
+**General repo work:** use **Cursor only** — [docs/CURSOR-PRIMARY.md](../../docs/CURSOR-PRIMARY.md). Copilot is optional.
 
 | App | Say **`print`** in chat? | How to print |
 |-----|--------------------------|--------------|
