@@ -6,6 +6,7 @@ const NAV = [
   { to: '/bounty', label: 'Bounty Board' },
   { to: '/developers', label: 'Developers' },
   { to: '/feedback', label: 'Content input' },
+  { to: '/approve', label: 'Agent approve' },
 ]
 
 export function PublicShell() {

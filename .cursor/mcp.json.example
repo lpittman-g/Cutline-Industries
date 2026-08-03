@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "phone-approval-lite": {
+      "command": "node",
+      "args": ["tools/phone-approval-lite/mcp/server.js"],
+      "env": {
+        "CUTLINE_API_URL": "http://127.0.0.1:8787"
+      }
+    }
+  }
+}

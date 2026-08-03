@@ -12,6 +12,7 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 | `/bounty` | Public Bounty Board |
 | `/developers` | Indie dev retainer engine |
 | `/feedback` | Audience input for AI Shorts |
+| `/approve` | Agent sign-in approval (no Apple Developer) |
 | `/app/*` | Mission Control (internal) |
 | `/os/*` | Cutline processing OS (internal) |
 
@@ -44,12 +45,13 @@ flowchart TB
   end
 
   subgraph tools [Agent Tools]
-    APNs[phone-approval-apple MCP]
+    Approve[phone-approval-lite MCP]
     Email[email-to-cursor]
   end
 
   Site --> API
   Feedback --> API
+  ApprovePage[/approve] --> API
   AI --> FB
   FB --> YT
   VOD --> YT
@@ -57,7 +59,8 @@ flowchart TB
   VOD --> GCP
   AI --> GCP
   Site --> AWS
-  APNs --> iPhone[iPhone ApprovalPing]
+  Approve --> ntfy[ntfy iOS app]
+  Approve --> ApprovePage
   Email --> Cursor[Cursor Cloud Agent]
 ```
 
@@ -69,7 +72,8 @@ flowchart TB
 | `server/` | Express backend, autopilots, AI pipeline |
 | `scripts/` | Python/Shell automation |
 | `synthlang/` | SynthLang autopilot JSON config |
-| `tools/phone-approval-apple/` | APNs MCP + iOS ApprovalPing app source |
+| `tools/phone-approval-lite/` | **Default** — ntfy + `/approve` (no Apple Dev) |
+| `tools/phone-approval-apple/` | Archived — APNs path (not used) |
 | `tools/email-to-cursor/` | Gmail Apps Script → Cursor webhook |
 | `docs/` | Technical documentation |
 | `docs/business/` | Blueprint PDFs, outreach plan, Stripe letter |
@@ -100,11 +104,19 @@ Copy `.env.example` → `.env`. Key variables:
 - IAM: `cursor-thermal-deploy`
 - Services: Amplify (staging), Route 53 (DNS ready), S3 (media)
 
-## Apple Developer (in progress)
+## Phone approval (Cutline lite — no Apple Developer)
 
-- Bundle ID: `studio.cutlineindustries.approvalping`
-- iOS app source: `tools/phone-approval-apple/ios/ApprovalPing/`
-- Setup: `tools/phone-approval-apple/docs/APPLE-DEVELOPER-SETUP.md`
+- **Push:** ntfy iOS app (free)
+- **Approve UI:** `/approve` on cutline-industries.studio
+- **MCP:** `phone-approval-lite`
+- Setup: `tools/phone-approval-lite/docs/SETUP-NO-APPLE-DEV.md`
+
+We do **not** use Apple Developer / APNs for agent approvals.
+
+## Apple Developer (not used)
+
+- Bundle ID (archived): `studio.cutlineindustries.approvalping`
+- See `tools/phone-approval-apple/` — reference only
 
 ## CI/CD
 

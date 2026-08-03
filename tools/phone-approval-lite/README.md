@@ -1,14 +1,41 @@
-# Phone approval lite (no Apple Developer)
+# Phone approval lite (Cutline default)
 
-iPhone sign-in approvals **without** Apple Developer Program or device serial numbers.
+**This is our phone approval system.** We do not use Apple Developer or APNs.
 
-Uses:
-- **[ntfy](https://ntfy.sh)** — free push notifications to the ntfy iOS app
-- **`/approve` web page** — Approve / Deny on your phone
-- **Generated device ID** — stored in browser localStorage when you pair
+## Stack
 
-Setup: [`docs/SETUP-NO-APPLE-DEV.md`](docs/SETUP-NO-APPLE-DEV.md)
+| Piece | Role |
+|-------|------|
+| **ntfy** (iOS app) | Free lock-screen push to your iPhone |
+| **`/approve`** | Web page to Approve / Deny agent requests |
+| **Generated device ID** | Pairs your phone in browser (not Apple serial) |
+| **MCP `phone-approval-lite`** | Agent tool to request approvals |
 
-MCP: `tools/phone-approval-lite/mcp/server.js`
+## Quick setup
 
-For native APNs (after Apple Developer enrollment): see [`../phone-approval-apple/`](../phone-approval-apple/).
+1. `.env` → `CUTLINE_APPROVAL_PAIR_SECRET=long-random-string`
+2. iPhone → install **ntfy** → subscribe to topic from `curl localhost:8787/api/approval/status`
+3. Safari → `https://cutline-industries.studio/approve` → Add to Home Screen
+4. Cursor → enable MCP from `.cursor/mcp.json.example`
+
+Full guide: [`docs/SETUP-NO-APPLE-DEV.md`](docs/SETUP-NO-APPLE-DEV.md)
+
+```bash
+npm run send-test
+```
+
+## Agent tools
+
+- `approval_lite_status`
+- `request_signin_approval_lite`
+- `resolve_signin_approval_lite`
+
+## Why not Apple Developer?
+
+| Apple APNs | Cutline lite |
+|------------|--------------|
+| $99/year | Free |
+| Mac + Xcode required | iPhone + ntfy app only |
+| Native app build | Web + ntfy |
+
+The `phone-approval-apple/` folder is archived and not used.
