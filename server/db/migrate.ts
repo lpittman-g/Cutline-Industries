@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
 import pg from 'pg'
 import { ROOT } from '../youtubeAuth.ts'
+import { createPgConfig } from './pgConfig.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -17,7 +18,7 @@ async function main() {
     process.exit(1)
   }
 
-  const client = new pg.Client({ connectionString: databaseUrl })
+  const client = new pg.Client(createPgConfig(databaseUrl))
   await client.connect()
 
   try {

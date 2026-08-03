@@ -206,7 +206,8 @@ losing the rendered clip.
 10. X/TikTok publishing APIs (queue + copy are implemented)
 
 ```bash
-# Postgres
+# Postgres — local or managed (Neon / Supabase / AWS RDS)
+# Production: paste provider URI with ?sslmode=require into DATABASE_URL
 DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/thermal
 npm run db:migrate
 

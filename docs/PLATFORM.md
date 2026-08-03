@@ -90,7 +90,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `CUTLINE_AI_MODE` | `project` (Thermal Shorts) or `trends` (Reddit) |
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
-| `DATABASE_URL` | Thermal Postgres |
+| `DATABASE_URL` | Thermal Postgres (user+password in URI; SSL for Neon/Supabase/RDS) |
 
 ## Google Cloud
 
@@ -132,7 +132,7 @@ Console links:
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional) | S3 media uploads when no IAM role |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
 | `OPENAI_API_KEY` | AI video pipeline |
-| `DATABASE_URL` | Thermal state + auth |
+| `DATABASE_URL` | Thermal state + auth (Neon / Supabase / RDS; use SSL in production) |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
 
 `npm audit` currently reports an RSC-only React Router advisory. This frontend
