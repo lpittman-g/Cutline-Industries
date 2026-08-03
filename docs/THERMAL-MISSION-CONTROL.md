@@ -253,8 +253,8 @@ Links:
 - [Registration instructions](https://dev.twitch.tv/docs/authentication/register-app)
 
 1. Enable 2FA on your Twitch account, then open the developer console.
-2. **Register Your Application** — name it (e.g. Cutline Thermal), pick a category (Application Integration), and set an OAuth Redirect URL (e.g. `http://localhost` — unused for client-credentials).
-3. **Manage** → copy **Client ID** → **New Secret** → copy **Client Secret**.
+2. **Register Your Application** — name it (e.g. Cutline Thermal), pick category **Application Integration**, Client Type **Confidential**, and add an OAuth Redirect URL that uses **HTTPS** (e.g. `https://cutline-industries.studio` — unused for client-credentials; Twitch rejects `http://`).
+3. Click **Add** on the redirect URL, then **Create**. **Manage** → copy **Client ID** → **New Secret** → copy **Client Secret**.
 
 Paste into `.env`:
 
