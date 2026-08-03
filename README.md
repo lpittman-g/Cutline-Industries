@@ -15,7 +15,8 @@ This repository is the **full Cutline platform monorepo**: the Thermal web app, 
 ├── scripts/              # Trend radar, AI scripts, AWS helpers, SynthLang verify
 ├── synthlang/            # Autonomous CI/autopilot config
 ├── tools/
-│   ├── phone-approval-apple/   # iPhone APNs MCP for agent sign-in approvals
+│   ├── phone-approval-lite/    # Default: ntfy + /approve (no Apple Developer)
+│   ├── phone-approval-apple/   # Archived — not used
 │   └── email-to-cursor/        # Email → Cursor Cloud Agent bridge
 ├── docs/                 # Product, pipeline, and business documentation
 ├── infra/                # AWS skeleton configs
@@ -73,7 +74,7 @@ Docs: [`docs/AI-VIDEO-PIPELINE.md`](docs/AI-VIDEO-PIPELINE.md)
 
 | Tool | Path | Purpose |
 |------|------|---------|
-| Phone approval MCP | `tools/phone-approval-apple/` | iPhone push for sign-in approvals |
+| Phone approval | `tools/phone-approval-lite/` | ntfy push + `/approve` — **no Apple Developer** |
 | Email → Cursor | `tools/email-to-cursor/` | Email triggers Cloud Agent runs |
 | SynthLang CI | `.github/workflows/synthlang-pipeline.yml` | Lint, typecheck, test, build |
 
@@ -98,7 +99,7 @@ PDFs in [`docs/business/`](docs/business/):
 | `.env` | Runtime config |
 | `client_secret.json` | Google OAuth |
 | `token.json` | YouTube refresh token |
-| `tools/*/secrets/` | Apple APNs, device tokens |
+| `tools/*/secrets/` | ntfy pair secret, device tokens |
 
 ## Brand
 

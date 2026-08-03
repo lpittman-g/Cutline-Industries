@@ -1,21 +1,10 @@
 # Phone Approval (Apple Developer + APNs)
 
-When the agent needs you to approve a sign-in, it sends a real iPhone push notification via Apple Push Notification service.
+> **Not in use.** Cutline uses [`phone-approval-lite`](../phone-approval-lite/) instead — free ntfy push + `/approve` web page. No Apple Developer account required.
 
-## Quick path
+This folder is kept for reference if you ever enroll in the Apple Developer Program later.
 
-1. Follow [`docs/APPLE-DEVELOPER-SETUP.md`](docs/APPLE-DEVELOPER-SETUP.md)
-2. Build `ios/ApprovalPing` on a Mac, run on your iPhone
-3. Paste device token + APNs key materials into `secrets/`
-4. Enable MCP `phone-approval-apple` in Cursor Settings
-5. Test: `npm run send-test`
+For the active system, see:
 
-## Agent usage
-
-```
-request_signin_approval
-  service: Squarespace
-  detail: Approve 2FA / passkey on agent desktop
-  desktopUrl: https://cursor.com/agents/<id>/desktop
-  waitSeconds: 180
-```
+- [`../phone-approval-lite/docs/SETUP-NO-APPLE-DEV.md`](../phone-approval-lite/docs/SETUP-NO-APPLE-DEV.md)
+- [`../README.md`](../README.md)

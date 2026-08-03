@@ -82,14 +82,14 @@ You should get an **ntfy banner** on your iPhone. Tap it → Approve or Deny.
 | `resolve_signin_approval_lite` | Force approve/deny |
 | `approval_lite_setup_doc` | This guide |
 
-## vs Apple Developer path
+We do **not** use Apple Developer for Cutline. This is the only supported approval path.
 
-| | **Lite (ntfy)** | **Apple APNs** |
-|---|-----------------|----------------|
+## vs Apple APNs (not used)
+
+| | **Cutline lite (default)** | Apple APNs (archived) |
+|---|---------------------------|------------------------|
 | Cost | Free | $99/yr |
-| Native iOS app | No (ntfy + Safari) | Yes (ApprovalPing) |
+| Native iOS app | No (ntfy + Safari) | Yes |
 | Lock screen push | Yes (via ntfy) | Yes (via APNs) |
 | Serial number | Not used | Not used |
-| Mac required | No | Yes (Xcode build) |
-
-When you enroll in Apple Developer later, switch to `phone-approval-apple` MCP for the native app experience.
+| Mac required | No | Yes |

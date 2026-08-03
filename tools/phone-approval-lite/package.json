@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Cutline device approval via ntfy + web — no Apple Developer required",
+  "scripts": {
+    "send-test": "node server/send-test.js"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
     "zod": "^4.3.6"
