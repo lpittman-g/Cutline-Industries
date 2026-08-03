@@ -24,6 +24,11 @@ Restart Cursor. MCP gives you:
 - **voice-print** — type **`print`** in chat → HP OfficeJet
 - **openaiDeveloperDocs** — live OpenAI platform documentation
 
+For cloud Automations, use the restricted
+[`mcp.automation.example.json`](mcp.automation.example.json) connection pack and
+follow [`docs/THERMAL-AUTOMATION-MCP.md`](../docs/THERMAL-AUTOMATION-MCP.md).
+Do not attach the LAN printer or phone tools to a cloud Automation.
+
 ### OpenAI Developers plugin (desktop)
 
 Settings → Plugins → paste `https://github.com/openai/openai-developers-for-cursor` → Install.
