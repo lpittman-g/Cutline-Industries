@@ -53,29 +53,45 @@ jobs:
     if: startsWith(github.head_ref, 'cursor/')
     runs-on: ubuntu-latest
     steps:
+      # Required: `gh` needs a git checkout / repo context for some operations
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Ready + approve + squash merge
         env:
           PR: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
+          DEFAULT_TOKEN: ${{ github.token }}
+          OPTIONAL_PAT: ${{ secrets.AUTO_APPROVE_TOKEN }}
         run: |
           set -euo pipefail
 
-          if [ -n "${{ secrets.AUTO_APPROVE_TOKEN }}" ]; then
-            export GH_TOKEN="${{ secrets.AUTO_APPROVE_TOKEN }}"
+          if [ -n "${OPTIONAL_PAT:-}" ]; then
+            export GH_TOKEN="$OPTIONAL_PAT"
           else
-            export GH_TOKEN="${{ github.token }}"
+            export GH_TOKEN="$DEFAULT_TOKEN"
           fi
 
-          echo "Processing PR #$PR (head: ${GITHUB_HEAD_REF:-unknown})"
+          echo "Processing PR #$PR (repo: $GH_REPO, head: ${GITHUB_HEAD_REF:-unknown})"
 
           gh pr ready "$PR" 2>/dev/null || true
 
-          gh pr review "$PR" --approve --body "Auto-approved: verification passed on \`cursor/*\` branch (Cutline Industries)." \
-            || echo "Approve step skipped (already approved or policy blocked)."
+          if ! gh pr review "$PR" --approve --body "Auto-approved: verification passed on \`cursor/*\` branch (Cutline Industries)."; then
+            echo "Approve step skipped (already approved or policy blocked)."
+          fi
 
           if gh pr merge "$PR" --squash --delete-branch; then
             echo "Merged PR #$PR"
-          else
-            echo "Direct merge failed — trying auto-merge"
-            gh pr merge "$PR" --squash --auto --delete-branch \
-              || { echo "::error::Could not merge PR #$PR. See docs/PR-AUTO-APPROVE.md"; exit 1; }
+            exit 0
           fi
+
+          echo "Direct merge failed — trying auto-merge"
+          if gh pr merge "$PR" --squash --auto --delete-branch; then
+            echo "Auto-merge enabled for PR #$PR"
+            exit 0
+          fi
+
+          echo "::error::Could not merge PR #$PR. Enable Allow auto-merge and/or add AUTO_APPROVE_TOKEN — see docs/PR-AUTO-APPROVE.md"
+          exit 1

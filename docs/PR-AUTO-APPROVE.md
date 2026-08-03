@@ -34,6 +34,11 @@ Do this once in GitHub → **Settings**:
 | `cursor/**` branches | Other branch prefixes |
 | Same-repo PRs | External forks (token limits) |
 
-## Manual override
+## Troubleshooting
 
-Close the PR or push a failing check to stop the merge. Rename the branch off `cursor/` to skip the workflow.
+| Symptom | Fix |
+|---------|-----|
+| `fatal: not a git repository` in Approve job | Workflow must `actions/checkout` before `gh` (fixed in current workflow) |
+| Approve skipped | Normal if already approved, or add `AUTO_APPROVE_TOKEN` |
+| Merge fails | Enable **Allow auto-merge**, or PAT with contents + pull_requests write |
+| This bootstrap PR fails merge once | Merge **manually** once so the workflow exists on `main` |
