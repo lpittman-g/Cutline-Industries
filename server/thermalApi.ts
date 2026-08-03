@@ -160,9 +160,14 @@ export function registerThermalRoutes(app: Express) {
         captions: resolveFulfillmentCaptions(clip, bountyCaptions),
       }
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
+        const url = localCleanDownloadUrl(clip)
+        if (!url) {
+          res.status(404).json({ error: 'Clean media not available locally' })
+          return
+        }
         res.json({
           ok: true,
-          url: localCleanDownloadUrl(clip),
+          url,
           storage: 'local',
           ...fulfillment,
         })

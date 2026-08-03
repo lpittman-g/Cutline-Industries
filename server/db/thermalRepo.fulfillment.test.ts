@@ -40,6 +40,19 @@ describe('resolveFulfillmentCaptions', () => {
       discord: null,
     })
   })
+
+  it('returns nulls when both clip columns and bounty notes are blank', () => {
+    const captions = resolveFulfillmentCaptions(
+      { ai_caption: '', ai_tiktok_caption: '  ', ai_discord_message: null },
+      { x: '   ', tiktok: null },
+    )
+    assert.deepEqual(captions, {
+      social: null,
+      x: null,
+      tiktok: null,
+      discord: null,
+    })
+  })
 })
 
 describe('nextBountyStatusOnQueueRetry', () => {
@@ -58,7 +71,7 @@ describe('localCleanDownloadUrl', () => {
     )
   })
 
-  it('derives folder from watermarked media_url when spike_id is missing', () => {
+  it('rewrites watermarked media_url to clean sibling under spike folder', () => {
     assert.equal(
       localCleanDownloadUrl({
         id: 99,
@@ -66,6 +79,28 @@ describe('localCleanDownloadUrl', () => {
         media_url: '/thermal-media/clips/7/heat_clip_wm.mp4',
       }),
       '/thermal-media/clips/7/heat_clip.mp4',
+    )
+  })
+
+  it('maps absolute local thermal_media paths from s3_clean_url', () => {
+    assert.equal(
+      localCleanDownloadUrl({
+        spike_id: null,
+        s3_clean_url: '/workspace/thermal_media/clips/3/heat_clip.mp4',
+      }),
+      '/thermal-media/clips/3/heat_clip.mp4',
+    )
+  })
+
+  it('returns null when no local path can be derived', () => {
+    assert.equal(
+      localCleanDownloadUrl({
+        id: 99,
+        spike_id: null,
+        media_url: null,
+        s3_clean_url: 's3://bucket/clips/1/clean.mp4',
+      }),
+      null,
     )
   })
 })
