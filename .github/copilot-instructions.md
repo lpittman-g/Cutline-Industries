@@ -6,7 +6,7 @@ Keep workstreams separate — [docs/WORKSTREAMS.md](../docs/WORKSTREAMS.md):
 
 | Stream | Agent | Scope |
 |--------|--------|--------|
-| **A** | `@thermal` | Gaming YouTube / Thermal Mission Control |
+| **A** | `@thermal` | On-site **Cutline Industries** / Thermal Mission Control |
 | **B** | `@voice-print` | Print / Cursor MCP / Application Card |
 
 ## Voice Print (Workstream B)
@@ -22,7 +22,9 @@ When the user says **`print`**:
 
 **Apps matrix:** [tools/voice-print/APPS.md](../tools/voice-print/APPS.md) — cloud/mobile cannot reach the HP; phone uses LAN web UI.
 
-## Thermal (Workstream A)
+## Thermal (Workstream A) — on-site Cutline Industries
+
+**Site brand:** Cutline Industries (`cutline-industries.studio`). **Product:** Thermal.
 
 **Copilot:** use custom agent **`@thermal`** (`.github/agents/thermal.agent.md`).
 

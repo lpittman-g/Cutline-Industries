@@ -14,10 +14,10 @@ export function PublicShell() {
     <div className="public-shell">
       <header className="public-nav">
         <Link to="/" className="brand public-brand">
-          <div className="brand-mark thermal-mark">T</div>
+          <div className="brand-mark thermal-mark">C</div>
           <div className="brand-text">
-            <strong>THERMAL</strong>
-            <span>heat → shorts → cash</span>
+            <strong>CUTLINE INDUSTRIES</strong>
+            <span>Thermal · heat → shorts → cash</span>
           </div>
         </Link>
         <nav className="public-nav-links">
@@ -43,7 +43,7 @@ export function PublicShell() {
         <Outlet />
       </main>
       <footer className="public-footer">
-        <p>Thermal · stream heat into monetized Shorts</p>
+        <p>Cutline Industries · Thermal on cutline-industries.studio</p>
         <p>
           <a href="mailto:lpittman@cutline-industries.studio">lpittman@cutline-industries.studio</a>
         </p>

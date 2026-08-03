@@ -8,11 +8,11 @@ export function LandingPage() {
       <section className="hero thermal-hero">
         <div className="hero-media thermal-heat" aria-hidden="true" />
         <div className="hero-inner">
-          <p className="hero-brand">THERMAL</p>
+          <p className="hero-brand">CUTLINE INDUSTRIES</p>
           <h1 className="hero-headline">Turn live stream heat into instant revenue.</h1>
           <p className="hero-support">
-            Chat spikes become Shorts in seconds — unlocks for streamers, bounty clips for fans, ad
-            packs for indie game studios.
+            Thermal converts chat spikes into Shorts in seconds — unlocks for streamers, bounty clips
+            for fans, ad packs for indie game studios.
           </p>
           <div className="hero-actions">
             <a className="btn btn-primary" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
