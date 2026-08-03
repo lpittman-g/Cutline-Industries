@@ -52,11 +52,16 @@ Claim CTA → POST /api/checkout/session
 
 ### Stripe env
 
+Full guide: [`docs/STRIPE.md`](./STRIPE.md) — separate Test and Live credentials.
+
 ```bash
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...   # stripe listen --forward-to localhost:8787/api/stripe/webhook
+STRIPE_WEBHOOK_SECRET=whsec_...
+# Production webhook: https://cutline-industries.studio/api/stripe/webhook
+# Local: stripe listen --forward-to localhost:8787/api/stripe/webhook
 THERMAL_PUBLIC_URL=http://127.0.0.1:5173
-# Optional: STRIPE_PRICE_GATEWAY, STRIPE_PRICE_BOUNTY
+# Optional Price IDs: STRIPE_PRICE_GATEWAY ($15), STRIPE_PRICE_BOUNTY ($50)
+# npm run stripe:setup-prices
 ```
 
 Without `STRIPE_SECRET_KEY`, checkout returns 503; seed/demo UI still loads.
@@ -112,7 +117,7 @@ Statuses: `prospect` → `sample_sent` → `active` (or `cancelled`).
 ### Stripe env (retainer)
 
 ```bash
-STRIPE_PRICE_RETAINER=price_...   # optional recurring Price
+STRIPE_PRICE_RETAINER=price_...   # recurring Price — see docs/STRIPE.md
 # STRIPE_RETAINER_AMOUNT_CENTS=75000
 ```
 

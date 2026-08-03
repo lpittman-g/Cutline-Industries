@@ -18,6 +18,7 @@
     "ai:pipeline:once": "tsx server/aiAutopilot.ts --once",
     "auth:youtube": "tsx server/youtubeAuth.ts",
     "db:migrate": "tsx server/db/migrate.ts",
+    "stripe:setup-prices": "tsx scripts/stripe-setup-prices.ts",
     "start": "concurrently -k \"npm:api\" \"npm:dev\""
   },
   "dependencies": {

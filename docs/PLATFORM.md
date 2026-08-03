@@ -113,7 +113,7 @@ Copy `.env.example` → `.env`. Key variables:
 | Secret | Used by |
 |--------|---------|
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | S3 media uploads |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | Checkout + fulfillment ([`docs/STRIPE.md`](./STRIPE.md)) |
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
@@ -151,3 +151,4 @@ We do **not** use Apple Developer / APNs for agent approvals.
 - GitHub: https://github.com/lpittman-g/Cutline-Industries
 - Staging: Amplify app `dlbg4dsrs0mjb` (us-east-2)
 - Domain: cutline-industries.studio
+- Stripe setup: [`docs/STRIPE.md`](./STRIPE.md)
