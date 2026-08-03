@@ -75,8 +75,11 @@ Surfaces (Cursor desktop · Cloud · Phone Ops)
 |--------|--------|---------|
 | `phone-approval-lite` | `.cursor/mcp.json.example` | Device approval via ntfy |
 | `voice-print` | same | **`print`** in chat → HP OfficeJet |
+| `openaiDeveloperDocs` | same | Live OpenAI platform docs |
 
-Requires **Cursor on your PC** for MCP (not mobile cloud chat).
+Requires **Cursor on your PC** for local MCP (LAN tools). `openaiDeveloperDocs` is HTTP and works wherever egress allows.
+
+**OpenAI Developers plugin:** install on desktop via Settings → Plugins → paste `https://github.com/openai/openai-developers-for-cursor`. Full guide: [OPENAI-DEVELOPERS-PLUGIN.md](OPENAI-DEVELOPERS-PLUGIN.md).
 
 ## Copilot optional?
 
@@ -113,6 +116,7 @@ See [VOICE-PRINT-PHONE.md](VOICE-PRINT-PHONE.md).
 
 ## Related
 
+- [OPENAI-DEVELOPERS-PLUGIN.md](OPENAI-DEVELOPERS-PLUGIN.md) — OpenAI Docs MCP + Cursor plugin
 - [AI-APPLICATION-CARD-BLUEPRINT.md](AI-APPLICATION-CARD-BLUEPRINT.md) — responsible AI card + print HTML
 - [PLATFORM.md](PLATFORM.md)
 - [THERMAL-MISSION-CONTROL.md](THERMAL-MISSION-CONTROL.md)

@@ -22,6 +22,12 @@ Restart Cursor. MCP gives you:
 
 - **phone-approval-lite** — push approve/deny to iPhone (ntfy)
 - **voice-print** — type **`print`** in chat → HP OfficeJet
+- **openaiDeveloperDocs** — live OpenAI platform documentation
+
+### OpenAI Developers plugin (desktop)
+
+Settings → Plugins → paste `https://github.com/openai/openai-developers-for-cursor` → Install.
+Details: [docs/OPENAI-DEVELOPERS-PLUGIN.md](../docs/OPENAI-DEVELOPERS-PLUGIN.md). Portable skills live in [`skills/`](skills/).
 
 ### Rules (already in repo)
 

@@ -47,12 +47,17 @@ npm run verify         # lint + typecheck + test (SynthLang loop)
 
 Stripe webhook must stay registered **before** `express.json()` in `server/api.ts`.
 
+## OpenAI docs / API setup
+
+Prefer Cursor + [docs/OPENAI-DEVELOPERS-PLUGIN.md](../docs/OPENAI-DEVELOPERS-PLUGIN.md). MCP server `openaiDeveloperDocs` is in `.mcp.json` / `.vscode/mcp.json`. Skills: `.cursor/skills/openai-*`.
+
 ## Repo tools
 
 | Tool | Purpose |
 |------|---------|
 | `tools/voice-print` | IPP print to HP OfficeJet via MCP `print` |
 | `tools/phone-approval-lite` | ntfy + web device approval |
+| `openaiDeveloperDocs` MCP | Live OpenAI docs (`developers.openai.com/mcp`) |
 | Thermal Mission Control | `npm run start` — API `:8787`, UI `:5173` |
 | SynthLang CI | `.github/workflows/synthlang-pipeline.yml` |
 | Google Workspace / YouTube | `server/googleCloud.ts`, `GOOGLE_CLOUD_PROJECT` |
