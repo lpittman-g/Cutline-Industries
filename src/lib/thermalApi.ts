@@ -20,6 +20,9 @@ export type ThermalClip = {
   tier: string
   price_usd?: string
   sale_amount_cents?: number | null
+  ai_caption?: string | null
+  autopilot_status?: string | null
+  autopilot_error?: string | null
 }
 
 export type DashboardSummary = {

@@ -72,6 +72,16 @@ export function ClipsPage() {
                     {clip.status} · {tierPriceLabel(clip.tier)}
                     {clip.sale_amount_cents ? ` · sold ${formatUsd(clip.sale_amount_cents)}` : ''}
                   </p>
+                  {clip.autopilot_status && (
+                    <p className={clip.autopilot_status === 'failed' ? 'chip warn' : 'chip ready'}>
+                      AI autopilot: {clip.autopilot_status}
+                    </p>
+                  )}
+                  {clip.ai_caption && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                      {clip.ai_caption}
+                    </p>
+                  )}
                   <div className="btn-row">
                     {video && (
                       <button type="button" className="btn" onClick={() => setPlaying(clip.id)}>

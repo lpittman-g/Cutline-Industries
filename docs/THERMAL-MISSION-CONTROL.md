@@ -171,12 +171,36 @@ AUTH_BOOTSTRAP_ADMIN_EMAIL=lpittman@cutline-industries.studio
 
 If AWS variables are blank, the pipeline falls back to local `thermal_media/`.
 
+## Step 7 (implemented): AI heat autopilot
+
+After FFmpeg + S3 completes, `thermalHeatAutopilot.ts`:
+
+1. Generates factual Discord, X/TikTok, and developer pitch copy with OpenAI
+2. Falls back to deterministic copy when `OPENAI_API_KEY` is absent
+3. Sends the $15 live-unlock drop to Discord
+4. Queues separate X and TikTok bounty posts (manual/API publish remains)
+5. Looks up a matching developer contact and sends the sample pitch with Gmail
+6. Persists generated copy, completion state, and errors on the clip
+
+No cron “keep alive” task is used. The existing Twitch monitor polls for live
+heat while the API process is running; production uptime belongs to the hosting
+service.
+
+```bash
+OPENAI_API_KEY=...
+OPENAI_THERMAL_MODEL=gpt-4o-mini
+GOOGLE_WORKSPACE_SENDER_EMAIL=lpittman@cutline-industries.studio
+```
+
+Google OAuth must be re-authorized once with the `gmail.send` scope before the
+pitch email step can send. Missing credentials skip/fail that channel without
+losing the rendered clip.
+
 ## Next steps
 
-7. Production Twitch/Kick credentials and Kick adapter
-8. Discord bot OAuth + automated live delivery
-9. X/TikTok publishing APIs
-10. Pitch generator + email automation
+8. Production Twitch credentials and Kick adapter
+9. Discord bot OAuth (webhook delivery is implemented)
+10. X/TikTok publishing APIs (queue + copy are implemented)
 
 ```bash
 # Postgres

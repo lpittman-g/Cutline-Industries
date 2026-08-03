@@ -154,7 +154,7 @@ export function BountyPage() {
             {item.clipStatus === 'claimed' ? (
               <span className="chip ok">Claimed</span>
             ) : item.clipId ? (
-              <Link className="btn btn-primary" to={`/checkout/${item.clipId}`}>
+              <Link className="btn btn-primary" to={`/checkout/${item.clipId}?tier=bounty`}>
                 Unlock Clean 4K Version
               </Link>
             ) : (

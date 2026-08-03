@@ -11,6 +11,7 @@ import {
 } from './db/thermalRepo.ts'
 import type { PlannedClip } from './planClips.ts'
 import { s3Configured, uploadThermalClipAssets } from './s3Storage.ts'
+import { processHeatSpikeAutopilot } from './thermalHeatAutopilot.ts'
 
 const MEDIA_ROOT = path.join(ROOT, 'thermal_media')
 const DEFAULT_VOD = path.join(ROOT, 'inbox', 'cutline_test_vod.mp4')
@@ -104,7 +105,20 @@ export async function processHeatSpikeToClip(spikeId: number) {
     })
 
     await updateHeatSpikeStatus(spikeId, 'rendered')
-    return { spike, clip, paths: { cleanPath, watermarkedPath, thumbPath } }
+    const autopilot = await processHeatSpikeAutopilot({
+      spikeId,
+      clipId: clip.id,
+      streamerId: spike.streamer_id ?? 0,
+      streamerName: username,
+      gameTitle: game,
+      msgPerMin: spike.msg_per_min,
+      clipTitle: plan.title,
+      previewUrl: mediaUrl,
+    }).catch((err) => ({
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    }))
+    return { spike, clip, autopilot, paths: { cleanPath, watermarkedPath, thumbPath } }
   } catch (err) {
     await updateHeatSpikeStatus(spikeId, 'failed')
     throw err

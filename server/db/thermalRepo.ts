@@ -207,6 +207,39 @@ export async function insertClip(input: {
   return mapClip(res.rows[0])
 }
 
+export async function updateClipAutopilot(input: {
+  clipId: number
+  status: 'processing' | 'completed' | 'failed'
+  caption?: string
+  discordMessage?: string
+  devEmailSubject?: string
+  devEmailBody?: string
+  error?: string | null
+}) {
+  await getPool().query(
+    `UPDATE clips SET
+       autopilot_status = $2,
+       ai_caption = COALESCE($3, ai_caption),
+       ai_discord_message = COALESCE($4, ai_discord_message),
+       ai_dev_email_subject = COALESCE($5, ai_dev_email_subject),
+       ai_dev_email_body = COALESCE($6, ai_dev_email_body),
+       autopilot_error = $7,
+       autopilot_completed_at =
+         CASE WHEN $2 IN ('completed', 'failed') THEN CURRENT_TIMESTAMP
+              ELSE autopilot_completed_at END
+     WHERE id = $1`,
+    [
+      input.clipId,
+      input.status,
+      input.caption ?? null,
+      input.discordMessage ?? null,
+      input.devEmailSubject ?? null,
+      input.devEmailBody ?? null,
+      input.error ?? null,
+    ],
+  )
+}
+
 export async function listClips(limit = 100): Promise<ClipWithMeta[]> {
   const res = await getPool().query(
     `SELECT * FROM clips ORDER BY created_at DESC LIMIT $1`,
@@ -230,7 +263,7 @@ export async function getClipById(id: number): Promise<ClipWithMeta | null> {
 
 export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
   const res = await getPool().query(
-    `SELECT DISTINCT c.*
+    `SELECT DISTINCT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
      FROM clips c
      INNER JOIN bounty_posts bp ON bp.clip_id = c.id
      WHERE c.media_url IS NOT NULL AND bp.status = 'posted'
@@ -287,10 +320,6 @@ export async function queueBountyPost(input: {
   platform: BountyPlatform
   notes?: string
 }): Promise<BountyPostWithClip> {
-  await getPool().query(
-    `UPDATE clips SET tier = 'bounty', price_usd = 50.00 WHERE id = $1`,
-    [input.clip_id],
-  )
   const res = await getPool().query(
     `INSERT INTO bounty_posts (clip_id, platform, status, notes)
      VALUES ($1, $2, 'queued', $3)
@@ -442,6 +471,21 @@ export async function listRetainers(limit = 100): Promise<RetainerRow[]> {
     [limit],
   )
   return res.rows.map(mapRetainer)
+}
+
+export async function findRetainerByGameTitle(gameTitle: string): Promise<RetainerRow | null> {
+  const res = await getPool().query(
+    `SELECT * FROM retainers
+     WHERE LOWER(game_title) = LOWER($1)
+       AND contact_email IS NOT NULL
+       AND status <> 'cancelled'
+     ORDER BY
+       CASE status WHEN 'prospect' THEN 1 WHEN 'sample_sent' THEN 2 ELSE 3 END,
+       created_at DESC NULLS LAST
+     LIMIT 1`,
+    [gameTitle],
+  )
+  return res.rows[0] ? mapRetainer(res.rows[0]) : null
 }
 
 export async function getRetainerById(id: number): Promise<RetainerRow | null> {

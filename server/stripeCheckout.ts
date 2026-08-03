@@ -38,7 +38,7 @@ function getStripe() {
 }
 
 function tierForClip(clipTier: string | undefined, override?: string): SaleTier {
-  if (override === 'gateway' || override === 'bounty' || override === 'retainer') return override
+  if (override === 'gateway' || override === 'bounty') return override
   if (clipTier === 'bounty') return 'bounty'
   return 'gateway'
 }
@@ -100,8 +100,8 @@ export async function createCheckoutSession(input: {
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: lineItems,
-    success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1`,
-    cancel_url: `${base}/checkout/${clip.id}?canceled=1`,
+    success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1&tier=${tier}`,
+    cancel_url: `${base}/checkout/${clip.id}?canceled=1&tier=${tier}`,
     client_reference_id: String(clip.id),
     metadata: {
       clip_id: String(clip.id),
