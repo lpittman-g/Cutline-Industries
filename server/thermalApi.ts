@@ -6,6 +6,7 @@ import {
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  ClipAlreadyClaimedError,
   getBountyCaptionNotes,
   getClipById,
   localCleanDownloadUrl,
@@ -225,6 +226,15 @@ export function registerThermalRoutes(app: Express) {
       })
       res.json({ ok: true, ...session })
     } catch (err) {
+      if (err instanceof ClipAlreadyClaimedError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'clip_already_claimed',
+          clipId: err.clipId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
@@ -241,6 +251,17 @@ export function registerThermalRoutes(app: Express) {
         return
       }
       const result = await confirmCheckoutSession(sessionId)
+      if (!result.ok && result.status === 'clip_already_claimed') {
+        res.status(409).json({
+          error: 'Clip already claimed by another checkout session',
+          code: 'clip_already_claimed',
+          clipId: result.clipId,
+          existingSessionId: result.existingSessionId,
+          refunded: result.refunded,
+          saleStatus: result.saleStatus,
+        })
+        return
+      }
       res.json(result)
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
