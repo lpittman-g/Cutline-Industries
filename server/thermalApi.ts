@@ -12,6 +12,7 @@ import {
   resolveFulfillmentCaptions,
   getRetainerById,
   insertRetainer,
+  investorMetrics,
   isRetainerStatus,
   listBountyClips,
   listBountyPosts,
@@ -268,6 +269,14 @@ export function registerThermalRoutes(app: Express) {
       totalRevenueCents: revenueCents,
       pendingOutreaches: pendingBounty + pendingRetainers,
       stripeMode: stripeModeLabel(),
+    })
+  })
+
+  app.get('/api/dashboard/investor', ...ops, async (_req, res) => {
+    res.json({
+      metrics: await investorMetrics(),
+      stripeMode: stripeModeLabel(),
+      generatedAt: new Date().toISOString(),
     })
   })
 

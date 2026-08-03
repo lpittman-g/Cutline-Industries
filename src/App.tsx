@@ -19,6 +19,7 @@ import { ClipsPage } from './pages/app/ClipsPage'
 import { BountyBoardPage } from './pages/app/BountyBoardPage'
 import { DevCrmPage } from './pages/app/DevCrmPage'
 import { RevenuePage } from './pages/app/RevenuePage'
+import { InvestorsPage } from './pages/app/InvestorsPage'
 import { StudioPage } from './pages/StudioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { PacksPage } from './pages/PacksPage'
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="bounty" element={<BountyBoardPage />} />
           <Route path="developers" element={<DevCrmPage />} />
           <Route path="revenue" element={<RevenuePage />} />
+          <Route path="investors" element={<InvestorsPage />} />
         </Route>
 
         {/* Cutline processing / legacy Creator OS (engine tools) */}

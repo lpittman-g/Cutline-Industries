@@ -831,6 +831,69 @@ export async function revenueByTier(): Promise<Record<SaleTier, number>> {
   return out
 }
 
+export type InvestorMetrics = {
+  streamersTotal: number
+  streamersLive: number
+  heatSpikesTotal: number
+  clipsTotal: number
+  clipsSold: number
+  salesCompleted: number
+  totalRevenueCents: number
+  revenueByTier: Record<SaleTier, number>
+  activeRetainers: number
+  mrrCents: number
+  bountyPosts: number
+  bountyViews: number
+  bountyEngagement: number
+}
+
+/** One-shot aggregate of the traction KPIs an investor screen needs. */
+export async function investorMetrics(): Promise<InvestorMetrics> {
+  const pool = getPool()
+  const [streamers, heat, clips, sales, retainers, bounty, byTier] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE is_live)::int AS live FROM streamers`,
+    ),
+    pool.query(`SELECT COUNT(*)::int AS total FROM heat_spikes`),
+    pool.query(
+      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE status = 'claimed')::int AS sold FROM clips`,
+    ),
+    pool.query(
+      `SELECT COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+              COALESCE(SUM(amount_cents) FILTER (WHERE status = 'completed'), 0)::int AS revenue
+       FROM sales`,
+    ),
+    pool.query(
+      `SELECT COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+              COALESCE(SUM(monthly_mrr) FILTER (WHERE status = 'active'), 0)::float AS mrr
+       FROM retainers`,
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS posts,
+              COALESCE(SUM(views), 0)::int AS views,
+              COALESCE(SUM(engagement), 0)::int AS engagement
+       FROM bounty_posts`,
+    ),
+    revenueByTier(),
+  ])
+
+  return {
+    streamersTotal: streamers.rows[0]?.total ?? 0,
+    streamersLive: streamers.rows[0]?.live ?? 0,
+    heatSpikesTotal: heat.rows[0]?.total ?? 0,
+    clipsTotal: clips.rows[0]?.total ?? 0,
+    clipsSold: clips.rows[0]?.sold ?? 0,
+    salesCompleted: sales.rows[0]?.completed ?? 0,
+    totalRevenueCents: sales.rows[0]?.revenue ?? 0,
+    revenueByTier: byTier,
+    activeRetainers: retainers.rows[0]?.active ?? 0,
+    mrrCents: Math.round((retainers.rows[0]?.mrr ?? 0) * 100),
+    bountyPosts: bounty.rows[0]?.posts ?? 0,
+    bountyViews: bounty.rows[0]?.views ?? 0,
+    bountyEngagement: bounty.rows[0]?.engagement ?? 0,
+  }
+}
+
 export type RevenueTimelinePoint = { date: string; amountCents: number; tier: SaleTier }
 
 export async function revenueTimeline(days = 30): Promise<RevenueTimelinePoint[]> {

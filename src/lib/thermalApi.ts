@@ -40,6 +40,28 @@ export type DashboardSummary = {
   stripeMode?: string
 }
 
+export type InvestorMetrics = {
+  streamersTotal: number
+  streamersLive: number
+  heatSpikesTotal: number
+  clipsTotal: number
+  clipsSold: number
+  salesCompleted: number
+  totalRevenueCents: number
+  revenueByTier: { gateway: number; bounty: number; retainer: number }
+  activeRetainers: number
+  mrrCents: number
+  bountyPosts: number
+  bountyViews: number
+  bountyEngagement: number
+}
+
+export type InvestorMetricsResponse = {
+  metrics: InvestorMetrics
+  stripeMode?: string
+  generatedAt: string
+}
+
 export type ThermalSale = {
   id: number
   clip_id: number | null
@@ -132,6 +154,10 @@ export function fetchDashboardSummary() {
 
 export function fetchClips() {
   return getJson<{ clips: ThermalClip[] }>('/api/clips')
+}
+
+export function fetchInvestorMetrics() {
+  return getJson<InvestorMetricsResponse>('/api/dashboard/investor')
 }
 
 export function fetchBountyPosts() {
