@@ -125,6 +125,10 @@ Console links:
 - [S3 buckets](https://s3.console.aws.amazon.com/s3/buckets)
 - [CloudFront distributions](https://console.aws.amazon.com/cloudfront/v4/home#/distributions)
 
+### AWS CLI (ops / bootstrap)
+
+Local bucket helpers (`scripts/aws/media_bootstrap.sh`) need **AWS CLI v2**. Follow [docs/AWS-CLI.md](./AWS-CLI.md) (prerequisites → install → `aws configure`). Official guide: [Getting started with the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). The Thermal API uses the SDK and does not require the CLI.
+
 ### Production secrets
 
 | Secret | Used by |
