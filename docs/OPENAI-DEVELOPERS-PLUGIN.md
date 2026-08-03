@@ -23,8 +23,10 @@ Team / Enterprise marketplace import (optional):
 | Docs skill | `.cursor/skills/openai-docs/` |
 | API key skill | `.cursor/skills/openai-platform-api-key/` |
 | Troubleshooting skill | `.cursor/skills/openai-api-troubleshooting/` |
+| Agents SDK skill | `.cursor/skills/agents-sdk/` |
+| ChatGPT Apps skills | `.cursor/skills/build-chatgpt-app/`, `chatgpt-app-submission/` |
 
-Copy `.cursor/mcp.json.example` → `~/.cursor/mcp.json` (merge if you already have servers), then restart Cursor.
+Copy `.cursor/mcp.json.example` → `~/.cursor/mcp.json` (merge if you already have servers), then restart Cursor. Cloud agents already use the vendored skills + HTTP Docs MCP when egress allows.
 
 Docs MCP URL: `https://developers.openai.com/mcp?source=cursor`
 
