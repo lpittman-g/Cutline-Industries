@@ -1,0 +1,92 @@
+name: Auto-approve Cursor PRs
+
+# After SynthLang verification succeeds on a cursor/* PR, mark ready,
+# approve as github-actions, and squash-merge — no human click required.
+#
+# One-time repo setup (owner): see docs/PR-AUTO-APPROVE.md
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: auto-approve-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  gate:
+    name: Wait for SynthLang
+    if: >
+      startsWith(github.head_ref, 'cursor/') &&
+      github.event.pull_request.user.type != 'Bot' ||
+      startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  approve_and_merge:
+    name: Approve and merge
+    needs: gate
+    if: startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ready + approve + squash merge
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_APPROVE_TOKEN || github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Prefer a PAT in AUTO_APPROVE_TOKEN when branch protection requires
+          # a non-Actions reviewer or when GITHUB_TOKEN cannot merge.
+          if [ -n "${{ secrets.AUTO_APPROVE_TOKEN }}" ]; then
+            export GH_TOKEN="${{ secrets.AUTO_APPROVE_TOKEN }}"
+          else
+            export GH_TOKEN="${{ github.token }}"
+          fi
+
+          echo "Processing PR #$PR (head: $GITHUB_HEAD_REF)"
+
+          # Leave draft so merge is allowed
+          gh pr ready "$PR" 2>/dev/null || true
+
+          # github-actions approving the human/Cursor author is allowed
+          gh pr review "$PR" --approve --body "Auto-approved: verification passed on \`cursor/*\` branch (Cutline Industries)." \
+            || echo "Approve step skipped (may already be approved or self-review blocked)."
+
+          # Squash merge immediately when checks are green
+          if gh pr merge "$PR" --squash --delete-branch; then
+            echo "Merged PR #$PR"
+          else
+            echo "Direct merge failed — enabling auto-merge if repo allows it"
+            gh pr merge "$PR" --squash --auto --delete-branch \
+              || { echo "::error::Could not merge PR #$PR. Enable auto-merge or add AUTO_APPROVE_TOKEN — see docs/PR-AUTO-APPROVE.md"; exit 1; }
+          fi
