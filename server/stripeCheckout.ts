@@ -185,7 +185,9 @@ export async function createRetainerCheckoutSession(input: {
       if (!row) throw new Error('Retainer not found')
       const retainer = row as unknown as RetainerRow
 
-      if (retainer.status === 'active' && retainer.stripe_subscription_id) {
+      // Match activateRetainer / canActivateRetainer: once active, only the
+      // winning checkout session may proceed — do not require subscription_id.
+      if (retainer.status === 'active') {
         throw new RetainerAlreadyActiveError(
           retainer.id,
           retainer.stripe_checkout_session_id ?? null,

@@ -48,6 +48,7 @@ import { requireRole } from './auth/authMiddleware.ts'
 import { createPrivateDownloadUrl, s3Configured } from './s3Storage.ts'
 import { startTwitchMonitor, syncStreamersFromTwitch } from './twitchMonitor.ts'
 import { ROOT } from './youtubeAuth.ts'
+import { getMissionControlStatus } from './missionControlStatus.ts'
 
 const expressStaticThermal = express.static(path.join(ROOT, 'thermal_media'), {
   fallthrough: true,
@@ -82,6 +83,10 @@ export function registerThermalRoutes(app: Express) {
   const ops = [dbRequired, requireRole('operator')] as const
 
   app.use('/thermal-media', expressStaticThermal)
+
+  app.get('/api/mission-control/status', requireRole('operator'), async (_req, res) => {
+    res.json(await getMissionControlStatus())
+  })
 
   app.get('/api/streamers', dbRequired, async (_req, res) => {
     await seedStreamersIfEmpty(defaultVod)
