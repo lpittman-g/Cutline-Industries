@@ -20,6 +20,8 @@ token.json
 !.env.example
 autopilot-state.json
 autopilot.log
+ai-pipeline-state.json
+ai-pipeline.log
 leads.json
 
 # Autopilot media / outputs
@@ -29,8 +31,13 @@ shorts_out/*
 !shorts_out/.gitkeep
 uploaded/*
 !uploaded/.gitkeep
+ai_out/
 *.zip
 cutline-industries-web.zip
+
+# Tool secrets
+tools/*/secrets/
+tools/*/.env
 
 # Editor directories and files
 .vscode/*

@@ -1,0 +1,20 @@
+{
+  "name": "phone-approval-apple",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Apple APNs phone-approval MCP — agent requests, iPhone push-approves",
+  "bin": {
+    "phone-approval-mcp": "./mcp/server.js"
+  },
+  "scripts": {
+    "mcp": "node ./mcp/server.js",
+    "register-device": "node ./server/register-device.js",
+    "send-test": "node ./server/send-test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.25.0"
+  }
+}

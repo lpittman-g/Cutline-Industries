@@ -1,10 +1,30 @@
-# Cutline Industries
+# Cutline Industries Platform
 
-Gaming media studio app: cut VODs into YouTube Shorts, build packs, and run Autopilot uploads.
+**Thermal** — turn live stream heat into monetized Shorts.
 
-**Domain:** [cutline-industries.studio](https://cutline-industries.studio)
+Public site: [cutline-industries.studio](https://cutline-industries.studio)  
+Company email: lpittman@cutline-industries.studio
 
-## Quick start
+This repository is the **full Cutline platform monorepo**: the Thermal web app, AI video pipeline, YouTube Autopilot, agent tools, and business docs.
+
+## Repository layout
+
+```
+├── src/                  # Thermal public site + Mission Control UI (/app)
+├── server/               # Express API, Autopilot, AI video pipeline
+├── scripts/              # Trend radar, AI scripts, AWS helpers, SynthLang verify
+├── synthlang/            # Autonomous CI/autopilot config
+├── tools/
+│   ├── phone-approval-apple/   # iPhone APNs MCP for agent sign-in approvals
+│   └── email-to-cursor/        # Email → Cursor Cloud Agent bridge
+├── docs/                 # Product, pipeline, and business documentation
+├── infra/                # AWS skeleton configs
+└── db/                   # Thermal Postgres migrations
+```
+
+See [`docs/PLATFORM.md`](docs/PLATFORM.md) for the full architecture.
+
+## Quick start (Thermal web + API)
 
 ```bash
 npm install
@@ -12,40 +32,74 @@ cp .env.example .env
 npm run start          # UI + API
 ```
 
-- Studio UI: http://127.0.0.1:5173  
-- API: http://127.0.0.1:8787  
+| URL | Purpose |
+|-----|---------|
+| http://127.0.0.1:5173 | Thermal site + `/os` command center |
+| http://127.0.0.1:8787 | Cutline API |
+
+## Content pipelines
+
+### VOD Autopilot (gameplay → Shorts)
+
+Drop `.mp4` files in `inbox/`:
 
 ```bash
-npm run autopilot      # watch inbox/ and process forever
-npm run autopilot:once # process inbox once
+npm run autopilot          # continuous
+npm run autopilot:once     # one pass
 ```
+
+### AI video pipeline (Thermal project Shorts)
+
+Creates faceless Shorts about Thermal/Cutline — no VOD required:
+
+```bash
+pip install edge-tts
+npm run ai:pipeline:once
+npm run ai:pipeline
+```
+
+Public audience input: `/feedback` on the site.
+
+Docs: [`docs/AI-VIDEO-PIPELINE.md`](docs/AI-VIDEO-PIPELINE.md)
 
 ## YouTube (one-time)
 
-1. Put OAuth client JSON in `client_secret.json` (Web client with Playground redirect for phone auth).
-2. Enable YouTube Data API v3 on the Google Cloud project.
-3. Add your Gmail as an OAuth **test user**.
-4. Authorize in [OAuth Playground](https://developers.google.com/oauthplayground/) with YouTube upload scopes.
-5. Paste `refresh_token` into **Autopilot** in the UI (or save `token.json`).
+1. OAuth client → `client_secret.json`
+2. Enable **YouTube Data API v3** on Google Cloud project `utility-mapper-504300-d6`
+3. Authorize via [OAuth Playground](https://developers.google.com/oauthplayground/) → save `token.json`
+4. AI Shorts default to **public** (`CUTLINE_AI_PRIVACY=public`)
 
-Default uploads are **private** until you set `CUTLINE_PRIVACY=public` in `.env`.
+## Agent tools
 
-## Connect cutline-industries.studio
+| Tool | Path | Purpose |
+|------|------|---------|
+| Phone approval MCP | `tools/phone-approval-apple/` | iPhone push for sign-in approvals |
+| Email → Cursor | `tools/email-to-cursor/` | Email triggers Cloud Agent runs |
+| SynthLang CI | `.github/workflows/synthlang-pipeline.yml` | Lint, typecheck, test, build |
 
-1. Deploy the Vite `dist/` site (Vercel, Netlify, or AWS S3+CloudFront).
-2. In Squarespace Domains for `cutline-industries.studio`, point DNS:
-   - **A/CNAME** records your host provides, **or**
-   - Use the host’s “add domain” flow and verify
-3. Keep Google Workspace email on Squarespace/Google as already set up.
+## Deploy
 
-## Folders
+- **CI:** GitHub Actions on push to `main`
+- **Staging:** AWS Amplify (`staging.*.amplifyapp.com`)
+- **Production domain:** `cutline-industries.studio` (Route 53 + Amplify — DNS cutover pending)
 
-| Path | Purpose |
-|---|---|
-| `inbox/` | Drop raw VODs here for Autopilot |
-| `shorts_out/` | Cut vertical Shorts |
-| `uploaded/` | Files moved after successful upload |
+## Business docs
+
+PDFs in [`docs/business/`](docs/business/):
+
+- Cutline Industries Blueprint
+- 4-Week Outreach Plan
+- Stripe Authorization Letter
+
+## Secrets (never commit)
+
+| File | Purpose |
+|------|---------|
+| `.env` | Runtime config |
+| `client_secret.json` | Google OAuth |
+| `token.json` | YouTube refresh token |
+| `tools/*/secrets/` | Apple APNs, device tokens |
 
 ## Brand
 
-Cutline Industries — gaming content, cut to ship.
+**Cutline Industries** builds **Thermal** — stream heat → Shorts → cash.
