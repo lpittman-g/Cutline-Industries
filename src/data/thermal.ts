@@ -1,5 +1,7 @@
 export const THERMAL = {
   name: 'Thermal',
+  company: 'Cutline Industries',
+  siteUrl: 'https://cutline-industries.studio',
   description:
     'Autonomous real-time media network and web command center that converts stream chat velocity into monetized short-form video content.',
   discordBotCta: 'Add Thermal Bot to Discord',

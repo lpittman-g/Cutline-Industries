@@ -15,8 +15,9 @@ Two different efforts landed in the same Cursor chat (“Gaming youtube channel�
 | Bounty / Stripe / revenue | Thermal Mission Control docs |
 | Public site · Mission Control UI | `src/` |
 | SynthLang CI for the product | `.github/workflows/` |
+| GitHub Copilot mirror (`@thermal`) | `.github/agents/thermal.agent.md`, `.github/instructions/thermal.instructions.md` |
 
-**Resume here** for product work (e.g. Thermal step 4+ media assets, auth, developer CRM).
+**Resume here** for product work (e.g. S3 media persistence, auth + roles).
 
 ---
 

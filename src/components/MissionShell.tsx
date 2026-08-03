@@ -14,10 +14,10 @@ export function MissionShell() {
     <div className="app-shell mission-shell">
       <aside className="sidebar">
         <Link to="/app/dashboard" className="brand" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="brand-mark thermal-mark">T</div>
+          <div className="brand-mark thermal-mark">C</div>
           <div className="brand-text">
-            <strong>THERMAL</strong>
-            <span>mission control</span>
+            <strong>CUTLINE</strong>
+            <span>Thermal mission control</span>
           </div>
         </Link>
         <nav className="nav">
