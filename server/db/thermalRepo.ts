@@ -1,10 +1,11 @@
 import type {
   BountyPlatform,
-  BountyPostStatus,
   BountyPostWithClip,
   ClipRow,
   HeatSpikeRow,
   HeatSpikeStatus,
+  RetainerRow,
+  RetainerStatus,
   SaleRow,
   SaleTier,
   StreamerRow,
@@ -404,7 +405,7 @@ function mapSale(row: Record<string, unknown>): SaleRow {
 }
 
 export async function insertPendingSale(input: {
-  clip_id: number
+  clip_id: number | null
   tier: SaleTier
   amount_cents: number
   stripe_checkout_session_id: string
@@ -423,6 +424,202 @@ export async function insertPendingSale(input: {
     ],
   )
   return mapSale(res.rows[0])
+}
+
+function mapRetainer(row: Record<string, unknown>): RetainerRow {
+  return row as unknown as RetainerRow
+}
+
+const RETAINER_STATUSES: RetainerStatus[] = ['prospect', 'sample_sent', 'active', 'cancelled']
+
+export function isRetainerStatus(value: string): value is RetainerStatus {
+  return RETAINER_STATUSES.includes(value as RetainerStatus)
+}
+
+export async function listRetainers(limit = 100): Promise<RetainerRow[]> {
+  const res = await getPool().query(
+    `SELECT * FROM retainers ORDER BY created_at DESC NULLS LAST, id DESC LIMIT $1`,
+    [limit],
+  )
+  return res.rows.map(mapRetainer)
+}
+
+export async function getRetainerById(id: number): Promise<RetainerRow | null> {
+  const res = await getPool().query(`SELECT * FROM retainers WHERE id = $1`, [id])
+  return res.rows[0] ? mapRetainer(res.rows[0]) : null
+}
+
+export async function insertRetainer(input: {
+  dev_name: string
+  game_title: string
+  monthly_mrr?: number
+  contact_email?: string | null
+  notes?: string | null
+  sample_clip_id?: number | null
+  status?: RetainerStatus
+}): Promise<RetainerRow> {
+  const res = await getPool().query(
+    `INSERT INTO retainers (
+       dev_name, game_title, monthly_mrr, contact_email, notes, sample_clip_id, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [
+      input.dev_name,
+      input.game_title,
+      input.monthly_mrr ?? 750,
+      input.contact_email ?? null,
+      input.notes ?? null,
+      input.sample_clip_id ?? null,
+      input.status ?? 'prospect',
+    ],
+  )
+  return mapRetainer(res.rows[0])
+}
+
+export async function updateRetainer(
+  id: number,
+  input: {
+    status?: RetainerStatus
+    monthly_mrr?: number
+    contact_email?: string | null
+    notes?: string | null
+    sample_clip_id?: number | null
+    stripe_subscription_id?: string | null
+    stripe_checkout_session_id?: string | null
+    dev_name?: string
+    game_title?: string
+  },
+): Promise<RetainerRow | null> {
+  const res = await getPool().query(
+    `UPDATE retainers SET
+       status = COALESCE($2, status),
+       monthly_mrr = COALESCE($3, monthly_mrr),
+       contact_email = COALESCE($4, contact_email),
+       notes = COALESCE($5, notes),
+       sample_clip_id = COALESCE($6, sample_clip_id),
+       stripe_subscription_id = COALESCE($7, stripe_subscription_id),
+       stripe_checkout_session_id = COALESCE($8, stripe_checkout_session_id),
+       dev_name = COALESCE($9, dev_name),
+       game_title = COALESCE($10, game_title),
+       updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      input.status ?? null,
+      input.monthly_mrr ?? null,
+      input.contact_email === undefined ? null : input.contact_email,
+      input.notes === undefined ? null : input.notes,
+      input.sample_clip_id === undefined ? null : input.sample_clip_id,
+      input.stripe_subscription_id === undefined ? null : input.stripe_subscription_id,
+      input.stripe_checkout_session_id === undefined ? null : input.stripe_checkout_session_id,
+      input.dev_name ?? null,
+      input.game_title ?? null,
+    ],
+  )
+  return res.rows[0] ? mapRetainer(res.rows[0]) : null
+}
+
+export async function setRetainerCheckoutSession(retainerId: number, sessionId: string) {
+  await getPool().query(
+    `UPDATE retainers
+     SET stripe_checkout_session_id = $2, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [retainerId, sessionId],
+  )
+}
+
+export async function activateRetainer(input: {
+  retainerId: number
+  stripeCheckoutSessionId: string
+  stripeSubscriptionId?: string | null
+  saleAmountCents: number
+  buyerEmail?: string | null
+}) {
+  await withClient(async (client) => {
+    await client.query(
+      `UPDATE retainers
+       SET status = 'active',
+           stripe_subscription_id = COALESCE($2, stripe_subscription_id),
+           stripe_checkout_session_id = $3,
+           contact_email = COALESCE($4, contact_email),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [
+        input.retainerId,
+        input.stripeSubscriptionId ?? null,
+        input.stripeCheckoutSessionId,
+        input.buyerEmail ?? null,
+      ],
+    )
+    await client.query(
+      `UPDATE sales
+       SET status = 'completed',
+           buyer_email = COALESCE($2, buyer_email),
+           completed_at = CURRENT_TIMESTAMP
+       WHERE stripe_checkout_session_id = $1`,
+      [input.stripeCheckoutSessionId, input.buyerEmail ?? null],
+    )
+  })
+}
+
+export async function retainerPipelineCounts(): Promise<{ status: RetainerStatus; count: number }[]> {
+  const res = await getPool().query(
+    `SELECT status, COUNT(*)::int AS count FROM retainers GROUP BY status`,
+  )
+  const byStatus = new Map<string, number>(
+    res.rows.map((row) => [String(row.status), Number(row.count)]),
+  )
+  return RETAINER_STATUSES.map((status) => ({
+    status,
+    count: byStatus.get(status) ?? 0,
+  }))
+}
+
+export async function countPendingRetainerOutreaches(): Promise<number> {
+  const res = await getPool().query(
+    `SELECT COUNT(*)::int AS n FROM retainers WHERE status IN ('prospect', 'sample_sent')`,
+  )
+  return res.rows[0]?.n ?? 0
+}
+
+export async function seedRetainersIfEmpty() {
+  const count = await getPool().query(`SELECT COUNT(*)::int AS n FROM retainers`)
+  if ((count.rows[0]?.n ?? 0) > 0) return
+
+  const seeds: Array<{
+    dev_name: string
+    game_title: string
+    status: RetainerStatus
+    monthly_mrr: number
+    notes: string
+  }> = [
+    {
+      dev_name: 'Northbark Games',
+      game_title: 'Hollow Paths',
+      status: 'sample_sent',
+      monthly_mrr: 750,
+      notes: 'High-heat variety coverage — sample ad pack sent',
+    },
+    {
+      dev_name: 'Arc Byte',
+      game_title: 'Neon Circuit',
+      status: 'prospect',
+      monthly_mrr: 1250,
+      notes: 'Detected in heat window — awaiting pitch',
+    },
+    {
+      dev_name: 'Saltpixel',
+      game_title: 'Tideforge',
+      status: 'active',
+      monthly_mrr: 2000,
+      notes: 'Monthly TikTok/Shorts wishlist pack',
+    },
+  ]
+
+  for (const s of seeds) {
+    await insertRetainer(s)
+  }
 }
 
 export async function listSales(limit = 100): Promise<SaleRow[]> {
