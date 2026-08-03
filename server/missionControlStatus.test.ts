@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import {
   buildMissionControlStatus,
   type MissionReadinessSnapshot,
+  type MissionRuntimeSnapshot,
 } from './missionControlStatus.ts'
 
 const emptySnapshot: MissionReadinessSnapshot = {
@@ -21,6 +22,23 @@ const emptySnapshot: MissionReadinessSnapshot = {
   googleSender: false,
   googleClient: false,
   googleToken: false,
+}
+
+const runtimeSnapshot: MissionRuntimeSnapshot = {
+  vod: {
+    running: true,
+    hasRun: true,
+    hasError: false,
+    lastRunAt: '2026-08-03T07:00:00.000Z',
+    artifactCount: 3,
+  },
+  ai: {
+    running: false,
+    hasRun: true,
+    hasError: true,
+    lastRunAt: '2026-08-03T06:00:00.000Z',
+    artifactCount: 2,
+  },
 }
 
 describe('buildMissionControlStatus', () => {
@@ -77,5 +95,38 @@ describe('buildMissionControlStatus', () => {
         ?.checks.find((check) => check.label === 'Gateway Price ID')?.required,
       false,
     )
+  })
+
+  it('groups automations by runtime status with safe artifact and launch metadata', () => {
+    const status = buildMissionControlStatus(
+      {
+        ...emptySnapshot,
+        database: true,
+        googleClient: true,
+        googleToken: true,
+      },
+      runtimeSnapshot,
+    )
+
+    assert.equal(status.repositories[0]?.name, 'Cutline-Industries')
+    assert.equal(status.repositories[0]?.automationCount, 4)
+    assert.equal(status.automationSummary.running, 1)
+    assert.equal(status.automationSummary.attention, 1)
+    assert.equal(status.automationSummary.ready, 1)
+    assert.equal(status.automationSummary.external, 1)
+    assert.deepEqual(
+      status.automationGroups
+        .find((group) => group.id === 'running')
+        ?.agents.map((agent) => agent.id),
+      ['vod-autopilot'],
+    )
+
+    const vod = status.automationGroups
+      .flatMap((group) => group.agents)
+      .find((agent) => agent.id === 'vod-autopilot')
+    assert.equal(vod?.run.progress, null)
+    assert.equal(vod?.run.progressState, 'indeterminate')
+    assert.equal(vod?.artifacts[0]?.count, 3)
+    assert.equal(vod?.launch.href, '/os/autopilot')
   })
 })

@@ -64,6 +64,49 @@ export type MissionControlStatus = {
     label: string
     detail: string
   }[]
+  repositories: {
+    id: string
+    owner: string
+    name: string
+    defaultBranch: string
+    href: string
+    automationCount: number
+  }[]
+  automationSummary: {
+    running: number
+    attention: number
+    ready: number
+    external: number
+  }
+  automationGroups: {
+    id: string
+    label: string
+    agents: {
+      id: string
+      name: string
+      repositoryId: string
+      status: 'running' | 'ready' | 'attention' | 'external'
+      summary: string
+      run: {
+        mode: string
+        progress: number | null
+        progressState: 'determinate' | 'indeterminate' | 'external'
+        currentStep: string
+        lastRunAt: string | null
+        hasError: boolean
+      }
+      artifacts: {
+        label: string
+        href: string
+        count: number | null
+      }[]
+      launch: {
+        label: string
+        href: string
+        external: boolean
+      }
+    }[]
+  }[]
   links: {
     id: string
     label: string

@@ -241,7 +241,9 @@ npm run start   # UI + API
 
 ### Mission Control
 
-- **Automation / Progress** — durable implementation map, safe configuration readiness, and PR/CI/Automation links (`/app/mission-control`)
+- **Automation / Progress** — durable implementation map plus repository-grouped
+  agents, run progress, artifact shortcuts, safe configuration readiness, and
+  PR/CI/Automation launch links (`/app/mission-control`)
 - **Streams** — live velocity, **Force heat spike** → real clip
 - **Dashboard** — real heat toast from latest `heat_spikes` row
 - **Clips** — thumbnails + video playback from `/thermal-media/`
@@ -251,6 +253,10 @@ npm run start   # UI + API
 The progress view reads `GET /api/mission-control/status` (operator+) and returns
 only implementation metadata and readiness booleans. It never returns environment
 values, tokens, database URLs, webhook URLs, or credentials.
+
+Runtime cards derive safe state from the existing Thermal heat, VOD Autopilot,
+AI Shorts, and Cursor Automation integrations. They do not start workers or
+duplicate any autopilot module.
 
 ### Media storage
 

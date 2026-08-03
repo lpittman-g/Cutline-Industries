@@ -13,6 +13,19 @@ function checkedAt(value: string) {
     : date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
+function runAt(value: string | null) {
+  if (!value) return 'No completed run yet'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? 'Run time unavailable'
+    : `Last run ${date.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })}`
+}
+
 export function MissionControlPage() {
   const [status, setStatus] = useState<MissionControlStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,6 +129,159 @@ export function MissionControlPage() {
               Checked {checkedAt(status.generatedAt)}
               <small>Auto-refreshes every 30 seconds</small>
             </div>
+          </section>
+
+          <section className="mission-automation-board" aria-labelledby="automation-board-title">
+            <div className="mission-section-head">
+              <div>
+                <span className="mission-eyebrow">Agent operations</span>
+                <h2 id="automation-board-title">Automation board</h2>
+              </div>
+              <div className="mission-agent-totals" aria-label="Automation status totals">
+                <span>
+                  <i className="mission-status-mark running" aria-hidden="true" />
+                  {status.automationSummary.running} running
+                </span>
+                <span>
+                  <i className="mission-status-mark attention" aria-hidden="true" />
+                  {status.automationSummary.attention} attention
+                </span>
+                <span>
+                  <i className="mission-status-mark ready" aria-hidden="true" />
+                  {status.automationSummary.ready} ready
+                </span>
+              </div>
+            </div>
+
+            {status.repositories.length ? (
+              <div className="mission-repositories" aria-label="Repositories">
+                {status.repositories.map((repository) => (
+                  <a href={repository.href} target="_blank" rel="noreferrer" key={repository.id}>
+                    <span className="mission-repo-mark" aria-hidden="true">
+                      CI
+                    </span>
+                    <span>
+                      <small>{repository.owner}</small>
+                      <strong>{repository.name}</strong>
+                    </span>
+                    <span className="mission-repo-meta">
+                      {repository.defaultBranch} · {repository.automationCount} automations
+                    </span>
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="panel empty">No repositories are reporting automation status.</div>
+            )}
+
+            {status.automationGroups.length ? (
+              <div className="mission-agent-groups">
+                {status.automationGroups.map((group) => (
+                  <section className="mission-agent-group" key={group.id}>
+                    <header>
+                      <span className={`mission-status-mark ${group.id}`} aria-hidden="true" />
+                      <h3>{group.label}</h3>
+                      <span>{group.agents.length}</span>
+                    </header>
+                    <div className="mission-agent-list">
+                      {group.agents.length ? (
+                        group.agents.map((agent) => (
+                          <article className="panel mission-agent-card" key={agent.id}>
+                            <div className="mission-agent-card-head">
+                              <span>{agent.run.mode}</span>
+                              <span className={`mission-agent-status ${agent.status}`}>
+                                {agent.status}
+                              </span>
+                            </div>
+                            <h4>{agent.name}</h4>
+                            <p>{agent.summary}</p>
+
+                            <div className="mission-run">
+                              <div>
+                                <strong>{agent.run.currentStep}</strong>
+                                <span>{runAt(agent.run.lastRunAt)}</span>
+                              </div>
+                              {agent.run.progressState === 'external' ? (
+                                <span className="mission-run-external">External telemetry</span>
+                              ) : (
+                                <div
+                                  className={`mission-run-track ${
+                                    agent.run.progressState === 'indeterminate'
+                                      ? 'indeterminate'
+                                      : ''
+                                  }`}
+                                  role="progressbar"
+                                  aria-label={`${agent.name} run progress`}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                  aria-valuenow={
+                                    agent.run.progressState === 'determinate'
+                                      ? (agent.run.progress ?? 0)
+                                      : undefined
+                                  }
+                                >
+                                  <span
+                                    style={
+                                      agent.run.progressState === 'determinate'
+                                        ? { width: `${agent.run.progress ?? 0}%` }
+                                        : undefined
+                                    }
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="mission-artifacts">
+                              <small>Artifacts</small>
+                              {agent.artifacts.map((artifact) =>
+                                artifact.href.startsWith('/') ? (
+                                  <Link to={artifact.href} key={artifact.label}>
+                                    {artifact.label}
+                                    {artifact.count == null ? null : <span>{artifact.count}</span>}
+                                  </Link>
+                                ) : (
+                                  <a
+                                    href={artifact.href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    key={artifact.label}
+                                  >
+                                    {artifact.label}
+                                    {artifact.count == null ? null : <span>{artifact.count}</span>}
+                                  </a>
+                                ),
+                              )}
+                            </div>
+
+                            {agent.launch.external ? (
+                              <a
+                                className="mission-launch"
+                                href={agent.launch.href}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {agent.launch.label} <span aria-hidden="true">↗</span>
+                              </a>
+                            ) : (
+                              <Link className="mission-launch" to={agent.launch.href}>
+                                {agent.launch.label} <span aria-hidden="true">→</span>
+                              </Link>
+                            )}
+                          </article>
+                        ))
+                      ) : (
+                        <div className="mission-agent-empty">No automations in this state.</div>
+                      )}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div className="panel empty">
+                No automation runs were returned. Refresh status or check the API.
+              </div>
+            )}
           </section>
 
           <div className="mission-layout">
