@@ -676,24 +676,30 @@ export async function claimClip(input: {
   })
 }
 
-/** Mark a losing checkout sale refunded after a claim/activate race. Idempotent. */
+/**
+ * Mark a losing checkout sale after a claim/activate race.
+ * Use `refunded` only when Stripe refund/cancel succeeded (or dry-run);
+ * use `failed` when the refund could not be created. Idempotent for terminal rows.
+ */
 export async function markSaleLostClaimRace(input: {
   stripeCheckoutSessionId: string
   stripePaymentIntentId?: string | null
   winningSessionId?: string | null
   refundReason?: string
+  status: 'refunded' | 'failed'
 }): Promise<SaleRow | null> {
   const refundReason = input.refundReason ?? 'clip_already_claimed'
   const res = await getPool().query(
     `UPDATE sales
-     SET status = 'refunded',
-         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-         metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
+     SET status = $2,
+         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
+         metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb
      WHERE stripe_checkout_session_id = $1
-       AND status <> 'refunded'
+       AND status NOT IN ('refunded', 'failed', 'completed')
      RETURNING *`,
     [
       input.stripeCheckoutSessionId,
+      input.status,
       input.stripePaymentIntentId ?? null,
       JSON.stringify({
         lost_claim_race: true,

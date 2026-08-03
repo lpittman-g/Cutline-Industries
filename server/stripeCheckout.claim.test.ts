@@ -21,6 +21,21 @@ describe('stripe lost-claim race handling', () => {
     assert.match(src, /refunds\.create/)
     assert.match(src, /markSaleLostClaimRace/)
     assert.match(src, /CUTLINE_DRY_RUN/)
+    assert.match(src, /isAlreadyRefundedError/)
+    assert.match(src, /status: 'failed'/)
+  })
+
+  it('marks sale after Stripe refund attempt (not before)', () => {
+    const start = src.indexOf('export async function resolveLostClaimRace')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 2500)
+    const tryIdx = body.indexOf('try {')
+    const tryBody = body.slice(tryIdx > 0 ? tryIdx : 0)
+    const refundIdx = tryBody.indexOf('refunds.create')
+    const markIdx = tryBody.indexOf("status: 'refunded'")
+    assert.ok(refundIdx > 0, 'expected refunds.create in resolveLostClaimRace try')
+    assert.ok(markIdx > refundIdx, 'ledger refunded mark must follow Stripe refund')
+    assert.match(body, /status: 'failed'/)
   })
 
   it('acks RetainerAlreadyActiveError in the webhook path', () => {
