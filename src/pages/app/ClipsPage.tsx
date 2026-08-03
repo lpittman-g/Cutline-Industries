@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { fetchClips, mediaUrl, type ThermalClip } from '../../lib/thermalApi'
+import { Link } from 'react-router-dom'
+import {
+  fetchClips,
+  formatUsd,
+  mediaUrl,
+  tierPriceLabel,
+  type ThermalClip,
+} from '../../lib/thermalApi'
 
 export function ClipsPage() {
   const [clips, setClips] = useState<ThermalClip[]>([])
@@ -62,13 +69,21 @@ export function ClipsPage() {
                   <strong>{clip.title ?? `Clip #${clip.id}`}</strong>
                   <p style={{ color: 'var(--muted)', margin: '0.35rem 0' }}>
                     @{clip.streamer_username} · {clip.game} · {clip.duration_sec ?? '?'}s ·{' '}
-                    {clip.status}
+                    {clip.status} · {tierPriceLabel(clip.tier)}
+                    {clip.sale_amount_cents ? ` · sold ${formatUsd(clip.sale_amount_cents)}` : ''}
                   </p>
-                  {video && (
-                    <button type="button" className="btn" onClick={() => setPlaying(clip.id)}>
-                      {playing === clip.id ? 'Hide' : 'Play preview'}
-                    </button>
-                  )}
+                  <div className="btn-row">
+                    {video && (
+                      <button type="button" className="btn" onClick={() => setPlaying(clip.id)}>
+                        {playing === clip.id ? 'Hide' : 'Play preview'}
+                      </button>
+                    )}
+                    {clip.status !== 'claimed' && (
+                      <Link className="btn btn-primary" to={`/checkout/${clip.id}`}>
+                        Claim {formatUsd(clip.tier === 'bounty' ? 5000 : 1500)}
+                      </Link>
+                    )}
+                  </div>
                   {playing === clip.id && video && (
                     <video
                       src={video}

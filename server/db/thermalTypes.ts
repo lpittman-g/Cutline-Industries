@@ -44,6 +44,27 @@ export type ClipRow = {
   thumbnail_url?: string | null
   media_url?: string | null
   tier?: string
+  sale_amount_cents?: number | null
+  claimed_at?: string | null
+  stripe_checkout_session_id?: string | null
+}
+
+export type SaleStatus = 'pending' | 'completed' | 'refunded' | 'failed'
+export type SaleTier = 'gateway' | 'bounty' | 'retainer'
+
+export type SaleRow = {
+  id: number
+  clip_id: number | null
+  tier: SaleTier
+  amount_cents: number
+  currency: string
+  stripe_checkout_session_id: string | null
+  stripe_payment_intent_id: string | null
+  status: SaleStatus
+  buyer_email: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  completed_at: string | null
 }
 
 export type RetainerRow = {
@@ -55,4 +76,4 @@ export type RetainerRow = {
   status: RetainerStatus
 }
 
-export const THERMAL_TABLES = ['streamers', 'heat_spikes', 'clips', 'retainers'] as const
+export const THERMAL_TABLES = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales'] as const

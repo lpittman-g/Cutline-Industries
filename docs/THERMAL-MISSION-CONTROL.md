@@ -26,9 +26,47 @@ Twitch monitor (or manual trigger)
 | `/api/clips/top` | GET | Top clips |
 | `/api/dashboard/summary` | GET | Heat toast + KPIs |
 
-Stubs (steps 2–6): `/api/sales`, `/api/bounty-posts`, `/api/developers/*`, auth routes.
+## Step 2 (implemented): Stripe Checkout + sales ledger
 
-### Setup
+### Flow
+
+```
+Claim CTA → POST /api/checkout/session
+  → Stripe Hosted Checkout
+  → webhook checkout.session.completed (or /api/checkout/confirm on success redirect)
+  → clips.status = claimed, sales row completed
+  → Revenue dashboard + timeline update
+```
+
+### API routes (added)
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/clips/:id` | GET | Single clip for checkout page |
+| `/api/bounty/clips` | GET | Public bounty board clips |
+| `/api/checkout/session` | POST | Create Stripe Checkout (`{ clipId }`) |
+| `/api/checkout/confirm` | POST | Confirm session after redirect (dev fallback) |
+| `/api/stripe/webhook` | POST | Stripe webhook (raw body) |
+| `/api/sales` | GET | Sales ledger |
+| `/api/dashboard/revenue-timeline` | GET | Revenue by day + tier |
+
+### Stripe env
+
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...   # stripe listen --forward-to localhost:8787/api/stripe/webhook
+THERMAL_PUBLIC_URL=http://127.0.0.1:5173
+# Optional: STRIPE_PRICE_GATEWAY, STRIPE_PRICE_BOUNTY
+```
+
+Without `STRIPE_SECRET_KEY`, checkout returns 503; seed/demo UI still loads.
+
+## Next steps
+
+3. Bounty post URLs + claim flow
+4. S3 persistence (optional)
+5. Auth + roles
+6. Developer CRM + retainers
 
 ```bash
 # Postgres
@@ -60,10 +98,4 @@ npm run start   # UI + API
 
 Clips stored under `thermal_media/clips/{spikeId}/` and served at `/thermal-media/...`.
 
-## Next steps
-
-2. Stripe Checkout (gateway $15, bounty $50)
-3. Bounty post URLs + claim flow
-4. S3 persistence (optional)
-5. Auth + roles
-6. Developer CRM + retainers
+### Setup
