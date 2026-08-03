@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Cutline AWS media bootstrap helpers (run where AWS CLI is configured)
+# Cutline AWS media bootstrap helpers (run where AWS CLI v2 is configured).
+# Setup: docs/AWS-CLI.md — https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 set -euo pipefail
 
 BUCKET="${CUTLINE_MEDIA_BUCKET:-cutline-media-$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo demo)}"
