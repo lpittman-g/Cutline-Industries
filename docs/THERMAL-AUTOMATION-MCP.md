@@ -15,10 +15,10 @@ Create or rename the private automation in the Cursor dashboard only.
 |---------|--------|----------|
 | Name | **Cutline Industries — Thermal Autopilot** | still `cutline industries` |
 | Id | keep existing | [`26c7e362-8eff-11f1-a7d1-d6b4613131ce`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce) |
-| Trigger | PR label `thermal-autopilot` **added only** | still fires on PR lifecycle (opened/closed), not label-added-only |
-| Model | Grok 4.5 · High · Fast | matches |
+| Trigger | PR label `thermal-autopilot` **added only** | still fires on PR lifecycle (opened/synchronize/closed), not label-added-only — **dashboard fix required** |
+| Model | Grok 4.5 · High · Fast | matches (`cursor-grok-4.5-high-fast`) |
 | Visibility | private | matches |
-| Memory | **disabled** | still enabled (automation memory available at runtime) |
+| Memory | **disabled** | still enabled (automation memory available at runtime) — **dashboard fix required** |
 | GitHub label | `thermal-autopilot` | exists on the repo |
 
 ### Dashboard steps
