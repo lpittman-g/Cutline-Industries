@@ -41,6 +41,7 @@ Send Cutline docs to the **HP OfficeJet Pro 9120** (`192.168.1.157`) straight fr
 | Can't reach the URL | Check firewall / Windows Defender is allowing port 8791 |
 | Printer offline | Visit `http://192.168.1.157` on your LAN to verify the printer |
 | Mic not working | Use Chrome or Safari; allow microphone permission when prompted |
+| Print hangs on Windows (HTML→PDF) | On the PC: `cd tools/voice-print && npm run browsers` — set `VOICE_PRINT_EDGE_PATH` / raise `VOICE_PRINT_PDF_TIMEOUT_MS` in `.env` |
 
 ## Related
 

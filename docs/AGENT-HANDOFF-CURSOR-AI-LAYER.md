@@ -74,7 +74,7 @@ Runtime host is **Cursor**. GitHub is only for repos/PRs/Actions.
 
 ## Suggested next work (pick up here)
 
-1. Harden voice-print HTML→PDF on Windows (Edge path, timeouts).
+1. ~~Harden voice-print HTML→PDF on Windows (Edge path, timeouts).~~ — done: multi-path Edge/Chrome discovery, temp `--user-data-dir`, `VOICE_PRINT_PDF_TIMEOUT_MS`, `npm run browsers`.
 2. ~~Improve Cutline Ops `/mobile.html`~~ — done: ◀/▶ cycle, ⋯ sheet (refresh · AI Card · list · Mission Control).
 3. Keep Application Card + COPILOT-VS-CURSOR in sync when MCP/rules change.
 4. Optional: MCP App / interactive card **only if** host supports it — Cursor mobile still cannot inject toolbar buttons.
@@ -88,6 +88,8 @@ Runtime host is **Cursor**. GitHub is only for repos/PRs/Actions.
 git pull origin main
 cd tools/voice-print && npm install && npm run list
 # Expect ai-application-card-blueprint in catalog
+npm run browsers
+npm run to-pdf -- docs/ai-application-card-blueprint.html   # HTML→PDF dry-run (no printer)
 ```
 
 Docs to read first: `CURSOR-PRIMARY.md` → `COPILOT-VS-CURSOR.md` → `AI-APPLICATION-CARD-BLUEPRINT.md` → `tools/voice-print/README.md`

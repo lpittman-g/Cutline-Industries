@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "print": "node print.js",
-    "list": "node print.js --list"
+    "list": "node print.js --list",
+    "browsers": "node print.js --browsers",
+    "to-pdf": "node print.js --to-pdf"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
