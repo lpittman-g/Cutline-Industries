@@ -38,14 +38,14 @@ export const HOOK_PATTERNS: HookPattern[] = [
 ]
 
 export const HASHTAG_SETS: Record<GameNiche, string[]> = {
-  fps: ['#FPS', '#Clutch', '#GamingShorts', '#Ranked', '#AimLabs', '#Esports'],
-  moba: ['#MOBA', '#GamingShorts', '#Macro', '#Outplay', '#Ranked', '#Esports'],
-  survival: ['#Survival', '#BaseBuild', '#GamingShorts', '#Crafting', '#Hardcore'],
-  rpg: ['#RPG', '#BossFight', '#GamingShorts', '#BuildGuide', '#Lore'],
-  racing: ['#Racing', '#SimRacing', '#GamingShorts', '#LapTime', '#Crash'],
-  fighting: ['#FGC', '#Combos', '#GamingShorts', '#Punish', '#Tournament'],
-  cozy: ['#CozyGames', '#ChillGameplay', '#GamingShorts', '#Aesthetic', '#Relax'],
-  variety: ['#Gaming', '#GamingShorts', '#Variety', '#Clips', '#Streamer'],
+  fps: ['#FPS', '#Clutch', '#Shorts', '#Ranked', '#AimLabs', '#Esports'],
+  moba: ['#MOBA', '#Shorts', '#Macro', '#Outplay', '#Ranked', '#Esports'],
+  survival: ['#Survival', '#BaseBuild', '#Shorts', '#Crafting', '#Hardcore'],
+  rpg: ['#RPG', '#BossFight', '#Shorts', '#BuildGuide', '#Lore'],
+  racing: ['#Racing', '#SimRacing', '#Shorts', '#LapTime', '#Crash'],
+  fighting: ['#FGC', '#Combos', '#Shorts', '#Punish', '#Tournament'],
+  cozy: ['#Cozy', '#Chill', '#Shorts', '#Aesthetic', '#Relax'],
+  variety: ['#Creators', '#Shorts', '#Variety', '#Clips', '#Streamer'],
 }
 
 export const CTA_OPTIONS = [
@@ -63,7 +63,7 @@ export const PUBLISH_CHECKLIST = [
   { id: 'captions', label: 'Burned-in or auto captions on' },
   { id: 'loop', label: 'Ending loops cleanly into the start' },
   { id: 'title', label: 'Title under 70 chars, outcome-first' },
-  { id: 'hashtags', label: '3–5 hashtags, niche + GamingShorts' },
+  { id: 'hashtags', label: '3–5 niche hashtags' },
   { id: 'cta', label: 'Spoken or on-screen subscribe CTA after the payoff' },
   { id: 'end', label: 'End screen / related Short pinned' },
   { id: 'cross', label: 'Same cut posted to TikTok + Reels same day' },

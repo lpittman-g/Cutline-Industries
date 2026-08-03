@@ -461,7 +461,7 @@ app.get('/api/blueprint', async (_req, res) => {
       ok: true,
       brand: 'Cutline Industries',
       mission:
-        'Gaming VOD → Shorts factory → audience → cash. Stripe first, YPP second.',
+        'Cutline Industries platform → terminal → ops → revenue.',
       doc: 'docs/CUTLINE-BLUEPRINT.md',
       youtube: {
         authorized: google.oauth.authorized,

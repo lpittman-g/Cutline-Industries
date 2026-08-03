@@ -24,7 +24,7 @@ export const THERMAL_TIERS = [
   {
     tier: 3,
     target: 'Indie Game Developers',
-    description: 'Recurring monthly ad packs built from creator gameplay to drive Steam wishlists.',
+    description: 'Recurring monthly ad packs built from creator moments to drive product wishlists.',
     pricing: '$750 – $2,500/mo Retainer',
   },
 ] as const

@@ -25,7 +25,7 @@ export interface BlueprintAction {
 }
 
 export const BLUEPRINT_MISSION =
-  'Gaming VOD → Shorts factory → audience → cash. Stripe first, YPP second. Use Google, AWS, Replit, and GPT as leverage — never as competitors.'
+  'Cutline Industries platform → terminal → ops → revenue. Use Google, AWS, Replit, and GPT as leverage — never as competitors.'
 
 export const BLUEPRINT_PILLARS: BlueprintPillar[] = [
   {
@@ -150,15 +150,15 @@ export const BLUEPRINT_OFFERS = [
 
 export const BLUEPRINT_NEXT_ACTIONS: BlueprintAction[] = [
   {
-    id: 'rename-channel',
-    title: 'Rename YouTube channel → Cutline Industries',
+    id: 'domain-cutover',
+    title: 'Point cutline-industries.studio DNS at Amplify',
     owner: 'you',
     eta: 'Today',
     status: 'now',
   },
   {
-    id: 'first-vod',
-    title: 'Drop first VOD in inbox/ and run Autopilot once (private)',
+    id: 'terminal-smoke',
+    title: 'Smoke-test /terminal → Command Center on the live domain',
     owner: 'both',
     eta: 'Today',
     status: 'now',

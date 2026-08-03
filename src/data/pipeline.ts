@@ -23,7 +23,7 @@ export const CONTENT_PIPELINE: PipelineStep[] = [
     title: 'Trend radar',
     owner: 'Replit',
     detail:
-      'Python/Node workers scan gaming news, Reddit, and YouTube API for rising topics, keywords, and competitor gaps.',
+      'Python/Node workers scan news, Reddit, and public APIs for rising topics, keywords, and competitor gaps.',
     outputs: ['topic queue', 'SEO keyword list', 'trend score'],
   },
   {
@@ -32,7 +32,7 @@ export const CONTENT_PIPELINE: PipelineStep[] = [
     title: 'Script & concepting',
     owner: 'AI',
     detail:
-      'Generate video ideas, title hooks, SEO keywords, and full 8–10 minute scripts tailored to trending gaming topics/tutorials.',
+      'Generate video ideas, title hooks, SEO keywords, and full 8–10 minute scripts tailored to trending topics and tutorials.',
     outputs: ['script.md', 'titles[]', 'hooks[]', 'chapters[]'],
   },
   {

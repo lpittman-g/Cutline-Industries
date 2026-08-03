@@ -7,7 +7,7 @@ export function OutreachPage() {
   const [leads, setLeads] = useState(DEMO_LEADS)
   const [filter, setFilter] = useState<'all' | Lead['stage']>('all')
   const [draft, setDraft] = useState(
-    `Hey {{name}} — I cut gaming Shorts packs for brands like yours.\nI can send a free 5-clip sample concept for {{company}} this week.\nWant the pack or a 15-min call?`,
+    `Hey {{name}} — Cutline Industries ships clip packs for brands like yours.\nI can send a free 5-clip sample concept for {{company}} this week.\nWant the pack or a 15-min call?`,
   )
 
   const visible = useMemo(

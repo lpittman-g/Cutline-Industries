@@ -40,7 +40,7 @@ export function PlaybookPage() {
         <section className="panel panel-pad">
           <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>One-time (you)</h3>
           <ol style={{ color: 'var(--muted)', paddingLeft: '1.1rem', lineHeight: 1.7 }}>
-            <li>Create your YouTube channel on the Google account you want to grow.</li>
+            <li>Connect the Google account you want for optional distribution uploads.</li>
             <li>Enable YouTube Data API v3 in Google Cloud (same account).</li>
             <li>
               Create a <strong>Web</strong> OAuth client with redirect{' '}

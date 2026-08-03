@@ -1,30 +1,29 @@
 # Cutline workstreams — keep them separate
 
-Two different efforts landed in the same Cursor chat (“Gaming youtube channel”). **Do not mix them.**
+Two efforts mixed in one Cursor chat. **Do not mix them.** This repo is **Cutline Industries** — not a gaming YouTube channel project.
 
 ---
 
-## Workstream A — Gaming YouTube / Thermal (this project)
+## Workstream A — Cutline Industries product platform
 
-**Owner agent:** Gaming youtube channel (Thermal Mission Control)
+**Owner agent:** Cutline Industries (this repo’s product work)
 
 | In scope | Paths / notes |
 |----------|----------------|
-| Thermal heat → clip → distribute → pay → retain | `server/`, `db/migrations/`, `/app/*` |
-| VOD autopilot · AI Shorts · YouTube | `scripts/`, `docs/AI-VIDEO-PIPELINE.md` |
-| Bounty / Stripe / revenue | Thermal Mission Control docs |
-| Public site · Mission Control UI | `src/` |
-| SynthLang CI for the product | `.github/workflows/` |
+| Public site · Mission Control · Creator OS | `src/` |
+| API, heat/clip pipeline, revenue tools | `server/`, `db/migrations/` |
+| Autopilot / AI media pipeline (optional tooling) | `scripts/`, `docs/AI-VIDEO-PIPELINE.md` |
+| SynthLang CI | `.github/workflows/` |
 
-**Resume here** for product work (e.g. Thermal step 4+ media assets, auth, developer CRM).
+**Resume here** for product, domain, and platform work.
 
 ---
 
-## Workstream B — Cursor AI layer + tools (unrelated to the gaming channel)
+## Workstream B — Cursor AI layer + tools
 
 **Owner agent:** Separate Cursor agent — see [AGENT-HANDOFF-CURSOR-AI-LAYER.md](AGENT-HANDOFF-CURSOR-AI-LAYER.md)
 
-**Conversation boundary:** In the Gaming youtube channel chat, everything **from this line down was Workstream B** (not the YouTube project):
+**Conversation boundary:** Everything from the **mcp-server-excel Agent Task** line downward in the earlier mixed chat was Workstream B:
 
 - GitHub Copilot / Agent Tasks on **mcp-server-excel**  
   `https://github.com/lpittman-g/mcp-server-excel/tasks/6a19f017-ea16-4a62-a5c4-4d0cb077641f`
@@ -50,7 +49,7 @@ Two different efforts landed in the same Cursor chat (“Gaming youtube channel�
 
 | If the user is talking about… | Work in… |
 |-------------------------------|----------|
-| Clips, bounty, Twitch heat, Shorts, Stripe for clips | **Workstream A** |
+| Site, domain, Mission Control, OS terminal, API, revenue | **Workstream A** |
 | Print, Copilot, Cursor MCP, Application Card, Excel MCP autopilot | **Workstream B** |
 
 When in doubt, ask which workstream — do not fold B into A’s PRs or vice versa.

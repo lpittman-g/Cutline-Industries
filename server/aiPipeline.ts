@@ -32,7 +32,7 @@ const PRIVACY = (process.env.CUTLINE_AI_PRIVACY || process.env.CUTLINE_PRIVACY |
   | 'public'
 const DRY_RUN = process.env.CUTLINE_DRY_RUN === '1' || process.env.CUTLINE_DRY_RUN === 'true'
 const MAX_SHORTS_PER_RUN = Number(process.env.CUTLINE_AI_MAX_SHORTS || 3)
-const SUBREDDIT = process.env.CUTLINE_TREND_SUBREDDIT || 'gaming'
+const SUBREDDIT = process.env.CUTLINE_TREND_SUBREDDIT || 'technology'
 
 export type TrendTopic = {
   id: string

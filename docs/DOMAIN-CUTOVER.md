@@ -12,7 +12,7 @@ On Squarespace Domains you will see setup steps (often 2/4). For this repo:
 1. Skip “Create a Squarespace website.”
 2. Connect the domain to **Amplify** (or Route 53 → Amplify) via DNS.
 
-After cutover, the live site is this repo’s build: Thermal product pages, Mission Control (`/app`), and the project terminal (`/terminal` → `/os/command`).
+After cutover, the live site is this repo’s build: Cutline Industries landing, Mission Control (`/app`), and the project terminal (`/terminal` → `/os/command`).
 
 ## Option A — Point Squarespace DNS at Amplify (simplest)
 

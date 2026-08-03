@@ -6,23 +6,23 @@ export function WorkPage() {
       <div className="page-head">
         <div>
           <h1>Work</h1>
-          <p>Cutline cuts gaming VODs into Shorts and content packs ready for YouTube.</p>
+          <p>Cutline Industries packages media workflows into shippable clips and content packs.</p>
         </div>
       </div>
 
       <section className="public-section panel panel-pad">
-        <h2 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Shorts factory</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Clip factory</h2>
         <p style={{ color: 'var(--muted)' }}>
-          Drop a VOD. Get a batch of vertical clips with titles, hooks, and tags — built for daily
-          posting, not one-off edits.
+          Drop source media. Get a batch of vertical clips with titles, hooks, and tags — built for
+          daily shipping, not one-off edits.
         </p>
       </section>
 
       <section className="public-section panel panel-pad">
         <h2 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>Sponsor packs</h2>
         <p style={{ color: 'var(--muted)' }}>
-          Spark, Surge, and Eclipse packages for brands that want gaming Shorts with clear delivery
-          and usage terms.
+          Spark, Surge, and Eclipse packages for brands that want clip packs with clear delivery and
+          usage terms.
         </p>
         <Link className="btn btn-primary" to="/deals">
           View packages

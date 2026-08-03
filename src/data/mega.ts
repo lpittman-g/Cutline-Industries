@@ -45,7 +45,7 @@ export const PLATFORM_MODULES: PlatformModule[] = [
   {
     id: 'studio',
     name: 'Studio',
-    blurb: 'Mark clutch moments, score clips, generate gaming-native copy.',
+    blurb: 'Mark clutch moments, score clips, generate ship-ready copy.',
     path: '/os/studio',
     status: 'live',
     group: 'create',
@@ -157,7 +157,7 @@ export const DEMO_LEADS: Lead[] = [
     name: 'Ava Chen',
     company: 'Nova Controllers',
     title: 'Partnerships Lead',
-    niche: 'Gaming hardware',
+    niche: 'Creator hardware',
     score: 92,
     stage: 'call',
     notes: 'Wants 12 Shorts pack around new pad launch.',
@@ -190,7 +190,7 @@ export const DEMO_LEADS: Lead[] = [
     niche: 'Beverage',
     score: 79,
     stage: 'new',
-    notes: 'Cold list — gaming lifestyle fit.',
+    notes: 'Cold list — creator lifestyle fit.',
   },
   {
     id: 'l5',
@@ -249,25 +249,25 @@ export const MONEY_RAILS = [
 
 export const ADS_HEADLINES = [
   'Cutline Industries',
-  'Gaming Content Studio',
-  'YouTube Shorts Autopilot',
-  'Cut VODs Into Shorts',
-  'Ship Shorts Faster',
-  'Grow Your Gaming Channel',
-  'Shorts Built To Convert',
-  'Gaming Content, Cut Fast',
+  'Command Terminal',
+  'Creator Operating System',
+  'Ship Media Faster',
+  'Mission Control',
+  'Cutline Platform',
+  'Ops Built To Ship',
+  'Media Tools, Cut Clean',
 ]
 
 export const ADS_DESCRIPTIONS = [
-  'Turn gaming VODs into Shorts fast. Cutline helps you post, grow, and monetize.',
-  'Cutline Industries cuts gameplay into Shorts and longform ready for YouTube ads.',
-  'From VOD to Shorts on Autopilot. Built for gaming creators who need volume.',
-  'Gaming media studio for YouTube growth—Shorts, packs, and monetization tools.',
+  'Cutline Industries — platform, terminal, and operator tools under one brand.',
+  'Command center, Mission Control, and creator workflows at cutline-industries.studio.',
+  'Ship media products with Cutline Industries tooling — not a channel brand.',
+  'Creator OS and operator surfaces for Cutline Industries.',
 ]
 
 export const MEGA_NORTH_STAR = {
   brand: 'Cutline Industries',
   domain: 'cutline-industries.studio',
-  promise: 'Gaming media studio — VODs cut into YouTube Shorts that ship.',
-  tagline: 'Gaming content, cut to ship.',
+  promise: 'Platform, terminal, and ops for shipping media products.',
+  tagline: 'Cutline Industries — built to ship.',
 }

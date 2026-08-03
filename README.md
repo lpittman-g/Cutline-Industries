@@ -1,11 +1,11 @@
 # Cutline Industries Platform
 
-**Thermal** — turn live stream heat into monetized Shorts.
+**Cutline Industries** — platform, command terminal, and operator tools.
 
 Public site: [cutline-industries.studio](https://cutline-industries.studio)  
 Company email: lpittman@cutline-industries.studio
 
-This repository is the **full Cutline platform monorepo**: the Thermal web app, AI video pipeline, YouTube Autopilot, agent tools, and business docs.
+This repository is the **Cutline Industries monorepo**: public site, Mission Control, Creator OS, agent tools, and business docs. It is **not** a gaming YouTube channel project.
 
 ## Repository layout
 
@@ -25,7 +25,7 @@ This repository is the **full Cutline platform monorepo**: the Thermal web app, 
 
 See [`docs/PLATFORM.md`](docs/PLATFORM.md) for the full architecture.
 
-**Workstreams** (keep separate): [`docs/WORKSTREAMS.md`](docs/WORKSTREAMS.md) — A = Gaming/Thermal · B = Cursor AI layer / print / Excel MCP.
+**Workstreams** (keep separate): [`docs/WORKSTREAMS.md`](docs/WORKSTREAMS.md) — A = Cutline Industries product · B = Cursor AI layer / print / Excel MCP.
 
 ## Quick start (Thermal web + API)
 
@@ -43,7 +43,7 @@ npm run start          # UI + API
 
 ## Content pipelines
 
-### VOD Autopilot (gameplay → Shorts)
+### VOD Autopilot (optional media tooling)
 
 Drop `.mp4` files in `inbox/`:
 
@@ -52,9 +52,9 @@ npm run autopilot          # continuous
 npm run autopilot:once     # one pass
 ```
 
-### AI video pipeline (Thermal project Shorts)
+### AI video pipeline (optional)
 
-Creates faceless Shorts about Thermal/Cutline — no VOD required:
+Creates faceless Shorts about Cutline Industries — no VOD required:
 
 ```bash
 pip install edge-tts
@@ -114,4 +114,4 @@ AI Application Card (Cursor primary): [`docs/AI-APPLICATION-CARD-BLUEPRINT.md`](
 
 ## Brand
 
-**Cutline Industries** builds **Thermal** — stream heat → Shorts → cash.
+**Cutline Industries** — platform · terminal · ops.
