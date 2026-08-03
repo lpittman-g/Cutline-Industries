@@ -1,6 +1,6 @@
 # Agent tools
 
-Standalone tools that extend Cursor Cloud Agents for Cutline operations.
+**Use Cursor for all repo work** — [`.cursor/README.md`](../.cursor/README.md) · [`docs/CURSOR-PRIMARY.md`](../docs/CURSOR-PRIMARY.md). Copilot configs are optional mirrors.
 
 ## Phone approval — **Cutline lite (default)**
 
@@ -50,18 +50,9 @@ Kept in repo for reference only. Use **phone-approval-lite** instead.
 
 ---
 
-## Voice Print — Cursor + Copilot (unified)
+## Voice Print (optional)
 
-Say **`print`** in chat on PC, or use **`@voice-print`** in Copilot. Phone: LAN web UI.
-
-| App | Setup |
-|-----|--------|
-| Cursor / Copilot / CLI | [APPS.md](voice-print/APPS.md) |
-| Copilot custom agent | [@voice-print](../.github/agents/voice-print.agent.md) |
-
-```bash
-cd tools/voice-print && npm install
-```
+Local PC only — chat **`print`**. See [voice-print/README.md](voice-print/README.md).
 
 ---
 

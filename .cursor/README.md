@@ -1,0 +1,46 @@
+# Cursor — primary AI for this repo
+
+**You do not need GitHub Copilot** for Cutline work. Open this repo in **Cursor** (desktop for MCP + LAN tools; cloud for PRs and code).
+
+## One-time setup
+
+```bash
+npm install
+cp .env.example .env
+```
+
+### MCP (local Cursor on your PC)
+
+Copy [`.cursor/mcp.json.example`](mcp.json.example) → `~/.cursor/mcp.json`, then:
+
+```bash
+cd tools/phone-approval-lite && npm install
+cd ../voice-print && npm install
+```
+
+Restart Cursor. MCP gives you:
+
+- **phone-approval-lite** — push approve/deny to iPhone (ntfy)
+- **voice-print** — type **`print`** in chat → HP OfficeJet
+
+### Rules (already in repo)
+
+| Rule | Purpose |
+|------|---------|
+| [`rules/cutline-primary.mdc`](rules/cutline-primary.mdc) | General repo agent — always on |
+| [`rules/voice-print.mdc`](rules/voice-print.mdc) | Chat command **`print`** |
+
+## What to use instead of Copilot
+
+| Copilot | Cursor equivalent |
+|---------|-----------------|
+| Copilot Chat | **Cursor chat** (Agent mode) |
+| `@voice-print` agent | **`print`** + voice-print MCP + rule |
+| `.github/copilot-instructions.md` | **`.cursor/rules/cutline-primary.mdc`** |
+| Copilot cloud task | **Cursor Cloud Agent** (this repo) |
+| `.vscode/mcp.json` | **`.cursor/mcp.json`** |
+
+## Docs
+
+- [docs/CURSOR-PRIMARY.md](../docs/CURSOR-PRIMARY.md) — full guide
+- [docs/COPILOT-ARCHITECTURE.md](../docs/COPILOT-ARCHITECTURE.md) — stack diagram (Cursor vs Copilot)

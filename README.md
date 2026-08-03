@@ -70,11 +70,16 @@ Docs: [`docs/AI-VIDEO-PIPELINE.md`](docs/AI-VIDEO-PIPELINE.md)
 3. Authorize via [OAuth Playground](https://developers.google.com/oauthplayground/) → save `token.json`
 4. AI Shorts default to **public** (`CUTLINE_AI_PRIVACY=public`)
 
-## Agent tools
+## Agent tools (Cursor primary)
+
+**Setup:** [`.cursor/README.md`](.cursor/README.md) · [`docs/CURSOR-PRIMARY.md`](docs/CURSOR-PRIMARY.md)
+
+Open this repo in **Cursor** — Copilot/VS Code optional.
 
 | Tool | Path | Purpose |
 |------|------|---------|
-| Phone approval | `tools/phone-approval-lite/` | ntfy push + `/approve` — **no Apple Developer** |
+| Phone approval | `tools/phone-approval-lite/` | ntfy push + `/approve` — MCP in Cursor |
+| Voice print | `tools/voice-print/` | Chat **`print`** → HP OfficeJet (local PC) |
 | Email → Cursor | `tools/email-to-cursor/` | Email triggers Cloud Agent runs |
 | SynthLang CI | `.github/workflows/synthlang-pipeline.yml` | Lint, typecheck, test, build |
 
