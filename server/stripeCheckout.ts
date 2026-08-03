@@ -327,7 +327,11 @@ export async function confirmCheckoutSession(sessionId: string) {
 
 export function stripeModeLabel() {
   if (!stripeConfigured()) return 'mock'
-  if (process.env.STRIPE_WEBHOOK_SECRET?.trim()) return 'live'
+  const key = process.env.STRIPE_SECRET_KEY?.trim() ?? ''
+  if (key.startsWith('sk_live_') || key.startsWith('rk_live_') || key.startsWith('rkcs_live_')) {
+    return 'live'
+  }
+  if (process.env.STRIPE_WEBHOOK_SECRET?.trim()) return 'test+webhook'
   return 'checkout-only'
 }
 

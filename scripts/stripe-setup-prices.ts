@@ -83,7 +83,11 @@ async function main() {
     process.exit(1)
   }
 
-  const mode = key.startsWith('sk_live_') ? 'live' : key.startsWith('sk_test_') ? 'test' : 'unknown'
+  const mode = key.startsWith('sk_live_')
+    ? 'live'
+    : key.startsWith('sk_test_') || key.startsWith('rkcs_test_') || key.startsWith('rk_test_')
+      ? 'test'
+      : 'unknown'
   console.log(`Stripe mode: ${mode}`)
   console.log('')
 

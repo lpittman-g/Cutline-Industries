@@ -19,6 +19,10 @@
     "auth:youtube": "tsx server/youtubeAuth.ts",
     "db:migrate": "tsx server/db/migrate.ts",
     "stripe:setup-prices": "tsx scripts/stripe-setup-prices.ts",
+    "stripe:cli": "stripe",
+    "stripe:sandbox": "stripe sandbox create --email lpittman@cutline-industries.studio --non-interactive",
+    "stripe:listen": "stripe listen --events checkout.session.completed --forward-to localhost:8787/api/stripe/webhook",
+    "stripe:trigger": "stripe trigger checkout.session.completed",
     "start": "concurrently -k \"npm:api\" \"npm:dev\""
   },
   "dependencies": {
@@ -38,6 +42,7 @@
     "stripe": "^22.4.0"
   },
   "devDependencies": {
+    "@stripe/cli": "^1.45.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
