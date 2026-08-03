@@ -5,6 +5,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
+  type S3ClientConfig,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
@@ -12,24 +13,32 @@ function bucket() {
   return process.env.AWS_S3_BUCKET_NAME?.trim() || ''
 }
 
+function region() {
+  return process.env.AWS_REGION?.trim() || ''
+}
+
+function explicitCredentials() {
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim()
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim()
+  if (!accessKeyId || !secretAccessKey) return undefined
+  return { accessKeyId, secretAccessKey }
+}
+
+/**
+ * S3 is configured when bucket + region are set. Credentials come from
+ * explicit access keys (local/dev) or the default provider chain (IAM role
+ * on EC2/ECS/Lambda/Amplify in production). Prefer IAM roles in production.
+ */
 export function s3Configured() {
-  return Boolean(
-    bucket() &&
-      process.env.AWS_REGION?.trim() &&
-      process.env.AWS_ACCESS_KEY_ID?.trim() &&
-      process.env.AWS_SECRET_ACCESS_KEY?.trim(),
-  )
+  return Boolean(bucket() && region())
 }
 
 function client() {
   if (!s3Configured()) throw new Error('AWS S3 storage is not configured')
-  return new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-  })
+  const config: S3ClientConfig = { region: region() }
+  const credentials = explicitCredentials()
+  if (credentials) config.credentials = credentials
+  return new S3Client(config)
 }
 
 function contentType(filePath: string) {
@@ -43,7 +52,7 @@ function contentType(filePath: string) {
 function publicUrl(key: string) {
   const cdn = process.env.AWS_CLOUDFRONT_DOMAIN?.trim().replace(/\/$/, '')
   if (cdn) return `${cdn}/${key}`
-  return `https://${bucket()}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+  return `https://${bucket()}.s3.${region()}.amazonaws.com/${key}`
 }
 
 export async function uploadFile(input: {

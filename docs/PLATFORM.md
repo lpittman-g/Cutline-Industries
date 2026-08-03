@@ -107,12 +107,29 @@ Copy `.env.example` → `.env`. Key variables:
 - Clean masters stay private; paid buyers receive 15-minute presigned URLs
 - Preview MP4 + thumbnail use `AWS_CLOUDFRONT_DOMAIN` when configured
 - Never commit AWS, Stripe, or OpenAI keys; inject them as deployment secrets
+- Prefer an **IAM role** on the host (EC2/ECS/Lambda/Amplify) instead of permanent access keys
+
+### Clip storage env
+
+| Variable | Kind | Notes |
+|----------|------|-------|
+| `AWS_ACCESS_KEY_ID` | secret | Local/dev only; omit when using an IAM role |
+| `AWS_SECRET_ACCESS_KEY` | secret | Local/dev only; omit when using an IAM role |
+| `AWS_REGION` | config | e.g. `us-east-1` |
+| `AWS_S3_BUCKET_NAME` | config | recommended: `thermal-video-clips` |
+| `AWS_CLOUDFRONT_DOMAIN` | config (optional) | CDN base URL for previews + thumbs |
+
+Console links:
+
+- [Create IAM user / access key](https://console.aws.amazon.com/iam/home#/users)
+- [S3 buckets](https://s3.console.aws.amazon.com/s3/buckets)
+- [CloudFront distributions](https://console.aws.amazon.com/cloudfront/v4/home#/distributions)
 
 ### Production secrets
 
 | Secret | Used by |
 |--------|---------|
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | S3 media uploads |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional) | S3 media uploads when no IAM role |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth |
