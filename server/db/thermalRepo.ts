@@ -552,6 +552,60 @@ export class ClipAlreadyClaimedError extends Error {
   }
 }
 
+/**
+ * Attach a Checkout Session to an unclaimed clip under row lock.
+ * Rejects if another buyer already claimed between session create and attach.
+ */
+export async function attachClipCheckoutSession(
+  clipId: number,
+  sessionId: string,
+): Promise<void> {
+  await withClient(async (client) => {
+    await client.query('BEGIN')
+    try {
+      const locked = await client.query(
+        `SELECT id, status, stripe_checkout_session_id
+         FROM clips WHERE id = $1 FOR UPDATE`,
+        [clipId],
+      )
+      const row = locked.rows[0] as
+        | { id: number; status: string; stripe_checkout_session_id: string | null }
+        | undefined
+      if (!row) {
+        throw new Error(`Clip ${clipId} not found`)
+      }
+      if (row.status === 'claimed') {
+        throw new ClipAlreadyClaimedError(clipId, row.stripe_checkout_session_id)
+      }
+      await client.query(
+        `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
+        [clipId, sessionId],
+      )
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
+  })
+}
+
+/** Mark a sale after a lost claim race (refunded) or refund failure (failed). */
+export async function markSaleStatusByCheckoutSession(
+  stripeCheckoutSessionId: string,
+  status: 'refunded' | 'failed',
+  stripePaymentIntentId?: string | null,
+): Promise<void> {
+  await getPool().query(
+    `UPDATE sales
+     SET status = $2,
+         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
+         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
+     WHERE stripe_checkout_session_id = $1
+       AND status <> 'completed'`,
+    [stripeCheckoutSessionId, status, stripePaymentIntentId ?? null],
+  )
+}
+
 export async function claimClip(input: {
   clipId: number
   saleAmountCents: number

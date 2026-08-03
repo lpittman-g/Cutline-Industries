@@ -7,6 +7,7 @@ import {
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
 } from './thermalRepo.ts'
+import { isAlreadyRefundedError } from '../stripeCheckout.ts'
 
 describe('resolveFulfillmentCaptions', () => {
   it('prefers clip caption columns when present', () => {
@@ -154,5 +155,37 @@ describe('canClaimClip', () => {
     assert.equal(err.clipId, 42)
     assert.equal(err.existingSessionId, 'cs_winner')
     assert.match(err.message, /42/)
+  })
+})
+
+describe('attachClipCheckoutSession SQL shape', () => {
+  it('locks the clip row before attaching a session', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const { dirname, join } = await import('node:path')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
+    const start = src.indexOf('export async function attachClipCheckoutSession')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 900)
+    assert.match(body, /FOR UPDATE/)
+    assert.match(body, /ClipAlreadyClaimedError/)
+  })
+})
+
+describe('isAlreadyRefundedError', () => {
+  it('detects Stripe charge_already_refunded code', () => {
+    assert.equal(isAlreadyRefundedError({ code: 'charge_already_refunded' }), true)
+  })
+
+  it('detects already-refunded message text', () => {
+    assert.equal(
+      isAlreadyRefundedError(new Error('Charge ch_1 has already been refunded.')),
+      true,
+    )
+  })
+
+  it('ignores unrelated errors', () => {
+    assert.equal(isAlreadyRefundedError(new Error('card_declined')), false)
   })
 })
