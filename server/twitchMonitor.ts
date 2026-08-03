@@ -92,7 +92,7 @@ async function pollOnce() {
       ? estimateMpm(live.viewer_count, s.current_msg_per_min, true)
       : simulateMpm(s)
 
-    await updateStreamerVelocity(s.id, mpm, isLive)
+    await updateStreamerVelocity(s.id, mpm, isLive, live?.game_name)
 
     if (isLive && mpm >= HEAT_THRESHOLD) {
       const cooldownKey = `heat-${s.id}`
@@ -104,6 +104,7 @@ async function pollOnce() {
         streamerId: s.id,
         msgPerMin: mpm,
         title: live?.title ? `Heat: ${live.title.slice(0, 80)}` : undefined,
+        game: live?.game_name,
       }).catch((err) => console.error('[thermal-monitor]', err))
     }
   }

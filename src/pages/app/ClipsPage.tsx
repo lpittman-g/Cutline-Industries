@@ -77,14 +77,21 @@ export function ClipsPage() {
                   {clip.autopilot_status && (
                     <p className={clip.autopilot_status === 'failed' ? 'chip warn' : 'chip ready'}>
                       AI autopilot: {clip.autopilot_status}
-                      {clip.autopilot_status === 'failed' && clip.autopilot_error
-                        ? ` — ${clip.autopilot_error}`
-                        : ''}
+                    </p>
+                  )}
+                  {clip.autopilot_error && (
+                    <p className="chip warn" style={{ whiteSpace: 'pre-wrap' }}>
+                      Autopilot notes: {clip.autopilot_error}
                     </p>
                   )}
                   {clip.ai_caption && (
                     <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
-                      {clip.ai_caption}
+                      X: {clip.ai_caption}
+                    </p>
+                  )}
+                  {clip.ai_tiktok_caption && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
+                      TikTok: {clip.ai_tiktok_caption}
                     </p>
                   )}
                   <div className="btn-row">

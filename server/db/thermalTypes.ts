@@ -48,6 +48,7 @@ export type ClipRow = {
   claimed_at?: string | null
   stripe_checkout_session_id?: string | null
   ai_caption?: string | null
+  ai_tiktok_caption?: string | null
   ai_discord_message?: string | null
   ai_dev_email_subject?: string | null
   ai_dev_email_body?: string | null

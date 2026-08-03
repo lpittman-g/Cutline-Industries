@@ -149,6 +149,11 @@ export function BountyBoardPage() {
                       </a>
                     </p>
                   )}
+                  {post.notes && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+                      Caption: {post.notes}
+                    </p>
+                  )}
                   <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
                     {post.views} views · {post.engagement} engagement · clip {post.clip_status}
                   </p>

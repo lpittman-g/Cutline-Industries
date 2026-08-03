@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { publicBaseUrl } from './auth/authCrypto.ts'
 import {
   findRetainerByGameTitle,
   getClipById,
@@ -109,6 +110,19 @@ Return JSON string keys:
   }
 }
 
+function skippedReason(result: unknown, channel: string): string | null {
+  if (
+    result &&
+    typeof result === 'object' &&
+    'skipped' in result &&
+    (result as { skipped?: boolean }).skipped
+  ) {
+    const reason = (result as { reason?: string }).reason
+    return `${channel}: ${reason || 'skipped'}`
+  }
+  return null
+}
+
 /**
  * Enriches an already-rendered Thermal clip. Rendering and S3 persistence stay
  * in heatPipeline; this stage owns AI copy and tier distribution.
@@ -127,10 +141,7 @@ export async function processHeatSpikeAutopilot(input: {
 
   try {
     const { copy, source, warning } = await generateCopy(input)
-    const base = (process.env.CUTLINE_PUBLIC_URL || 'https://cutline-industries.studio').replace(
-      /\/$/,
-      '',
-    )
+    const base = publicBaseUrl()
     const gatewayUrl = `${base}/checkout/${input.clipId}?tier=gateway`
     const previewUrl = input.previewUrl.startsWith('http')
       ? input.previewUrl
@@ -138,13 +149,18 @@ export async function processHeatSpikeAutopilot(input: {
     const warnings: string[] = []
     if (warning) warnings.push(warning)
 
-    await sendDiscordClipDrop({
+    const discordResult = await sendDiscordClipDrop({
       streamer: input.streamerName,
       game: input.gameTitle,
       message: copy.discordHypeMessage,
       previewUrl,
       checkoutUrl: gatewayUrl,
-    }).catch((err) => warnings.push(`discord: ${err instanceof Error ? err.message : String(err)}`))
+    }).catch((err) => {
+      warnings.push(`discord: ${err instanceof Error ? err.message : String(err)}`)
+      return null
+    })
+    const discordSkip = skippedReason(discordResult, 'discord')
+    if (discordSkip) warnings.push(discordSkip)
 
     await Promise.all([
       queueBountyPost({ clip_id: input.clipId, platform: 'x', notes: copy.xCaption }),
@@ -161,6 +177,8 @@ export async function processHeatSpikeAutopilot(input: {
         warnings.push(`email: ${err instanceof Error ? err.message : String(err)}`)
         return null
       })
+      const emailSkip = skippedReason(result, 'email')
+      if (emailSkip) warnings.push(emailSkip)
       if (result && 'ok' in result && result.ok) {
         await updateRetainer(developer.id, {
           status: 'sample_sent',
@@ -168,12 +186,15 @@ export async function processHeatSpikeAutopilot(input: {
           notes: `Thermal autopilot pitch sent for ${input.gameTitle}`,
         })
       }
+    } else {
+      warnings.push('email: no retainer contact_email matched game title')
     }
 
     await updateClipAutopilot({
       clipId: input.clipId,
       status: 'completed',
       caption: copy.xCaption,
+      tiktokCaption: copy.tiktokCaption,
       discordMessage: copy.discordHypeMessage,
       devEmailSubject: copy.devEmailSubject,
       devEmailBody: copy.devEmailBody,
