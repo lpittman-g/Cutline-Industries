@@ -56,6 +56,15 @@ Local PC only — chat **`print`**. See [voice-print/README.md](voice-print/READ
 
 ---
 
+## OpenAI Developers (docs MCP + skills)
+
+Live OpenAI docs via HTTP MCP `openaiDeveloperDocs`, plus portable skills under `.cursor/skills/openai-*`.
+
+- Guide: [`docs/OPENAI-DEVELOPERS-PLUGIN.md`](../docs/OPENAI-DEVELOPERS-PLUGIN.md)
+- Desktop plugin: `https://github.com/openai/openai-developers-for-cursor`
+
+---
+
 ## email-to-cursor
 
 Forward email to `cursor@cutline-industries.studio` → triggers a Cursor Cloud Agent run.
