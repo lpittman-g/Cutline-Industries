@@ -53,6 +53,20 @@ export async function uploadShort(opts: {
 export async function moveToUploaded(filePath: string, uploadedDir: string) {
   await fs.mkdir(uploadedDir, { recursive: true })
   const dest = path.join(uploadedDir, path.basename(filePath))
-  await fs.rename(filePath, dest)
+  try {
+    await fs.rename(filePath, dest)
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') {
+      try {
+        await fs.access(dest)
+        return dest
+      } catch {
+        // source gone and dest missing — upload already succeeded, skip move
+        return dest
+      }
+    }
+    throw err
+  }
   return dest
 }
