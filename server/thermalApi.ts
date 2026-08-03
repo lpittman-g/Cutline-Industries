@@ -4,14 +4,26 @@ import { thermalDbEnabled } from './db/pool.ts'
 import {
   countClipsToday,
   countLiveStreamers,
+  getClipById,
+  listBountyClips,
   listClips,
   listHeatEvents,
   listRecentHeatAlert,
+  listSales,
   listStreamers,
   listTopClips,
+  revenueByTier,
+  revenueTimeline,
   seedStreamersIfEmpty,
+  totalRevenueCents,
 } from './db/thermalRepo.ts'
 import { triggerHeatEvent } from './heatPipeline.ts'
+import {
+  confirmCheckoutSession,
+  createCheckoutSession,
+  stripeConfigured,
+  stripeModeLabel,
+} from './stripeCheckout.ts'
 import { startTwitchMonitor, syncStreamersFromTwitch } from './twitchMonitor.ts'
 import { ROOT } from './youtubeAuth.ts'
 
@@ -81,10 +93,67 @@ export function registerThermalRoutes(app: Express) {
     res.json({ clips: await listTopClips() })
   })
 
+  app.get('/api/clips/:id', dbRequired, async (req, res) => {
+    const id = Number(req.params.id)
+    if (!id) {
+      res.status(400).json({ error: 'Invalid clip id' })
+      return
+    }
+    const clip = await getClipById(id)
+    if (!clip) {
+      res.status(404).json({ error: 'Clip not found' })
+      return
+    }
+    res.json({ clip })
+  })
+
+  app.post('/api/checkout/session', dbRequired, async (req, res) => {
+    if (!stripeConfigured()) {
+      res.status(503).json({
+        error: 'Stripe not configured',
+        hint: 'Set STRIPE_SECRET_KEY in environment',
+      })
+      return
+    }
+    try {
+      const clipId = Number(req.body?.clipId)
+      if (!clipId) {
+        res.status(400).json({ error: 'clipId required' })
+        return
+      }
+      const session = await createCheckoutSession({
+        clipId,
+        tierOverride: req.body?.tier,
+      })
+      res.json({ ok: true, ...session })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.post('/api/checkout/confirm', dbRequired, async (req, res) => {
+    if (!stripeConfigured()) {
+      res.status(503).json({ error: 'Stripe not configured' })
+      return
+    }
+    try {
+      const sessionId = String(req.body?.sessionId ?? '')
+      if (!sessionId) {
+        res.status(400).json({ error: 'sessionId required' })
+        return
+      }
+      const result = await confirmCheckoutSession(sessionId)
+      res.json(result)
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
   app.get('/api/dashboard/summary', dbRequired, async (_req, res) => {
     const alert = await listRecentHeatAlert()
     const clipsToday = await countClipsToday()
     const liveChannels = await countLiveStreamers()
+    const revenueCents = await totalRevenueCents()
     res.json({
       heatAlert: alert
         ? {
@@ -96,13 +165,18 @@ export function registerThermalRoutes(app: Express) {
         : null,
       activeLiveChannels: liveChannels,
       dailyClipsRendered: clipsToday,
-      totalRevenueCents: 0,
+      totalRevenueCents: revenueCents,
       pendingOutreaches: 0,
+      stripeMode: stripeModeLabel(),
     })
   })
 
-  app.get('/api/dashboard/revenue-timeline', dbRequired, async (_req, res) => {
-    res.json({ timeline: [], note: 'Sales ledger wired in step 2 (Stripe)' })
+  app.get('/api/dashboard/revenue-timeline', dbRequired, async (req, res) => {
+    const days = Number(req.query.days ?? 30)
+    res.json({
+      timeline: await revenueTimeline(Number.isFinite(days) ? days : 30),
+      byTier: await revenueByTier(),
+    })
   })
 
   app.get('/api/auth/user', (_req, res) => {
@@ -121,6 +195,10 @@ export function registerThermalRoutes(app: Express) {
     res.json({ posts: [], note: 'Bounty distribution step 3' })
   })
 
+  app.get('/api/bounty/clips', dbRequired, async (_req, res) => {
+    res.json({ clips: await listBountyClips() })
+  })
+
   app.get('/api/developers', dbRequired, async (_req, res) => {
     res.json({ developers: [], note: 'Developer CRM uses retainers table — step 6' })
   })
@@ -130,7 +208,7 @@ export function registerThermalRoutes(app: Express) {
   })
 
   app.get('/api/sales', dbRequired, async (_req, res) => {
-    res.json({ sales: [], note: 'Sales ledger step 2' })
+    res.json({ sales: await listSales(), stripeMode: stripeModeLabel() })
   })
 
   startTwitchMonitor()

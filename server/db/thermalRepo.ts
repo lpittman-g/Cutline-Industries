@@ -2,6 +2,8 @@ import type {
   ClipRow,
   HeatSpikeRow,
   HeatSpikeStatus,
+  SaleRow,
+  SaleTier,
   StreamerRow,
 } from './thermalTypes.ts'
 import { getPool, withClient } from './pool.ts'
@@ -215,6 +217,134 @@ export async function listTopClips(limit = 10): Promise<ClipWithMeta[]> {
     [limit],
   )
   return res.rows.map(mapClip)
+}
+
+export async function getClipById(id: number): Promise<ClipWithMeta | null> {
+  const res = await getPool().query(`SELECT * FROM clips WHERE id = $1`, [id])
+  return res.rows[0] ? mapClip(res.rows[0]) : null
+}
+
+export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
+  const res = await getPool().query(
+    `SELECT * FROM clips
+     WHERE media_url IS NOT NULL AND tier IN ('gateway', 'bounty')
+     ORDER BY created_at DESC LIMIT $1`,
+    [limit],
+  )
+  return res.rows.map(mapClip)
+}
+
+export async function setClipCheckoutSession(clipId: number, sessionId: string) {
+  await getPool().query(
+    `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
+    [clipId, sessionId],
+  )
+}
+
+export async function claimClip(input: {
+  clipId: number
+  saleAmountCents: number
+  stripeCheckoutSessionId: string
+  stripePaymentIntentId?: string | null
+  buyerEmail?: string | null
+}) {
+  await withClient(async (client) => {
+    await client.query(
+      `UPDATE clips
+       SET status = 'claimed',
+           sale_amount_cents = $2,
+           claimed_at = CURRENT_TIMESTAMP,
+           stripe_checkout_session_id = $3
+       WHERE id = $1`,
+      [input.clipId, input.saleAmountCents, input.stripeCheckoutSessionId],
+    )
+    await client.query(
+      `UPDATE sales
+       SET status = 'completed',
+           stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+           buyer_email = COALESCE($3, buyer_email),
+           completed_at = CURRENT_TIMESTAMP
+       WHERE stripe_checkout_session_id = $1`,
+      [input.stripeCheckoutSessionId, input.stripePaymentIntentId ?? null, input.buyerEmail ?? null],
+    )
+  })
+}
+
+function mapSale(row: Record<string, unknown>): SaleRow {
+  return row as unknown as SaleRow
+}
+
+export async function insertPendingSale(input: {
+  clip_id: number
+  tier: SaleTier
+  amount_cents: number
+  stripe_checkout_session_id: string
+  metadata?: Record<string, unknown>
+}): Promise<SaleRow> {
+  const res = await getPool().query(
+    `INSERT INTO sales (clip_id, tier, amount_cents, stripe_checkout_session_id, status, metadata)
+     VALUES ($1, $2, $3, $4, 'pending', $5)
+     RETURNING *`,
+    [
+      input.clip_id,
+      input.tier,
+      input.amount_cents,
+      input.stripe_checkout_session_id,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  )
+  return mapSale(res.rows[0])
+}
+
+export async function listSales(limit = 100): Promise<SaleRow[]> {
+  const res = await getPool().query(
+    `SELECT s.*, c.title AS clip_title, c.streamer_username
+     FROM sales s
+     LEFT JOIN clips c ON c.id = s.clip_id
+     ORDER BY s.created_at DESC
+     LIMIT $1`,
+    [limit],
+  )
+  return res.rows.map(mapSale)
+}
+
+export async function totalRevenueCents(): Promise<number> {
+  const res = await getPool().query(
+    `SELECT COALESCE(SUM(amount_cents), 0)::int AS total FROM sales WHERE status = 'completed'`,
+  )
+  return res.rows[0]?.total ?? 0
+}
+
+export async function revenueByTier(): Promise<Record<SaleTier, number>> {
+  const res = await getPool().query(
+    `SELECT tier, COALESCE(SUM(amount_cents), 0)::int AS total
+     FROM sales WHERE status = 'completed'
+     GROUP BY tier`,
+  )
+  const out: Record<SaleTier, number> = { gateway: 0, bounty: 0, retainer: 0 }
+  for (const row of res.rows) {
+    const tier = row.tier as SaleTier
+    if (tier in out) out[tier] = row.total
+  }
+  return out
+}
+
+export type RevenueTimelinePoint = { date: string; amountCents: number; tier: SaleTier }
+
+export async function revenueTimeline(days = 30): Promise<RevenueTimelinePoint[]> {
+  const res = await getPool().query(
+    `SELECT DATE(completed_at) AS day, tier, COALESCE(SUM(amount_cents), 0)::int AS total
+     FROM sales
+     WHERE status = 'completed' AND completed_at >= CURRENT_DATE - $1::int
+     GROUP BY day, tier
+     ORDER BY day ASC`,
+    [days],
+  )
+  return res.rows.map((row) => ({
+    date: String(row.day).slice(0, 10),
+    amountCents: row.total,
+    tier: row.tier as SaleTier,
+  }))
 }
 
 export async function countClipsToday(): Promise<number> {

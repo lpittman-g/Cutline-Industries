@@ -26,6 +26,7 @@ import {
   SECRET_PATH,
 } from './youtubeAuth.ts'
 import { registerThermalRoutes } from './thermalApi.ts'
+import { registerStripeWebhookRoute } from './stripeCheckout.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -33,6 +34,7 @@ const app = express()
 const PORT = Number(process.env.CUTLINE_API_PORT || 8787)
 
 app.use(cors())
+registerStripeWebhookRoute(app)
 app.use(express.json({ limit: '1mb' }))
 
 async function readJsonSafe<T>(file: string, fallback: T): Promise<T> {
@@ -527,7 +529,7 @@ app.post('/api/leads', async (req, res) => {
 app.get('/api/thermal/schema', async (_req, res) => {
   const databaseUrl = process.env.DATABASE_URL?.trim()
   const migrationFile = 'db/migrations/001_thermal_core.sql'
-  const tables = ['streamers', 'heat_spikes', 'clips', 'retainers']
+  const tables = ['streamers', 'heat_spikes', 'clips', 'retainers', 'sales']
 
   if (!databaseUrl) {
     res.json({
