@@ -9,6 +9,7 @@ import {
   getRetainerById,
   insertPendingSale,
   markSaleLostClaimRace,
+  RetainerAlreadyActiveError,
   setRetainerCheckoutSession,
 } from './db/thermalRepo.ts'
 import { withClient } from './db/pool.ts'
@@ -178,6 +179,7 @@ export async function handleLostClaimRace(session: Stripe.Checkout.Session) {
   const sale = await markSaleLostClaimRace({
     stripeCheckoutSessionId: session.id,
     stripePaymentIntentId: paymentIntentId,
+    refundReason: 'clip_already_claimed',
   })
 
   if (!paymentIntentId) {
@@ -208,6 +210,79 @@ export async function handleLostClaimRace(session: Stripe.Checkout.Session) {
       error: err instanceof Error ? err.message : String(err),
     })
     return { sale, refunded: false as const, reason: 'stripe_error' as const }
+  }
+}
+
+function subscriptionIdFromSession(session: Stripe.Checkout.Session): string | null {
+  return typeof session.subscription === 'string'
+    ? session.subscription
+    : session.subscription?.id ?? null
+}
+
+/**
+ * Losing retainer checkout paid after another activate won — ledger +
+ * best-effort subscription cancel (and invoice refund when a PI is present).
+ */
+export async function handleLostRetainerRace(session: Stripe.Checkout.Session) {
+  const paymentIntentId = paymentIntentIdFromSession(session)
+  const subscriptionId = subscriptionIdFromSession(session)
+  const sale = await markSaleLostClaimRace({
+    stripeCheckoutSessionId: session.id,
+    stripePaymentIntentId: paymentIntentId,
+    refundReason: 'retainer_already_active',
+  })
+
+  if (process.env.CUTLINE_DRY_RUN === '1') {
+    console.warn('[stripe] dry-run: skip cancel/refund for lost retainer race', {
+      sessionId: session.id,
+      subscriptionId,
+      paymentIntentId,
+    })
+    return { sale, cancelled: false as const, refunded: false as const, reason: 'dry_run' as const }
+  }
+
+  let cancelled = false
+  let refunded = false
+  const stripe = getStripe()
+
+  if (subscriptionId) {
+    try {
+      await stripe.subscriptions.cancel(subscriptionId)
+      cancelled = true
+    } catch (err) {
+      console.error('[stripe] lost-retainer subscription cancel failed', {
+        sessionId: session.id,
+        subscriptionId,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  if (paymentIntentId) {
+    try {
+      await stripe.refunds.create({
+        payment_intent: paymentIntentId,
+        reason: 'duplicate',
+        metadata: {
+          retainer_id: String(session.metadata?.retainer_id ?? ''),
+          lost_retainer_race: '1',
+        },
+      })
+      refunded = true
+    } catch (err) {
+      console.error('[stripe] lost-retainer refund failed', {
+        sessionId: session.id,
+        paymentIntentId,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  return {
+    sale,
+    cancelled,
+    refunded,
+    reason: cancelled || refunded ? ('ok' as const) : ('stripe_error' as const),
   }
 }
 
@@ -384,6 +459,23 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             })
             return
           }
+          // Lost retainer activate race: mark loser refunded, cancel sub, ack webhook.
+          if (err instanceof RetainerAlreadyActiveError) {
+            const lost = await handleLostRetainerRace(session)
+            console.warn('[stripe] retainer already active; acknowledging webhook', {
+              retainerId: err.retainerId,
+              existingSessionId: err.existingSessionId,
+              cancelled: lost.cancelled,
+              refunded: lost.refunded,
+            })
+            res.json({
+              received: true,
+              skipped: 'retainer_already_active',
+              cancelled: lost.cancelled,
+              refunded: lost.refunded,
+            })
+            return
+          }
           throw err
         }
       }
@@ -420,6 +512,10 @@ export async function confirmCheckoutSession(sessionId: string) {
   } catch (err) {
     if (err instanceof ClipAlreadyClaimedError) {
       await handleLostClaimRace(session)
+      throw err
+    }
+    if (err instanceof RetainerAlreadyActiveError) {
+      await handleLostRetainerRace(session)
       throw err
     }
     throw err

@@ -25,6 +25,7 @@ import {
   listTopClips,
   markBountyPosted,
   queueBountyPost,
+  RetainerAlreadyActiveError,
   retainerPipelineCounts,
   revenueByTier,
   revenueTimeline,
@@ -258,6 +259,15 @@ export function registerThermalRoutes(app: Express) {
           error: err.message,
           code: 'clip_already_claimed',
           clipId: err.clipId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
+      if (err instanceof RetainerAlreadyActiveError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'retainer_already_active',
+          retainerId: err.retainerId,
           existingSessionId: err.existingSessionId,
         })
         return
