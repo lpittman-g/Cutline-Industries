@@ -138,10 +138,45 @@ Routes: `/signup`, `/signin`, `/verify-email` · API `/api/auth/*`
 npm run db:migrate   # applies 006_thermal_auth.sql
 ```
 
+## Step 6 (implemented): Mission Control roles + S3 persistence
+
+### Mission Control access
+
+- `/app/*` requires `operator` or `admin`
+- New signups default to `user`
+- `AUTH_BOOTSTRAP_ADMIN_EMAIL` makes the matching signup an admin
+- Admin role API: `POST /api/auth/users/:id/role`
+- Local-only bypass: `AUTH_MC_OPEN=1`
+
+### S3 media flow
+
+```
+FFmpeg local render
+  → clean.mp4 (private S3)
+  → preview.mp4 + thumb.jpg (S3 / CloudFront)
+  → clips row stores S3 URIs and public preview URLs
+  → paid checkout session → 15-minute presigned clean download
+```
+
+Required deployment secrets:
+
+```bash
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_S3_BUCKET_NAME=thermal-video-clips
+AWS_CLOUDFRONT_DOMAIN=https://clips.example.com # optional
+AUTH_BOOTSTRAP_ADMIN_EMAIL=lpittman@cutline-industries.studio
+```
+
+If AWS variables are blank, the pipeline falls back to local `thermal_media/`.
+
 ## Next steps
 
-6. S3 persistence (optional)
-7. Auth roles / protect Mission Control
+7. Production Twitch/Kick credentials and Kick adapter
+8. Discord bot OAuth + automated live delivery
+9. X/TikTok publishing APIs
+10. Pitch generator + email automation
 
 ```bash
 # Postgres

@@ -4,6 +4,7 @@ import {
   confirmCheckoutSession,
   createCheckoutSession,
   fetchClip,
+  fetchClipDownload,
   formatUsd,
   tierPriceLabel,
   type ThermalClip,
@@ -16,6 +17,7 @@ export function CheckoutPage() {
   const [clip, setClip] = useState<ThermalClip | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const paid = search.get('paid') === '1'
   const canceled = search.get('canceled') === '1'
 
@@ -35,7 +37,10 @@ export function CheckoutPage() {
     confirmCheckoutSession(sessionId)
       .then((result) => {
         if (result.ok && numericId) {
-          return fetchClip(numericId).then((data) => setClip(data.clip))
+          return Promise.all([
+            fetchClip(numericId).then((data) => setClip(data.clip)),
+            fetchClipDownload(numericId, sessionId).then((data) => setDownloadUrl(data.url)),
+          ])
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Could not confirm payment'))
@@ -82,9 +87,9 @@ export function CheckoutPage() {
               {formatUsd(amountCents)})
             </p>
             <ul style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
-              <li>Unwatermarked 4K MP4</li>
-              <li>Transcript text file</li>
-              <li>Pre-written social captions</li>
+              <li>Unwatermarked vertical MP4</li>
+              <li>Private download after verified payment</li>
+              <li>15-minute secure S3 link when cloud storage is enabled</li>
             </ul>
             {clip.status === 'claimed' ? (
               <p className="chip ok">Already claimed</p>
@@ -92,6 +97,11 @@ export function CheckoutPage() {
               <p className="chip">Stripe Checkout — live when STRIPE_SECRET_KEY is set</p>
             )}
             <div className="btn-row" style={{ marginTop: '1rem' }}>
+              {downloadUrl && (
+                <a className="btn btn-primary" href={downloadUrl}>
+                  Download clean clip
+                </a>
+              )}
               <button
                 type="button"
                 className="btn btn-primary"

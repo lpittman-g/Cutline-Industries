@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { signin } from '../../lib/authApi'
 
 export function SigninPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mfaCode, setMfaCode] = useState('')
@@ -21,7 +22,8 @@ export function SigninPage() {
         password,
         mfaCode: mfaRequired ? mfaCode : undefined,
       })
-      navigate('/app/dashboard')
+      const next = searchParams.get('next')
+      navigate(next?.startsWith('/app') ? next : '/app/dashboard')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign in failed'
       if (msg.toLowerCase().includes('mfa')) setMfaRequired(true)

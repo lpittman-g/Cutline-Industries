@@ -103,6 +103,24 @@ Copy `.env.example` → `.env`. Key variables:
 - Account: `583968735276`
 - IAM: `cursor-thermal-deploy`
 - Services: Amplify (staging), Route 53 (DNS ready), S3 (media)
+- Clip bucket env: `AWS_S3_BUCKET_NAME` (recommended: `thermal-video-clips`)
+- Clean masters stay private; paid buyers receive 15-minute presigned URLs
+- Preview MP4 + thumbnail use `AWS_CLOUDFRONT_DOMAIN` when configured
+- Never commit AWS, Stripe, or OpenAI keys; inject them as deployment secrets
+
+### Production secrets
+
+| Secret | Used by |
+|--------|---------|
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` | S3 media uploads |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
+| `OPENAI_API_KEY` | AI video pipeline |
+| `DATABASE_URL` | Thermal state + auth |
+| `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
+
+`npm audit` currently reports an RSC-only React Router advisory. This frontend
+is a Vite SPA and does not use React Server Components or server actions; the
+repo stays on the latest router release to retain fixes for older XSS advisories.
 
 ## Phone approval (Cutline lite — no Apple Developer)
 
