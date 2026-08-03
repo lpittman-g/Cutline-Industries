@@ -86,7 +86,8 @@ Copy `.env.example` → `.env`. Key variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `GOOGLE_CLOUD_PROJECT` | GCP project for YouTube OAuth |
+| `GOOGLE_CLOUD_PROJECT` | GCP project for YouTube / Gmail OAuth |
+| `GOOGLE_WORKSPACE_SENDER_EMAIL` | From-address for Gmail send |
 | `CUTLINE_AI_MODE` | `project` (Thermal Shorts) or `trends` (Reddit) |
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
@@ -96,7 +97,9 @@ Copy `.env.example` → `.env`. Key variables:
 
 - Account: `lpittman@cutline-industries.studio`
 - Project: `utility-mapper-504300-d6`
-- APIs: YouTube Data API v3, OAuth
+- APIs: YouTube Data API v3, Gmail API (`gmail.send`), OAuth
+- Secrets: `client_secret.json`, `token.json` (gitignored)
+- Setup: [`docs/GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md)
 
 ## AWS
 
