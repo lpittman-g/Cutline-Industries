@@ -50,6 +50,7 @@ export type ThermalSale = {
 async function patchJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
@@ -92,7 +93,7 @@ export type RevenueTimelinePoint = {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`)
+  const res = await fetch(`${API}${path}`, { credentials: 'include' })
   if (!res.ok) throw new Error(await res.text())
   return res.json() as Promise<T>
 }
@@ -100,6 +101,7 @@ async function getJson<T>(path: string): Promise<T> {
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
@@ -193,6 +195,15 @@ export function confirmCheckoutSession(sessionId: string) {
   }>('/api/checkout/confirm', {
     sessionId,
   })
+}
+
+export function fetchClipDownload(clipId: number, sessionId: string) {
+  return postJson<{
+    ok: boolean
+    url: string
+    storage: 's3' | 'local'
+    expiresIn?: number
+  }>(`/api/clips/${clipId}/download`, { sessionId })
 }
 
 export type ThermalRetainerStatus = 'prospect' | 'sample_sent' | 'active' | 'cancelled'

@@ -1,5 +1,7 @@
 import { getPool } from '../db/pool.ts'
 
+export type UserRole = 'user' | 'operator' | 'admin'
+
 export type UserRow = {
   id: number
   email: string
@@ -10,6 +12,7 @@ export type UserRow = {
   mfa_secret: string | null
   failed_login_count: number
   locked_until: string | null
+  role: UserRole
   created_at: string
   updated_at: string
 }
@@ -20,6 +23,7 @@ export type PublicUser = {
   displayName: string | null
   emailVerified: boolean
   mfaEnabled: boolean
+  role: UserRole
 }
 
 export function toPublicUser(row: UserRow): PublicUser {
@@ -29,6 +33,7 @@ export function toPublicUser(row: UserRow): PublicUser {
     displayName: row.display_name,
     emailVerified: row.email_verified,
     mfaEnabled: row.mfa_enabled,
+    role: (row.role as UserRole) || 'user',
   }
 }
 
@@ -50,14 +55,27 @@ export async function insertUser(input: {
   email: string
   password_hash: string
   display_name?: string | null
+  role?: UserRole
 }): Promise<UserRow> {
+  const bootstrap = process.env.AUTH_BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase()
+  const role: UserRole =
+    input.role ??
+    (bootstrap && input.email === bootstrap ? 'admin' : 'user')
+
   const res = await getPool().query(
-    `INSERT INTO users (email, password_hash, display_name)
-     VALUES ($1, $2, $3)
+    `INSERT INTO users (email, password_hash, display_name, role)
+     VALUES ($1, $2, $3, $4)
      RETURNING *`,
-    [input.email, input.password_hash, input.display_name ?? null],
+    [input.email, input.password_hash, input.display_name ?? null, role],
   )
   return mapUser(res.rows[0])
+}
+
+export async function setUserRole(userId: number, role: UserRole) {
+  await getPool().query(
+    `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+    [userId, role],
+  )
 }
 
 export async function markEmailVerified(userId: number) {

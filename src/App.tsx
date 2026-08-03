@@ -12,6 +12,7 @@ import { ApprovePage } from './pages/ApprovePage'
 import { SignupPage } from './pages/auth/SignupPage'
 import { SigninPage } from './pages/auth/SigninPage'
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage'
+import { RequireMissionControl } from './components/RequireMissionControl'
 import { DashboardPage } from './pages/app/DashboardPage'
 import { StreamsPage } from './pages/app/StreamsPage'
 import { ClipsPage } from './pages/app/ClipsPage'
@@ -58,8 +59,15 @@ export default function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Route>
 
-        {/* Thermal Mission Control */}
-        <Route path="/app" element={<MissionShell />}>
+        {/* Thermal Mission Control (operator+) */}
+        <Route
+          path="/app"
+          element={
+            <RequireMissionControl>
+              <MissionShell />
+            </RequireMissionControl>
+          }
+        >
           <Route index element={<Navigate to="/app/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="streams" element={<StreamsPage />} />

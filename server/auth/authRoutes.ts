@@ -6,14 +6,15 @@ import {
   createEmailVerificationToken,
   createSession,
   deleteSession,
-  findSessionUser,
   findUserByEmail,
   insertUser,
   markEmailVerified,
   recordLoginAttempt,
   setFailedLogin,
   setMfaEnabled,
+  setUserRole,
   toPublicUser,
+  type UserRole,
 } from './authRepo.ts'
 import {
   SESSION_COOKIE,
@@ -27,6 +28,7 @@ import {
   validatePassword,
   verifyPassword,
 } from './authCrypto.ts'
+import { attachAuthUser, missionControlOpen, requireAuth, requireRole } from './authMiddleware.ts'
 
 declare global {
   namespace Express {
@@ -86,24 +88,8 @@ function clearSessionCookie(res: Response) {
   )
 }
 
-async function attachUser(req: Request, _res: Response, next: NextFunction) {
-  try {
-    if (!thermalDbEnabled()) {
-      next()
-      return
-    }
-    const cookies = parseCookies(req.headers.cookie)
-    const token = cookies[SESSION_COOKIE]
-    if (!token) {
-      next()
-      return
-    }
-    const user = await findSessionUser(hashToken(token))
-    if (user) req.authUser = toPublicUser(user)
-    next()
-  } catch (err) {
-    next(err)
-  }
+async function attachUser(req: Request, res: Response, next: NextFunction) {
+  return attachAuthUser(req, res, next)
 }
 
 export function registerAuthRoutes(app: Express) {
@@ -123,6 +109,10 @@ export function registerAuthRoutes(app: Express) {
         lockoutDurationMinutes: cfg.auth_configuration.sign_in_rules.lockout_duration_minutes,
         sessionTimeoutHours: cfg.auth_configuration.sign_in_rules.session_timeout_hours,
         multiFactorAuthentication: cfg.auth_configuration.sign_in_rules.multi_factor_authentication,
+      },
+      missionControl: {
+        open: missionControlOpen(),
+        minRole: 'operator',
       },
     })
   })
@@ -277,6 +267,12 @@ export function registerAuthRoutes(app: Express) {
         return
       }
 
+      const bootstrapAdmin = process.env.AUTH_BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase()
+      if (bootstrapAdmin && user.email === bootstrapAdmin && user.role !== 'admin') {
+        await setUserRole(user.id, 'admin')
+        user.role = 'admin'
+      }
+
       if (user.mfa_enabled) {
         if (!mfaCode) {
           res.status(401).json({
@@ -363,4 +359,21 @@ export function registerAuthRoutes(app: Express) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
+
+  app.post('/api/auth/users/:id/role', dbRequired, requireAuth, requireRole('admin'), async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      const role = String(req.body?.role ?? '') as UserRole
+      if (!id || !['user', 'operator', 'admin'].includes(role)) {
+        res.status(400).json({ error: 'id and role (user|operator|admin) required' })
+        return
+      }
+      await setUserRole(id, role)
+      res.json({ ok: true, userId: id, role })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
 }
+
+export { requireAuth, requireRole, attachAuthUser, missionControlOpen }

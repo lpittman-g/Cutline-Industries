@@ -38,6 +38,8 @@ import {
   stripeConfigured,
   stripeModeLabel,
 } from './stripeCheckout.ts'
+import { requireRole } from './auth/authMiddleware.ts'
+import { createPrivateDownloadUrl, s3Configured } from './s3Storage.ts'
 import { startTwitchMonitor, syncStreamersFromTwitch } from './twitchMonitor.ts'
 import { ROOT } from './youtubeAuth.ts'
 
@@ -59,8 +61,19 @@ function dbRequired(_req: Request, res: Response, next: () => void) {
   next()
 }
 
+function publicClip<T extends Record<string, unknown>>(clip: T) {
+  const {
+    s3_clean_url: _clean,
+    stripe_checkout_session_id: _session,
+    stripe_payment_link: _paymentLink,
+    ...safe
+  } = clip
+  return safe
+}
+
 export function registerThermalRoutes(app: Express) {
   const defaultVod = path.join(ROOT, 'inbox', 'cutline_test_vod.mp4')
+  const ops = [dbRequired, requireRole('operator')] as const
 
   app.use('/thermal-media', expressStaticThermal)
 
@@ -70,7 +83,7 @@ export function registerThermalRoutes(app: Express) {
     res.json({ streamers })
   })
 
-  app.post('/api/streamers/sync', dbRequired, async (_req, res) => {
+  app.post('/api/streamers/sync', ...ops, async (_req, res) => {
     await seedStreamersIfEmpty(defaultVod)
     const result = await syncStreamersFromTwitch()
     res.json({ ok: true, ...result, streamers: await listStreamers() })
@@ -80,7 +93,7 @@ export function registerThermalRoutes(app: Express) {
     res.json({ events: await listHeatEvents() })
   })
 
-  app.post('/api/heat-events', dbRequired, async (req, res) => {
+  app.post('/api/heat-events', ...ops, async (req, res) => {
     try {
       const streamerId = Number(req.body?.streamerId)
       if (!streamerId) {
@@ -99,11 +112,11 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.get('/api/clips', dbRequired, async (_req, res) => {
+  app.get('/api/clips', ...ops, async (_req, res) => {
     res.json({ clips: await listClips() })
   })
 
-  app.get('/api/clips/top', dbRequired, async (_req, res) => {
+  app.get('/api/clips/top', ...ops, async (_req, res) => {
     res.json({ clips: await listTopClips() })
   })
 
@@ -118,7 +131,43 @@ export function registerThermalRoutes(app: Express) {
       res.status(404).json({ error: 'Clip not found' })
       return
     }
-    res.json({ clip })
+    res.json({ clip: publicClip(clip as unknown as Record<string, unknown>) })
+  })
+
+  app.post('/api/clips/:id/download', dbRequired, async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      const sessionId = String(req.body?.sessionId ?? '')
+      const clip = id ? await getClipById(id) : null
+      if (!clip) {
+        res.status(404).json({ error: 'Clip not found' })
+        return
+      }
+      if (
+        clip.status !== 'claimed' ||
+        !sessionId ||
+        clip.stripe_checkout_session_id !== sessionId
+      ) {
+        res.status(403).json({ error: 'Paid checkout session required' })
+        return
+      }
+      if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
+        res.json({
+          ok: true,
+          url: `/thermal-media/clips/${id}/heat_clip.mp4`,
+          storage: 'local',
+        })
+        return
+      }
+      res.json({
+        ok: true,
+        url: await createPrivateDownloadUrl(clip.s3_clean_url),
+        storage: 's3',
+        expiresIn: 900,
+      })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
   })
 
   app.post('/api/checkout/session', dbRequired, async (req, res) => {
@@ -163,7 +212,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.get('/api/dashboard/summary', dbRequired, async (_req, res) => {
+  app.get('/api/dashboard/summary', ...ops, async (_req, res) => {
     const alert = await listRecentHeatAlert()
     const clipsToday = await countClipsToday()
     const liveChannels = await countLiveStreamers()
@@ -187,7 +236,7 @@ export function registerThermalRoutes(app: Express) {
     })
   })
 
-  app.get('/api/dashboard/revenue-timeline', dbRequired, async (req, res) => {
+  app.get('/api/dashboard/revenue-timeline', ...ops, async (req, res) => {
     const days = Number(req.query.days ?? 30)
     res.json({
       timeline: await revenueTimeline(Number.isFinite(days) ? days : 30),
@@ -195,11 +244,11 @@ export function registerThermalRoutes(app: Express) {
     })
   })
 
-  app.get('/api/bounty-posts', dbRequired, async (_req, res) => {
+  app.get('/api/bounty-posts', ...ops, async (_req, res) => {
     res.json({ posts: await listBountyPosts() })
   })
 
-  app.post('/api/bounty-posts', dbRequired, async (req, res) => {
+  app.post('/api/bounty-posts', ...ops, async (req, res) => {
     try {
       const clipId = Number(req.body?.clipId)
       const platform = String(req.body?.platform ?? '').toLowerCase()
@@ -227,7 +276,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.patch('/api/bounty-posts/:id', dbRequired, async (req, res) => {
+  app.patch('/api/bounty-posts/:id', ...ops, async (req, res) => {
     try {
       const id = Number(req.params.id)
       if (!id) {
@@ -257,7 +306,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.post('/api/bounty-posts/:id/mark-posted', dbRequired, async (req, res) => {
+  app.post('/api/bounty-posts/:id/mark-posted', ...ops, async (req, res) => {
     try {
       const id = Number(req.params.id)
       const postUrl = String(req.body?.postUrl ?? '')
@@ -280,15 +329,18 @@ export function registerThermalRoutes(app: Express) {
   })
 
   app.get('/api/bounty/clips', dbRequired, async (_req, res) => {
-    res.json({ clips: await listBountyClips() })
+    const clips = await listBountyClips()
+    res.json({
+      clips: clips.map((clip) => publicClip(clip as unknown as Record<string, unknown>)),
+    })
   })
 
-  app.get('/api/developers', dbRequired, async (_req, res) => {
+  app.get('/api/developers', ...ops, async (_req, res) => {
     await seedRetainersIfEmpty()
     res.json({ developers: await listRetainers() })
   })
 
-  app.get('/api/developers/pipeline', dbRequired, async (_req, res) => {
+  app.get('/api/developers/pipeline', ...ops, async (_req, res) => {
     await seedRetainersIfEmpty()
     res.json({ pipeline: await retainerPipelineCounts() })
   })
@@ -332,7 +384,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.post('/api/developers', dbRequired, async (req, res) => {
+  app.post('/api/developers', ...ops, async (req, res) => {
     try {
       const devName = String(req.body?.devName ?? '').trim()
       const gameTitle = String(req.body?.gameTitle ?? '').trim()
@@ -367,7 +419,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.get('/api/developers/:id', dbRequired, async (req, res) => {
+  app.get('/api/developers/:id', ...ops, async (req, res) => {
     const id = Number(req.params.id)
     if (!id) {
       res.status(400).json({ error: 'Invalid retainer id' })
@@ -381,7 +433,7 @@ export function registerThermalRoutes(app: Express) {
     res.json({ developer })
   })
 
-  app.patch('/api/developers/:id', dbRequired, async (req, res) => {
+  app.patch('/api/developers/:id', ...ops, async (req, res) => {
     try {
       const id = Number(req.params.id)
       if (!id) {
@@ -429,7 +481,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.post('/api/developers/:id/checkout', dbRequired, async (req, res) => {
+  app.post('/api/developers/:id/checkout', ...ops, async (req, res) => {
     if (!stripeConfigured()) {
       res.status(503).json({
         error: 'Stripe not configured',
@@ -455,7 +507,7 @@ export function registerThermalRoutes(app: Express) {
     }
   })
 
-  app.get('/api/sales', dbRequired, async (_req, res) => {
+  app.get('/api/sales', ...ops, async (_req, res) => {
     res.json({ sales: await listSales(), stripeMode: stripeModeLabel() })
   })
 

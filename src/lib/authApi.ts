@@ -6,6 +6,7 @@ export type AuthUser = {
   displayName: string | null
   emailVerified: boolean
   mfaEnabled: boolean
+  role?: 'user' | 'operator' | 'admin'
 }
 
 export type AuthConfigPublic = {
@@ -25,6 +26,10 @@ export type AuthConfigPublic = {
     lockoutDurationMinutes: number
     sessionTimeoutHours: number
     multiFactorAuthentication: string
+  }
+  missionControl?: {
+    open: boolean
+    minRole: string
   }
 }
 

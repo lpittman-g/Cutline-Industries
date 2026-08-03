@@ -10,6 +10,7 @@ import {
   updateHeatSpikeStatus,
 } from './db/thermalRepo.ts'
 import type { PlannedClip } from './planClips.ts'
+import { s3Configured, uploadThermalClipAssets } from './s3Storage.ts'
 
 const MEDIA_ROOT = path.join(ROOT, 'thermal_media')
 const DEFAULT_VOD = path.join(ROOT, 'inbox', 'cutline_test_vod.mp4')
@@ -70,8 +71,23 @@ export async function processHeatSpikeToClip(spikeId: number) {
     const thumbPath = path.join(outDir, 'thumb.jpg')
     await extractThumbnail(cleanPath, thumbPath, 1)
 
-    const mediaUrl = `/thermal-media/clips/${spikeId}/heat_clip_wm.mp4`
-    const thumbUrl = `/thermal-media/clips/${spikeId}/thumb.jpg`
+    let mediaUrl = `/thermal-media/clips/${spikeId}/heat_clip_wm.mp4`
+    let thumbUrl = `/thermal-media/clips/${spikeId}/thumb.jpg`
+    let cleanAsset = cleanPath
+    let watermarkedAsset = watermarkedPath
+
+    if (s3Configured()) {
+      const assets = await uploadThermalClipAssets({
+        spikeId,
+        cleanPath,
+        watermarkedPath,
+        thumbnailPath: thumbPath,
+      })
+      mediaUrl = assets.watermarked.url ?? mediaUrl
+      thumbUrl = assets.thumbnail.url ?? thumbUrl
+      cleanAsset = assets.clean.uri
+      watermarkedAsset = assets.watermarked.uri
+    }
 
     const clip = await insertClip({
       spike_id: spikeId,
@@ -81,8 +97,8 @@ export async function processHeatSpikeToClip(spikeId: number) {
       streamer_username: username,
       thumbnail_url: thumbUrl,
       media_url: mediaUrl,
-      s3_watermarked_url: watermarkedPath,
-      s3_clean_url: cleanPath,
+      s3_watermarked_url: watermarkedAsset,
+      s3_clean_url: cleanAsset,
       tier: 'gateway',
       price_usd: 15,
     })
