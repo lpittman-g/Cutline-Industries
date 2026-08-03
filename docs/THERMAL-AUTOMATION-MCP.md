@@ -6,8 +6,22 @@ without granting access to production systems.
 
 ## Create the automation
 
-Cursor Automations cannot be created from the cloud agent API. Create or rename
-the private automation in the Cursor dashboard:
+Cursor Automations cannot be created or renamed from the cloud agent API / MCP.
+Create or rename the private automation in the Cursor dashboard only.
+
+### Current status (needs dashboard fix)
+
+| Setting | Target | Observed |
+|---------|--------|----------|
+| Name | **Cutline Industries — Thermal Autopilot** | still `cutline industries` |
+| Id | keep existing | [`26c7e362-8eff-11f1-a7d1-d6b4613131ce`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce) |
+| Trigger | PR label `thermal-autopilot` **added only** | still fires on PR lifecycle (e.g. closed) |
+| Model | Grok 4.5 · High · Fast | matches |
+| Visibility | private | matches |
+| Memory | **disabled** | still enabled (automation memory available at runtime) |
+| GitHub label | `thermal-autopilot` | exists on the repo |
+
+### Dashboard steps
 
 1. Connect only `lpittman-g/Cutline-Industries` in
    [Cursor Integrations](https://cursor.com/dashboard/integrations).
@@ -16,7 +30,6 @@ the private automation in the Cursor dashboard:
 3. Open [New Automation](https://cursor.com/automations/new), or rename the
    existing private automation
    [`cutline industries`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce).
-   Cursor cannot create or rename automations via MCP — dashboard only.
 4. Name it **Cutline Industries — Thermal Autopilot**.
 5. Use a GitHub pull-request label trigger for the exact label
    `thermal-autopilot`, **added only** (not on PR opened / closed / every
