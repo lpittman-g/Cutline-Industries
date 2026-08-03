@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "voice-print": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["tools/voice-print/mcp/server.js"],
+      "env": {
+        "VOICE_PRINT_PRINTER_IP": "192.168.1.157",
+        "VOICE_PRINT_DEFAULT_FILE": "docs/combined-print.html"
+      },
+      "tools": ["print", "list_printables"]
+    }
+  }
+}

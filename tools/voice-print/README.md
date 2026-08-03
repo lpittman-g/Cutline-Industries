@@ -12,8 +12,9 @@ Configured for your printer from the status report:
 
 ## Quick start — print from chat
 
-1. **Local Cursor only** (same Wi‑Fi as the printer — cloud agents cannot reach it)
-2. One-time setup:
+Works in **Cursor**, **VS Code Copilot Chat**, and **Copilot CLI** on your PC (same Wi‑Fi as the printer).
+
+1. One-time setup:
 
 ```bash
 cd tools/voice-print
@@ -21,7 +22,18 @@ cp .env.example .env
 npm install
 ```
 
-3. Add to `~/.cursor/mcp.json` (or copy from repo `.cursor/mcp.json.example`):
+2. **GitHub Copilot (VS Code)** — configs are in the repo already:
+   - Open `.vscode/mcp.json` → click **Start** on `voice-print`
+   - Copilot Chat → **Agent** mode → type **`print`**
+
+3. **Copilot CLI** — loads `.mcp.json` / `.github/mcp.json` automatically:
+
+```bash
+copilot mcp list    # verify voice-print
+copilot             # then type: print
+```
+
+4. **Cursor** — add to `~/.cursor/mcp.json` (see `.cursor/mcp.json.example`):
 
 ```json
 "voice-print": {
@@ -33,11 +45,9 @@ npm install
 }
 ```
 
-4. Open this repo in **Cursor on your PC**, start a chat, and type or say:
+Then in chat type or say **`print`**. Default job: combined blueprint pack. Say **print architecture blueprint** for a specific file.
 
-**`print`**
-
-The agent sends the default combined print pack to your HP. Say **print architecture blueprint** to pick a specific file.
+Full Copilot guide: [`.github/instructions/voice-print.instructions.md`](../../.github/instructions/voice-print.instructions.md)
 
 ## Optional web UI (microphone)
 
@@ -74,7 +84,7 @@ HTML files are converted to PDF via headless Chrome/Edge before IPP print.
 | Printer offline | Confirm printer IP at http://192.168.1.157 on your LAN |
 | Mic not working | Use Chrome or Edge; allow microphone permission |
 | HTML won't print | Install Edge/Chrome; or print a PDF version |
-| Cloud agent can't print | This tool must run **on your PC**, not in Cursor Cloud |
+| Cloud agent can't print | Local VS Code / Copilot CLI / Cursor only — not GitHub cloud Copilot |
 
 ## Wi‑Fi Direct (optional)
 
