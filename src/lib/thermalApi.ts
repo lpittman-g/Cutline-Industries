@@ -40,6 +40,81 @@ export type DashboardSummary = {
   stripeMode?: string
 }
 
+export type MissionControlStatus = {
+  generatedAt: string
+  summary: {
+    implemented: number
+    ready: number
+    total: number
+  }
+  phases: {
+    id: string
+    name: string
+    status: 'ready' | 'needs_config'
+    implemented: boolean
+    description: string
+    checks: {
+      label: string
+      ready: boolean
+      required: boolean
+    }[]
+  }[]
+  nextActions: {
+    phaseId: string
+    label: string
+    detail: string
+  }[]
+  repositories: {
+    id: string
+    owner: string
+    name: string
+    defaultBranch: string
+    href: string
+    automationCount: number
+  }[]
+  automationSummary: {
+    running: number
+    attention: number
+    ready: number
+    external: number
+  }
+  automationGroups: {
+    id: string
+    label: string
+    agents: {
+      id: string
+      name: string
+      repositoryId: string
+      status: 'running' | 'ready' | 'attention' | 'external'
+      summary: string
+      run: {
+        mode: string
+        progress: number | null
+        progressState: 'determinate' | 'indeterminate' | 'external'
+        currentStep: string
+        lastRunAt: string | null
+        hasError: boolean
+      }
+      artifacts: {
+        label: string
+        href: string
+        count: number | null
+      }[]
+      launch: {
+        label: string
+        href: string
+        external: boolean
+      }
+    }[]
+  }[]
+  links: {
+    id: string
+    label: string
+    href: string
+    kind: 'github' | 'cursor'
+  }[]
+}
+
 export type ThermalSale = {
   id: number
   clip_id: number | null
@@ -128,6 +203,10 @@ export function fetchStreamers() {
 
 export function fetchDashboardSummary() {
   return getJson<DashboardSummary>('/api/dashboard/summary')
+}
+
+export function fetchMissionControlStatus() {
+  return getJson<MissionControlStatus>('/api/mission-control/status')
 }
 
 export function fetchClips() {

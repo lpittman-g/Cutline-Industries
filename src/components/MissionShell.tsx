@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 
 const NAV = [
   { to: '/app/dashboard', label: 'Dashboard' },
+  { to: '/app/mission-control', label: 'Automation / Progress' },
   { to: '/app/streams', label: 'Streams' },
   { to: '/app/clips', label: 'Clips' },
   { to: '/app/bounty', label: 'Bounty Board' },
