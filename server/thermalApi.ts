@@ -8,6 +8,7 @@ import {
   countQueuedBountyPosts,
   getBountyCaptionNotes,
   getClipById,
+  resolveFulfillmentCaptions,
   getRetainerById,
   insertRetainer,
   isRetainerStatus,
@@ -155,13 +156,7 @@ export function registerThermalRoutes(app: Express) {
       }
       const bountyCaptions = await getBountyCaptionNotes(id)
       const fulfillment = {
-        captions: {
-          // `social` aliases x for older checkout clients
-          social: clip.ai_caption ?? bountyCaptions.x ?? null,
-          x: clip.ai_caption ?? bountyCaptions.x ?? null,
-          tiktok: clip.ai_tiktok_caption ?? bountyCaptions.tiktok ?? null,
-          discord: clip.ai_discord_message ?? null,
-        },
+        captions: resolveFulfillmentCaptions(clip, bountyCaptions),
       }
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
         res.json({
