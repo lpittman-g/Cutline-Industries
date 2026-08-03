@@ -217,7 +217,8 @@ npm run db:migrate
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
 
-# Optional Discord heat alerts
+# Optional Discord heat alerts + clip drops
+# Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL
 DISCORD_HEAT_WEBHOOK_URL=
 
 # VOD source for clips when live VOD unavailable
@@ -264,3 +265,19 @@ TWITCH_CLIENT_SECRET=...
 ```
 
 Used by `server/twitchMonitor.ts` for Helix app-access tokens (live stream poll + streamer sync). If unset, the monitor stays in seed/simulate mode and the clip pipeline still works via **Force heat spike**.
+
+#### Discord
+
+- `DISCORD_HEAT_WEBHOOK_URL`
+
+There is no standalone credential dashboard. In Discord:
+
+**Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL**
+
+Paste into `.env`:
+
+```bash
+DISCORD_HEAT_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+Used by `server/discordNotify.ts` for heat detection and live clip-drop posts. If unset, Discord steps are skipped and the clip pipeline continues.
