@@ -3,6 +3,7 @@ import path from 'node:path'
 
 const PRINT_GLOBS = [
   'docs/architecture-blueprint.html',
+  'docs/ai-application-card-blueprint.html',
   'docs/combined-print.html',
   'docs/cover-sheet.html',
   'docs/cutline-4-week-outreach.html',
@@ -11,6 +12,7 @@ const PRINT_GLOBS = [
 
 const LABELS = {
   'docs/architecture-blueprint.html': 'Architecture blueprint',
+  'docs/ai-application-card-blueprint.html': 'AI Application Card blueprint',
   'docs/combined-print.html': 'Combined print pack',
   'docs/cover-sheet.html': 'Cover sheet',
   'docs/cutline-4-week-outreach.html': '4-week outreach plan',

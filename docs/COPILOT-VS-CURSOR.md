@@ -46,6 +46,8 @@ Open repo in **Cursor desktop**. See [CURSOR-PRIMARY.md](CURSOR-PRIMARY.md).
 
 ## Related
 
+- **[AI-APPLICATION-CARD-BLUEPRINT.md](AI-APPLICATION-CARD-BLUEPRINT.md)** — printable Application Card blueprint
+- [ai-application-card-blueprint.html](ai-application-card-blueprint.html) — print via voice-print
 - [CURSOR-PRIMARY.md](CURSOR-PRIMARY.md) — full Cursor guide
 - [COPILOT-ARCHITECTURE.md](COPILOT-ARCHITECTURE.md) — Copilot stack diagram
 - [VOICE-PRINT-PHONE.md](VOICE-PRINT-PHONE.md) — phone Print button (Cursor mobile UI can't be customized)

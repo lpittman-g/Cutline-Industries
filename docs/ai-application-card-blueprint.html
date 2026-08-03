@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cutline Industries — AI Application Card Blueprint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Pinyon+Script&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050a09;
+      --panel: #0f1c18;
+      --ink: #e8f7ef;
+      --muted: #8aa396;
+      --lime: #b8ff3c;
+      --cyan: #3dffd0;
+      --amber: #ffc857;
+      --line: rgba(184, 255, 60, 0.16);
+    }
+    * { box-sizing: border-box; }
+    @page { size: letter portrait; margin: 0.5in; }
+    @media print {
+      .actions { display: none !important; }
+      body { background: #fff; }
+      .page { border: 0; margin: 0; box-shadow: none; }
+    }
+    body {
+      margin: 0;
+      background: #111;
+      color: var(--ink);
+      font-family: "Libre Caslon Text", "IM Fell English", "Times New Roman", serif;
+      line-height: 1.4;
+    }
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0 auto 20px;
+      padding: 0.5in;
+      background:
+        radial-gradient(700px 360px at 100% 0%, rgba(61,255,208,0.08), transparent 50%),
+        linear-gradient(180deg, #07110f, var(--bg));
+      border: 1px solid var(--line);
+    }
+    .actions {
+      max-width: 8.5in;
+      margin: 16px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 8px;
+    }
+    .actions a, .actions button {
+      font-family: "Libre Caslon Text", serif;
+      border: 0;
+      background: var(--lime);
+      color: #04100c;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      border-bottom: 2px solid var(--lime);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .hdr h1 {
+      margin: 0;
+      font-family: "Pinyon Script", cursive;
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1.1;
+    }
+    .hdr .brand {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lime);
+      margin-bottom: 4px;
+    }
+    .hdr p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .badge {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .badge strong { color: var(--cyan); display: block; font-size: 12px; }
+    h2 {
+      font-size: 15px;
+      margin: 14px 0 8px;
+      color: var(--ink);
+    }
+    h3 {
+      font-size: 12px;
+      margin: 0 0 6px;
+      color: var(--cyan);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .card p, .card li { font-size: 10.5px; color: var(--muted); margin: 0; }
+    .card ul { margin: 4px 0 0; padding-left: 14px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin: 6px 0 4px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: rgba(184,255,60,0.08);
+      color: var(--lime);
+      font-weight: 700;
+    }
+    td { color: var(--muted); }
+    td strong { color: var(--ink); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .step {
+      background: rgba(184,255,60,0.06);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 9.5px;
+      color: var(--muted);
+    }
+    .step strong { display: block; color: var(--lime); font-size: 10.5px; margin-bottom: 2px; }
+    .note {
+      font-size: 10px;
+      color: var(--amber);
+      border-left: 2px solid var(--amber);
+      padding-left: 8px;
+      margin: 8px 0;
+    }
+    .foot {
+      margin-top: 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 9.5px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 9.5px;
+      color: var(--cyan);
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button type="button" onclick="window.print()">Print blueprint</button>
+    <a href="AI-APPLICATION-CARD-BLUEPRINT.md">Markdown source</a>
+    <a href="COPILOT-VS-CURSOR.md">Copilot vs Cursor</a>
+  </div>
+
+  <article class="page">
+    <header class="hdr">
+      <div>
+        <div class="brand">Cutline Industries · Thermal</div>
+        <h1>AI Application Card</h1>
+        <p>Responsible AI blueprint — Cursor primary · Copilot optional · Local tools on LAN</p>
+      </div>
+      <div class="badge">
+        <strong>Blueprint · Card</strong>
+        Inspired by GitHub Copilot Chat<br />
+        Application Card (responsible use)
+      </div>
+    </header>
+
+    <h2>1. Overview</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>What this application is</h3>
+        <p>
+          The Cutline AI layer helps operators build Thermal (heat → clip → pay → retain),
+          run agent tools, and print business blueprints. <strong>Cursor</strong> is the
+          primary host. GitHub Copilot configs are optional mirrors.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Intended users</h3>
+        <ul>
+          <li>Founder / ops (Lamont) on Cursor desktop or cloud</li>
+          <li>Same person on phone for LAN print Ops bar</li>
+          <li>Optional: VS Code + Copilot teammates</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>2. Cursor vs Copilot (use Cursor)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Copilot</th>
+          <th>Cursor (use this)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Copilot Chat</td>
+          <td><strong>Cursor chat</strong> (Agent mode)</td>
+        </tr>
+        <tr>
+          <td><code>copilot-instructions.md</code></td>
+          <td><strong><code>cutline-primary.mdc</code></strong></td>
+        </tr>
+        <tr>
+          <td>Cloud agent tasks</td>
+          <td><strong>Cursor Cloud Agent</strong></td>
+        </tr>
+        <tr>
+          <td>VS Code MCP</td>
+          <td><strong><code>~/.cursor/mcp.json</code></strong></td>
+        </tr>
+        <tr>
+          <td><code>@voice-print</code> agent</td>
+          <td><strong>Chat <code>print</code></strong> + voice-print MCP</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Architecture (surfaces → tools)</h2>
+    <div class="flow">
+      <div class="step"><strong>1 · Surfaces</strong>Cursor desktop · Cloud · Phone Ops</div>
+      <div class="step"><strong>2 · Client</strong>Chat · rules · MCP picker</div>
+      <div class="step"><strong>3 · Agent</strong>Context · think→act loop</div>
+      <div class="step"><strong>4 · Tools</strong>Edit · shell · MCP servers</div>
+      <div class="step"><strong>5 · Runtime</strong>PC LAN · Cloud VM · GitHub</div>
+    </div>
+    <p class="note">
+      Cloud / Cursor mobile cannot reach the HP OfficeJet on home Wi‑Fi.
+      Print from PC chat <code>print</code> or phone <code>/mobile.html</code> Ops bar.
+    </p>
+
+    <h2>4. Capabilities &amp; limitations</h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Can do</h3>
+        <ul>
+          <li>Edit Thermal UI / API / docs</li>
+          <li>Open PRs from Cursor Cloud</li>
+          <li>MCP: phone-approval-lite</li>
+          <li>MCP: voice-print (local PC)</li>
+          <li>Run migrate / start / pipelines</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Cannot do alone</h3>
+        <ul>
+          <li>Reach LAN printer from cloud</li>
+          <li>Spend Stripe / deploy prod without you</li>
+          <li>Bypass human PR review</li>
+          <li>Add buttons inside Cursor mobile UI</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Human oversight</h3>
+        <ul>
+          <li>You approve merges</li>
+          <li>Secrets stay in <code>.env</code> (never commit)</li>
+          <li>Stripe webhook + keys are yours</li>
+          <li>Print jobs: you start PC server</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>5. Repo wiring (application surface)</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Cursor (primary)</h3>
+        <ul>
+          <li><code>.cursor/rules/cutline-primary.mdc</code></li>
+          <li><code>.cursor/rules/voice-print.mdc</code></li>
+          <li><code>.cursor/mcp.json.example</code></li>
+          <li><code>docs/CURSOR-PRIMARY.md</code></li>
+          <li><code>docs/COPILOT-VS-CURSOR.md</code></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Copilot (optional mirror)</h3>
+        <ul>
+          <li><code>.github/copilot-instructions.md</code></li>
+          <li><code>.github/agents/voice-print.agent.md</code></li>
+          <li><code>.vscode/mcp.json</code> · <code>.mcp.json</code></li>
+          <li>GitHub Agent Tasks API (optional)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>6. Responsible use (Cutline standard)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Principle</th>
+          <th>How Cutline applies it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Transparency</strong></td>
+          <td>This card + docs explain what agents can do and where they run.</td>
+        </tr>
+        <tr>
+          <td><strong>Reliability &amp; safety</strong></td>
+          <td>Feature branches <code>cursor/*-6543</code>; CI (SynthLang); human merge.</td>
+        </tr>
+        <tr>
+          <td><strong>Privacy &amp; security</strong></td>
+          <td>No secrets in git; MCP local; printer only on home LAN.</td>
+        </tr>
+        <tr>
+          <td><strong>Accountability</strong></td>
+          <td>Operator owns Stripe, YouTube, and print decisions — AI proposes, you ship.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. Daily ops quick path</h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Code</h3>
+        <p>Open repo in Cursor → Agent chat → work Thermal / tools. No Copilot required.</p>
+      </div>
+      <div class="card">
+        <h3>Print</h3>
+        <p>PC: <code>cd tools/voice-print && npm start</code> · chat <code>print</code> or phone <code>/mobile.html</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Setup once</h3>
+        <p><code>./scripts/setup-cursor.sh</code> or <code>.\scripts\setup-cursor.ps1</code></p>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <span>cutline-industries.studio · HP OfficeJet 192.168.1.157</span>
+      <span>Ref: docs.github.com/en/copilot/responsible-use/chat · Application Card</span>
+    </footer>
+  </article>
+</body>
+</html>
