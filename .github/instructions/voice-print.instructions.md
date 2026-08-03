@@ -2,7 +2,13 @@
 applyTo: "tools/voice-print/**,.github/mcp.json,.mcp.json,.vscode/mcp.json,.copilot/mcp-config.json"
 ---
 
-# Voice Print for GitHub Copilot
+# Voice Print for GitHub Copilot + Cursor
+
+Unified with Cursor — canonical rules: [tools/voice-print/CHAT-PRINT.md](../../tools/voice-print/CHAT-PRINT.md).
+
+**Copilot agent:** `@voice-print` → [.github/agents/voice-print.agent.md](../agents/voice-print.agent.md)
+
+**Which app:** [tools/voice-print/APPS.md](../../tools/voice-print/APPS.md)
 
 ## Chat command
 
@@ -12,7 +18,7 @@ applyTo: "tools/voice-print/**,.github/mcp.json,.mcp.json,.vscode/mcp.json,.copi
 | `print architecture blueprint` | `print` with `file: docs/architecture-blueprint.html` |
 | `list printables` | `list_printables` |
 
-Always use **Agent** mode in VS Code Copilot Chat so MCP tools are available.
+Use **Agent** mode in VS Code Copilot Chat (or select `@voice-print`).
 
 ## One-time setup (Windows PC, same Wi‑Fi as printer)
 

@@ -1,29 +1,22 @@
 # Cutline Industries — GitHub Copilot instructions
 
-## Voice Print — say **print** in chat
+## Voice Print — shared with Cursor
 
-When the user message is **only** `print` (case-insensitive), or clearly means "print this now":
+Follow [tools/voice-print/CHAT-PRINT.md](../tools/voice-print/CHAT-PRINT.md).
 
-1. Call the **voice-print** MCP tool `print` with no `file` argument (default: `docs/combined-print.html`).
-2. If MCP is unavailable, run locally:
-   ```bash
-   cd tools/voice-print && npm run print -- docs/combined-print.html
-   ```
-3. Confirm what was sent and the printer IP (`192.168.1.157`).
+**Copilot:** use custom agent **`@voice-print`** (`.github/agents/voice-print.agent.md`).
 
-Variations:
+When the user says **`print`**:
 
-- **print architecture blueprint** → `print` with `file: docs/architecture-blueprint.html`
-- **list printables** → `list_printables`
+1. MCP tool **`print`** (default: `docs/combined-print.html`)
+2. Fallback: `cd tools/voice-print && npm run print -- docs/combined-print.html`
 
-**Local only:** VS Code Copilot, Copilot CLI, or Cursor on the same Wi‑Fi as the HP OfficeJet. GitHub **cloud** Copilot agents cannot reach the printer on your LAN.
-
-Setup: [`tools/voice-print/README.md`](../tools/voice-print/README.md) and [`.github/instructions/voice-print.instructions.md`](instructions/voice-print.instructions.md).
+**Apps matrix:** [tools/voice-print/APPS.md](../tools/voice-print/APPS.md) — cloud/mobile cannot reach the HP; phone uses LAN web UI.
 
 ## Repo tools
 
 | Tool | Purpose |
 |------|---------|
 | `tools/voice-print` | IPP print to HP OfficeJet via MCP `print` |
-| `tools/phone-approval-lite` | ntfy + web device approval (no Apple Dev account) |
+| `tools/phone-approval-lite` | ntfy + web device approval |
 | Thermal Mission Control | `npm run start` — API `:8787`, UI `:5173` |

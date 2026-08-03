@@ -12,7 +12,16 @@ Configured for your printer from the status report:
 
 ## Quick start — print from chat
 
-Works in **Cursor**, **VS Code Copilot Chat**, and **Copilot CLI** on your PC (same Wi‑Fi as the printer).
+**Cursor + Copilot (PC, same Wi‑Fi):** one command — **`print`**.
+
+| App | How |
+|-----|-----|
+| **Cursor** | MCP in `~/.cursor/mcp.json` → chat **`print`** |
+| **VS Code Copilot** | `.vscode/mcp.json` → Agent → **`@voice-print`** or **`print`** |
+| **Copilot CLI** | `copilot` → **`print`** |
+| **Phone** | PC `npm start` → open Phone URL → **Print** |
+
+Full app matrix: **[APPS.md](APPS.md)** · Shared rules: **[CHAT-PRINT.md](CHAT-PRINT.md)** · Copilot agent: **[.github/agents/voice-print.agent.md](../../.github/agents/voice-print.agent.md)**
 
 1. One-time setup:
 
