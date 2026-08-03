@@ -292,7 +292,7 @@ async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
   await fulfillClipCheckoutSession(session)
 }
 
-async function paymentIntentId(session: Stripe.Checkout.Session): string | null {
+function paymentIntentId(session: Stripe.Checkout.Session): string | null {
   if (typeof session.payment_intent === 'string') return session.payment_intent
   return session.payment_intent?.id ?? null
 }
@@ -302,36 +302,60 @@ function subscriptionId(session: Stripe.Checkout.Session): string | null {
   return session.subscription?.id ?? null
 }
 
+/** True when Stripe reports the PaymentIntent/charge was already refunded. */
+export function isAlreadyRefundedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  const code =
+    err && typeof err === 'object' && 'code' in err
+      ? String((err as { code?: unknown }).code ?? '')
+      : ''
+  return (
+    code === 'charge_already_refunded' ||
+    /already (been )?refunded|charge_already_refunded/i.test(msg)
+  )
+}
+
 /**
- * Losing buyer paid but another session claimed the clip first.
- * Mark the sale refunded and best-effort refund the PaymentIntent (skipped in dry-run).
+ * Losing buyer paid after another claim won — Stripe refund then ledger update.
+ * Marks sale `refunded` only when the refund succeeded (or was already refunded);
+ * otherwise `failed` so ops can retry. Skips Stripe calls when `CUTLINE_DRY_RUN=1`.
  */
 export async function resolveLostClaimRace(
   err: ClipAlreadyClaimedError,
   session: Stripe.Checkout.Session,
-): Promise<{ refunded: boolean; reason?: string }> {
+): Promise<{
+  refunded: boolean
+  saleStatus: 'refunded' | 'failed'
+  reason?: string
+  refundId?: string
+}> {
   const pi = paymentIntentId(session)
-  await markSaleLostClaimRace({
-    stripeCheckoutSessionId: session.id,
-    winningSessionId: err.existingSessionId,
-    stripePaymentIntentId: pi,
-    refundReason: 'clip_already_claimed',
-  })
+  const mark = (status: 'refunded' | 'failed') =>
+    markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      winningSessionId: err.existingSessionId,
+      stripePaymentIntentId: pi,
+      refundReason: 'clip_already_claimed',
+      status,
+    })
 
   if (!pi) {
-    return { refunded: false, reason: 'no_payment_intent' }
+    await mark('failed')
+    return { refunded: false, saleStatus: 'failed', reason: 'no_payment_intent' }
   }
+
   if (process.env.CUTLINE_DRY_RUN === '1') {
     console.warn('[stripe] dry-run: skip refund for lost claim race', {
       clipId: err.clipId,
       sessionId: session.id,
       paymentIntentId: pi,
     })
-    return { refunded: false, reason: 'dry_run' }
+    await mark('refunded')
+    return { refunded: false, saleStatus: 'refunded', reason: 'dry_run' }
   }
 
   try {
-    await getStripe().refunds.create({
+    const refund = await getStripe().refunds.create({
       payment_intent: pi,
       reason: 'duplicate',
       metadata: {
@@ -339,34 +363,56 @@ export async function resolveLostClaimRace(
         lost_claim_race: '1',
       },
     })
-    return { refunded: true }
+    await mark('refunded')
+    return { refunded: true, saleStatus: 'refunded', refundId: refund.id }
   } catch (refundErr) {
-    console.warn('[stripe] lost-claim refund failed; sale already marked refunded for ops', {
+    if (isAlreadyRefundedError(refundErr)) {
+      await mark('refunded')
+      return { refunded: true, saleStatus: 'refunded', reason: 'already_refunded' }
+    }
+    console.error('[stripe] lost-claim refund failed', {
       clipId: err.clipId,
       sessionId: session.id,
       paymentIntentId: pi,
       error: refundErr instanceof Error ? refundErr.message : String(refundErr),
     })
-    return { refunded: false, reason: 'stripe_error' }
+    await mark('failed')
+    return { refunded: false, saleStatus: 'failed', reason: 'stripe_error' }
   }
 }
 
+/** Alias used by preferred draft #88 tests/docs. */
+export const handleLostClaimRace = async (session: Stripe.Checkout.Session) => {
+  const clipId = Number(session.metadata?.clip_id ?? session.client_reference_id)
+  return resolveLostClaimRace(
+    new ClipAlreadyClaimedError(clipId || 0, null),
+    session,
+  )
+}
+
 /**
- * Losing retainer checkout paid after another activate won — ledger +
- * best-effort subscription cancel (and invoice refund when a PI is present).
+ * Losing retainer checkout paid after another activate won — cancel/refund
+ * first, then mark sale `refunded` or `failed` from the Stripe outcome.
  */
 export async function resolveLostRetainerRace(
   err: RetainerAlreadyActiveError,
   session: Stripe.Checkout.Session,
-): Promise<{ cancelled: boolean; refunded: boolean; reason?: string }> {
+): Promise<{
+  cancelled: boolean
+  refunded: boolean
+  saleStatus: 'refunded' | 'failed'
+  reason?: string
+}> {
   const pi = paymentIntentId(session)
   const subId = subscriptionId(session)
-  await markSaleLostClaimRace({
-    stripeCheckoutSessionId: session.id,
-    winningSessionId: err.existingSessionId,
-    stripePaymentIntentId: pi,
-    refundReason: 'retainer_already_active',
-  })
+  const mark = (status: 'refunded' | 'failed') =>
+    markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      winningSessionId: err.existingSessionId,
+      stripePaymentIntentId: pi,
+      refundReason: 'retainer_already_active',
+      status,
+    })
 
   if (process.env.CUTLINE_DRY_RUN === '1') {
     console.warn('[stripe] dry-run: skip cancel/refund for lost retainer race', {
@@ -375,11 +421,18 @@ export async function resolveLostRetainerRace(
       subscriptionId: subId,
       paymentIntentId: pi,
     })
-    return { cancelled: false, refunded: false, reason: 'dry_run' }
+    await mark('refunded')
+    return {
+      cancelled: false,
+      refunded: false,
+      saleStatus: 'refunded',
+      reason: 'dry_run',
+    }
   }
 
   let cancelled = false
   let refunded = false
+  let stripeError = false
   const stripe = getStripe()
 
   if (subId) {
@@ -387,6 +440,7 @@ export async function resolveLostRetainerRace(
       await stripe.subscriptions.cancel(subId)
       cancelled = true
     } catch (cancelErr) {
+      stripeError = true
       console.error('[stripe] lost-retainer subscription cancel failed', {
         retainerId: err.retainerId,
         sessionId: session.id,
@@ -408,18 +462,37 @@ export async function resolveLostRetainerRace(
       })
       refunded = true
     } catch (refundErr) {
-      console.error('[stripe] lost-retainer refund failed; sale already marked refunded for ops', {
-        retainerId: err.retainerId,
-        sessionId: session.id,
-        paymentIntentId: pi,
-        error: refundErr instanceof Error ? refundErr.message : String(refundErr),
-      })
+      if (isAlreadyRefundedError(refundErr)) {
+        refunded = true
+      } else {
+        stripeError = true
+        console.error('[stripe] lost-retainer refund failed', {
+          retainerId: err.retainerId,
+          sessionId: session.id,
+          paymentIntentId: pi,
+          error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+        })
+      }
+    }
+  } else if (!cancelled) {
+    // No payment intent and no cancel — nothing to settle; mark failed for ops.
+    await mark('failed')
+    return {
+      cancelled: false,
+      refunded: false,
+      saleStatus: 'failed',
+      reason: 'no_payment_intent',
     }
   }
+
+  const saleStatus: 'refunded' | 'failed' =
+    refunded || (cancelled && !stripeError) ? 'refunded' : 'failed'
+  await mark(saleStatus)
 
   return {
     cancelled,
     refunded,
+    saleStatus,
     reason: cancelled || refunded ? 'ok' : 'stripe_error',
   }
 }
@@ -465,19 +538,22 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     // Lost claim race: payment already fulfilled for another session — ack so Stripe stops retrying.
     if (err instanceof ClipAlreadyClaimedError) {
       let refunded = false
+      let saleStatus: 'refunded' | 'failed' = 'failed'
       if (session) {
         const resolved = await resolveLostClaimRace(err, session).catch((resolveErr) => {
           console.error('[stripe] lost-claim resolution failed', resolveErr)
-          return { refunded: false }
+          return { refunded: false, saleStatus: 'failed' as const }
         })
         refunded = resolved.refunded
+        saleStatus = resolved.saleStatus
       }
       console.warn('[stripe] clip already claimed; acknowledging webhook', {
         clipId: err.clipId,
         existingSessionId: err.existingSessionId,
         refunded,
+        saleStatus,
       })
-      res.json({ received: true, skipped: 'clip_already_claimed', refunded })
+      res.json({ received: true, skipped: 'clip_already_claimed', refunded, saleStatus })
       return
     }
 
@@ -485,25 +561,33 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     if (err instanceof RetainerAlreadyActiveError) {
       let cancelled = false
       let refunded = false
+      let saleStatus: 'refunded' | 'failed' = 'failed'
       if (session) {
         const resolved = await resolveLostRetainerRace(err, session).catch((resolveErr) => {
           console.error('[stripe] lost-retainer resolution failed', resolveErr)
-          return { cancelled: false, refunded: false }
+          return {
+            cancelled: false,
+            refunded: false,
+            saleStatus: 'failed' as const,
+          }
         })
         cancelled = resolved.cancelled
         refunded = resolved.refunded
+        saleStatus = resolved.saleStatus
       }
       console.warn('[stripe] retainer already active; acknowledging webhook', {
         retainerId: err.retainerId,
         existingSessionId: err.existingSessionId,
         cancelled,
         refunded,
+        saleStatus,
       })
       res.json({
         received: true,
         skipped: 'retainer_already_active',
         cancelled,
         refunded,
+        saleStatus,
       })
       return
     }
@@ -537,17 +621,21 @@ export async function confirmCheckoutSession(sessionId: string) {
     await fulfillCheckoutSession(session)
   } catch (err) {
     if (err instanceof ClipAlreadyClaimedError) {
-      const { refunded } = await resolveLostClaimRace(err, session)
+      const { refunded, saleStatus } = await resolveLostClaimRace(err, session)
       return {
         ok: false as const,
         status: 'clip_already_claimed' as const,
         clipId: err.clipId,
         existingSessionId: err.existingSessionId,
         refunded,
+        saleStatus,
       }
     }
     if (err instanceof RetainerAlreadyActiveError) {
-      const { cancelled, refunded } = await resolveLostRetainerRace(err, session)
+      const { cancelled, refunded, saleStatus } = await resolveLostRetainerRace(
+        err,
+        session,
+      )
       return {
         ok: false as const,
         status: 'retainer_already_active' as const,
@@ -555,6 +643,7 @@ export async function confirmCheckoutSession(sessionId: string) {
         existingSessionId: err.existingSessionId,
         cancelled,
         refunded,
+        saleStatus,
       }
     }
     throw err
