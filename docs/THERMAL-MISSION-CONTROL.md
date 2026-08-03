@@ -186,9 +186,11 @@ After FFmpeg + S3 completes, `thermalHeatAutopilot.ts`:
 4. Queues separate X and TikTok bounty posts with platform-specific captions
 5. Looks up a matching developer contact and sends the sample pitch with Gmail
 6. Persists X (`ai_caption`) and TikTok (`ai_tiktok_caption`) copy, completion state, and errors on the clip
-7. Paid checkout fulfillment returns X + TikTok captions (clip columns, then bounty notes)
+7. Paid checkout fulfillment returns X + TikTok captions with the clean download
+   (clip columns first, then bounty_posts.notes fallback)
 8. Operators can retry distribution via `POST /api/clips/:id/autopilot` (Clip Vault);
    retry refreshes bounty caption notes without un-posting live bounty rows
+9. TikTok captions persist on `clips.ai_tiktok_caption` (migration `009`)
 
 No cron “keep alive” task is used. The existing Twitch monitor polls for live
 heat while the API process is running; production uptime belongs to the hosting
@@ -198,11 +200,14 @@ service.
 OPENAI_API_KEY=...
 OPENAI_THERMAL_MODEL=gpt-4o-mini
 GOOGLE_WORKSPACE_SENDER_EMAIL=lpittman@cutline-industries.studio
+# Prefer THERMAL_PUBLIC_URL for Discord / checkout / autopilot links (falls back to CUTLINE_PUBLIC_URL)
+THERMAL_PUBLIC_URL=http://127.0.0.1:5173
 ```
 
 Google OAuth must be re-authorized once with the `gmail.send` scope before the
-pitch email step can send. Missing credentials skip/fail that channel without
-losing the rendered clip. Full setup: [`GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md).
+pitch email step can send. Missing Discord webhook or Gmail sender records a
+skip reason on the clip without losing the rendered media. Full setup:
+[`GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md).
 
 ## Next steps
 

@@ -110,17 +110,15 @@ export function CheckoutPage() {
             ) : (
               <p className="chip">Stripe Checkout — live when STRIPE_SECRET_KEY is set</p>
             )}
-            {(fulfillmentCaptions?.x ||
-              fulfillmentCaptions?.tiktok ||
-              (paid && (clip.ai_caption || clip.ai_tiktok_caption))) && (
-              <div style={{ color: 'var(--muted)', marginTop: '1rem', lineHeight: 1.7 }}>
-                {(fulfillmentCaptions?.x || clip.ai_caption) && (
-                  <p>X caption: {fulfillmentCaptions?.x || clip.ai_caption}</p>
-                )}
-                {(fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption) && (
-                  <p>TikTok caption: {fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption}</p>
-                )}
-              </div>
+            {(fulfillmentCaptions?.x || (paid && clip.ai_caption)) && (
+              <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
+                X caption: {fulfillmentCaptions?.x || clip.ai_caption}
+              </p>
+            )}
+            {(fulfillmentCaptions?.tiktok || (paid && clip.ai_tiktok_caption)) && (
+              <p style={{ color: 'var(--muted)', marginTop: '0.5rem' }}>
+                TikTok caption: {fulfillmentCaptions?.tiktok || clip.ai_tiktok_caption}
+              </p>
             )}
             <div className="btn-row" style={{ marginTop: '1rem' }}>
               {downloadUrl && (
