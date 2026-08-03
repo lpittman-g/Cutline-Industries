@@ -49,6 +49,22 @@ Then in chat type or say **`print`**. Default job: combined blueprint pack. Say 
 
 Full Copilot guide: [`.github/instructions/voice-print.instructions.md`](../../.github/instructions/voice-print.instructions.md)
 
+## Print from your phone
+
+Cursor **mobile/cloud chat cannot reach your printer**. Use this instead:
+
+1. On your **PC** (same Wi‑Fi as HP), leave this running:
+
+```bash
+cd tools/voice-print && npm start
+```
+
+2. Note the **Phone URL** printed in the terminal, e.g. `http://192.168.1.42:8791`
+3. On your **phone** (same Wi‑Fi), open that URL in Safari/Chrome
+4. Tap the big **Print** button, or tap **Say “print”** and speak the word
+
+Add the URL to your phone home screen for one-tap access.
+
 ## Optional web UI (microphone)
 
 ```bash
