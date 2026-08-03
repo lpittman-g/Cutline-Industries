@@ -69,6 +69,21 @@ export async function uploadFile(input: {
   }
 }
 
+/**
+ * Upload a local MP4 preview and return its CloudFront URL when configured,
+ * otherwise the regional S3 URL. The bucket/prefix must be readable by the
+ * CDN or bucket policy for the returned URL to be publicly accessible.
+ */
+export async function uploadClipToS3(filePath: string, s3Key: string): Promise<string> {
+  const uploaded = await uploadFile({
+    filePath,
+    key: s3Key,
+    publicRead: true,
+  })
+  if (!uploaded.url) throw new Error('S3 upload completed without a public URL')
+  return uploaded.url
+}
+
 export async function uploadThermalClipAssets(input: {
   spikeId: number
   cleanPath: string
