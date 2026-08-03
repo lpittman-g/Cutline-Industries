@@ -42,6 +42,11 @@
         font-weight: 600;
         cursor: pointer;
       }
+      button.print-big {
+        font-size: 1.35rem;
+        padding: 1rem 1.1rem;
+        min-height: 3.25rem;
+      }
       button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -77,16 +82,17 @@
   </head>
   <body>
     <h1>Voice Print</h1>
-    <p>
-      Say <strong id="wakeWord">print</strong> to send the selected blueprint to your HP OfficeJet.
-      Runs on your local network — keep this tab open on the same Wi‑Fi as the printer.
+    <p id="intro">
+      On your <strong>phone</strong>: stay on home Wi‑Fi, tap <strong>Print</strong> below, or say
+      <strong id="wakeWord">print</strong>. Your PC must be running <code>npm start</code> in
+      <code>tools/voice-print</code>.
     </p>
 
     <label for="file">Blueprint / file</label>
     <select id="file"></select>
 
-    <button id="listenBtn" class="primary" type="button">Start listening for “print”</button>
-    <button id="printNowBtn" type="button">Print now (no voice)</button>
+    <button id="printNowBtn" class="primary print-big" type="button">Print</button>
+    <button id="listenBtn" type="button">Say “print” (mic)</button>
 
     <div id="status" class="status">Loading catalog…</div>
 
@@ -221,6 +227,10 @@
         .then((h) => {
           wakeWord = h.wakeWord || 'print'
           wakeWordEl.textContent = wakeWord
+          if (h.phoneUrls?.length) {
+            document.getElementById('intro').innerHTML =
+              `Phone URL: <strong>${h.phoneUrls[0]}</strong> — tap <strong>Print</strong> or say <strong>${wakeWord}</strong>.`
+          }
         })
         .finally(loadCatalog)
     </script>
