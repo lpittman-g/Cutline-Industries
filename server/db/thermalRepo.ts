@@ -525,6 +525,9 @@ export async function setClipCheckoutSession(clipId: number, sessionId: string) 
   )
 }
 
+/** Advisory-lock class for clip checkout session creation (see createCheckoutSession). */
+export const CLIP_CHECKOUT_LOCK_CLASS = 42001
+
 /**
  * Stripe webhook / confirm may retry. Allow unclaimed → claimed, or the same
  * checkout session replaying; reject a second buyer session.
@@ -550,6 +553,36 @@ export class ClipAlreadyClaimedError extends Error {
     this.clipId = clipId
     this.existingSessionId = existingSessionId
   }
+}
+
+/**
+ * Mark the losing checkout's sales row refunded after a claim race.
+ * Idempotent for already-refunded rows.
+ */
+export async function markSaleLostClaimRace(input: {
+  stripeCheckoutSessionId: string
+  stripePaymentIntentId?: string | null
+}): Promise<SaleRow | null> {
+  const res = await getPool().query(
+    `UPDATE sales
+     SET status = 'refunded',
+         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+         metadata = COALESCE(metadata, '{}'::jsonb) ||
+           jsonb_build_object(
+             'lost_claim_race', true,
+             'refund_reason', 'clip_already_claimed'
+           )
+     WHERE stripe_checkout_session_id = $1
+       AND status <> 'refunded'
+     RETURNING *`,
+    [input.stripeCheckoutSessionId, input.stripePaymentIntentId ?? null],
+  )
+  if (res.rows[0]) return mapSale(res.rows[0])
+  const existing = await getPool().query(
+    `SELECT * FROM sales WHERE stripe_checkout_session_id = $1 LIMIT 1`,
+    [input.stripeCheckoutSessionId],
+  )
+  return existing.rows[0] ? mapSale(existing.rows[0]) : null
 }
 
 export async function claimClip(input: {
