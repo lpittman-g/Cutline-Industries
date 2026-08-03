@@ -101,6 +101,7 @@ Surfaces (Cursor desktop · Cloud · Phone Ops)
 1. Open repo in **Cursor** (after `setup-cursor`)
 2. Chat for code / Thermal / tools
 3. Print: PC `tools/voice-print` → chat **`print`** or phone **`/mobile.html`**
+4. Phone Ops: **⋯ → Select AI Application Card** then **Print** (LAN only)
 
 ---
 

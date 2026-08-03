@@ -12,14 +12,14 @@ Configured for your printer from the status report:
 
 ## Quick start — print from chat
 
-**Cursor + Copilot (PC, same Wi‑Fi):** one command — **`print`**.
+**Prefer Cursor** (PC, same Wi‑Fi): one command — **`print`**. Copilot mirrors are optional.
 
 | App | How |
 |-----|-----|
-| **Cursor** | MCP in `~/.cursor/mcp.json` → chat **`print`** |
-| **VS Code Copilot** | `.vscode/mcp.json` → Agent → **`@voice-print`** or **`print`** |
-| **Copilot CLI** | `copilot` → **`print`** |
-| **Phone** | PC `npm start` → open Phone URL → **Print** |
+| **Cursor** (primary) | MCP in `~/.cursor/mcp.json` → chat **`print`** |
+| **Phone Ops bar** | PC `npm start` → `http://<PC-IP>:8791/mobile.html` → **Print** / **⋯** |
+| **VS Code Copilot** (optional) | `.vscode/mcp.json` → Agent → **`@voice-print`** or **`print`** |
+| **Copilot CLI** (optional) | `copilot` → **`print`** |
 
 Full app matrix: **[APPS.md](APPS.md)** · Shared rules: **[CHAT-PRINT.md](CHAT-PRINT.md)** · Copilot agent: **[.github/agents/voice-print.agent.md](../../.github/agents/voice-print.agent.md)**
 
