@@ -35,6 +35,14 @@ The update script (run automatically on VM startup) installs npm dependencies on
 - Public `/feedback` submissions and AI-pipeline audience input persist to `inbox/audience_inputs.json` (a JSON file store), NOT to Postgres. Postgres backs the Thermal pipeline tables (`streamers`, `heat_spikes`, `clips`, `retainers`, `sales`, `bounty_posts`) and auth.
 - The API degrades gracefully when Postgres is down (endpoints report `connected: false`), so a healthy `/api/health` alone does not prove the DB is up — check `/api/thermal/schema` for `connected: true` / `migrated: true`.
 
+### Optional content pipelines (VOD Autopilot + AI video)
+
+These are optional background workers, not part of the core web app, so they are NOT installed by the update script.
+
+- AI video pipeline (`npm run ai:pipeline:once` / `npm run ai:pipeline`) needs the Python `edge-tts` package for text-to-speech. Install it once with `python3 -m pip install --break-system-packages edge-tts` (Ubuntu 24.04 is PEP 668 externally-managed, hence the flag). It reads `/feedback` audience input, renders Shorts with FFmpeg, and dry-run uploads while `CUTLINE_DRY_RUN=1`. edge-tts requires network egress to Microsoft's TTS endpoint.
+- VOD Autopilot (`npm run autopilot:once` / `npm run autopilot`) processes `.mp4` files placed in `inbox/`, cutting vertical Shorts into `shorts_out/<name>/`. The running API's `thermal-monitor` also scans `inbox/` on its poll interval, so any mp4 dropped there will be picked up by both.
+- Both engines default to dry-run (no real YouTube upload) until Google OAuth (`token.json`) is configured; they render real media locally regardless.
+
 ### Lint / test / build
 
 Use the root `package.json` scripts: `npm run lint` (oxlint), `npm run typecheck` (tsc), `npm test` (node test runner), `npm run verify` (all three), `npm run build` (production build; not needed for dev). None of these require Postgres.
