@@ -7,6 +7,7 @@ import {
   getClipById,
   getRetainerById,
   insertPendingSale,
+  isFulfillmentConflictError,
   setClipCheckoutSession,
   setRetainerCheckoutSession,
 } from './db/thermalRepo.ts'
@@ -278,6 +279,13 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
     res.json({ received: true })
   } catch (err) {
+    // Second buyer lost the FOR UPDATE race — ACK so Stripe does not retry forever.
+    // confirmCheckoutSession still surfaces the conflict to the redirect UI.
+    if (isFulfillmentConflictError(err)) {
+      console.warn('[stripe] fulfillment conflict (acked)', err.message)
+      res.json({ received: true, conflict: true })
+      return
+    }
     console.error('[stripe] webhook handler error', err)
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }

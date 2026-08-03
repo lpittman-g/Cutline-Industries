@@ -49,6 +49,11 @@ Google Workspace services. Never print, commit, or expose credentials. Run the
 repository verification suite and create a draft PR. Never merge automatically.
 ```
 
+Draft PRs from `cursor/cutline-thermal-autopilot-*` (or labeled
+`thermal-autopilot`) are excluded from
+[`.github/workflows/auto-approve-cursor-prs.yml`](../.github/workflows/auto-approve-cursor-prs.yml)
+so this automation cannot undraft/squash-merge its own changes.
+
 ## Safe MCP connection pack
 
 The copyable config is
