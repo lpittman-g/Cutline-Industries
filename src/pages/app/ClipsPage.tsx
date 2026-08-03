@@ -84,11 +84,6 @@ export function ClipsPage() {
                       Autopilot notes: {clip.autopilot_error}
                     </p>
                   )}
-                  {clip.autopilot_error && (
-                    <p className="chip warn" style={{ whiteSpace: 'pre-wrap' }}>
-                      Autopilot notes: {clip.autopilot_error}
-                    </p>
-                  )}
                   {clip.ai_caption && (
                     <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
                       X: {clip.ai_caption}
