@@ -197,7 +197,7 @@ GOOGLE_WORKSPACE_SENDER_EMAIL=lpittman@cutline-industries.studio
 
 Google OAuth must be re-authorized once with the `gmail.send` scope before the
 pitch email step can send. Missing credentials skip/fail that channel without
-losing the rendered clip.
+losing the rendered clip. Full setup: [`GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md).
 
 ## Next steps
 

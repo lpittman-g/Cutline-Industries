@@ -41,13 +41,27 @@ export function PlaybookPage() {
           <h3 style={{ fontFamily: 'var(--font-display)', marginTop: 0 }}>One-time (you)</h3>
           <ol style={{ color: 'var(--muted)', paddingLeft: '1.1rem', lineHeight: 1.7 }}>
             <li>Create your YouTube channel on the Google account you want to grow.</li>
-            <li>Enable YouTube Data API v3 in Google Cloud (same account).</li>
+            <li>
+              Enable <strong>YouTube Data API v3</strong> and <strong>Gmail API</strong> in Google
+              Cloud (same account / project).
+            </li>
             <li>
               Create a <strong>Web</strong> OAuth client with redirect{' '}
-              <code>https://developers.google.com/oauthplayground</code>.
+              <code>https://developers.google.com/oauthplayground</code> → save{' '}
+              <code>client_secret.json</code>.
             </li>
-            <li>Add yourself as an OAuth test user, then authorize in OAuth Playground.</li>
-            <li>Paste the refresh token on the Autopilot page once.</li>
+            <li>
+              Set <code>GOOGLE_CLOUD_PROJECT</code> and <code>GOOGLE_WORKSPACE_SENDER_EMAIL</code> in{' '}
+              <code>.env</code>.
+            </li>
+            <li>
+              Add yourself as an OAuth test user, then authorize YouTube + <code>gmail.send</code>{' '}
+              (Autopilot <strong>Open OAuth</strong> or OAuth Playground).
+            </li>
+            <li>
+              Exchange the code or paste the refresh token on Autopilot → writes{' '}
+              <code>token.json</code>.
+            </li>
             <li>
               Drop VODs into <code>inbox/</code> and run <code>npm run autopilot</code>.
             </li>

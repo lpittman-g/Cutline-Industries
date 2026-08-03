@@ -313,16 +313,20 @@ app.get('/api/google/youtube/channel', async (_req, res) => {
 
 app.get('/api/google/oauth/url', async (_req, res) => {
   try {
+    const google = await getGoogleCloudStatus()
     const url = await buildYoutubeAuthUrl()
     res.json({
       ok: true,
-      account: 'lpittman@cutline-industries.studio',
+      account: google.accountEmailHint,
       url,
+      scopes: google.oauth.scopes,
+      links: google.links,
       instructions: [
-        'Open url and sign in as lpittman@cutline-industries.studio',
-        'Allow YouTube access',
+        `Open url and sign in as ${google.accountEmailHint}`,
+        'Allow YouTube (upload + channel) and Gmail send scopes',
         'On the OAuth Playground page, copy the code= value from the browser URL or Step 2 authorization code',
-        'POST { "code": "4/..." } to /api/google/oauth/exchange',
+        'POST { "code": "4/..." } to /api/google/oauth/exchange (or paste on Autopilot)',
+        'token.json is written to the project root (gitignored)',
       ],
     })
   } catch (err) {
