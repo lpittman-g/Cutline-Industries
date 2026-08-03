@@ -25,6 +25,13 @@ export const GOOGLE_APIS = [
     required: false,
     purpose: 'Traffic measurement via gtag measurement ID',
   },
+  {
+    id: 'gmail-send',
+    name: 'Gmail API (send only)',
+    consoleUrl: 'https://console.cloud.google.com/apis/library/gmail.googleapis.com',
+    required: false,
+    purpose: 'Send Thermal sample pitch emails from Google Workspace',
+  },
 ] as const
 
 export async function getGoogleCloudStatus() {

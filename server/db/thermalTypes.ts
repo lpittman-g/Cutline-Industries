@@ -47,6 +47,13 @@ export type ClipRow = {
   sale_amount_cents?: number | null
   claimed_at?: string | null
   stripe_checkout_session_id?: string | null
+  ai_caption?: string | null
+  ai_discord_message?: string | null
+  ai_dev_email_subject?: string | null
+  ai_dev_email_body?: string | null
+  autopilot_status?: string | null
+  autopilot_error?: string | null
+  autopilot_completed_at?: string | null
 }
 
 export type SaleStatus = 'pending' | 'completed' | 'refunded' | 'failed'

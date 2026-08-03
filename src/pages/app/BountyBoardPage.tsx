@@ -193,7 +193,12 @@ export function BountyBoardPage() {
                         Update metrics
                       </button>
                     )}
-                    <Link className="btn" to={`/checkout/${post.clip_id}`} target="_blank" rel="noreferrer">
+                    <Link
+                      className="btn"
+                      to={`/checkout/${post.clip_id}?tier=bounty`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Claim CTA ↗
                     </Link>
                   </div>

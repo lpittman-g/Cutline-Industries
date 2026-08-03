@@ -20,6 +20,8 @@ export function CheckoutPage() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const paid = search.get('paid') === '1'
   const canceled = search.get('canceled') === '1'
+  const requestedTier = search.get('tier')
+  const checkoutTier = requestedTier === 'bounty' ? 'bounty' : clip?.tier ?? 'gateway'
 
   useEffect(() => {
     if (!numericId) return
@@ -51,7 +53,7 @@ export function CheckoutPage() {
     setLoading(true)
     setError(null)
     try {
-      const session = await createCheckoutSession(clip.id, clip.tier)
+      const session = await createCheckoutSession(clip.id, checkoutTier)
       window.location.href = session.url
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Checkout failed')
@@ -59,7 +61,7 @@ export function CheckoutPage() {
     }
   }
 
-  const amountCents = clip?.tier === 'bounty' ? 5000 : 1500
+  const amountCents = checkoutTier === 'bounty' ? 5000 : 1500
 
   return (
     <div className="public-page thermal-page">
@@ -83,7 +85,7 @@ export function CheckoutPage() {
               {clip.title ?? `Clip #${clip.id}`}
             </h2>
             <p style={{ color: 'var(--muted)' }}>
-              @{clip.streamer_username} · {clip.game} · {tierPriceLabel(clip.tier)} (
+              @{clip.streamer_username} · {clip.game} · {tierPriceLabel(checkoutTier)} (
               {formatUsd(amountCents)})
             </p>
             <ul style={{ color: 'var(--muted)', lineHeight: 1.7 }}>

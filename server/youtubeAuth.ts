@@ -12,6 +12,7 @@ export const TOKEN_PATH = path.join(ROOT, 'token.json')
 const SCOPES = [
   'https://www.googleapis.com/auth/youtube.upload',
   'https://www.googleapis.com/auth/youtube',
+  'https://www.googleapis.com/auth/gmail.send',
 ]
 
 type ClientSecretFile = {

@@ -31,3 +31,32 @@ export async function notifyDiscordHeat(opts: {
   if (!res.ok) throw new Error(`Discord webhook ${res.status}`)
   return { ok: true }
 }
+
+export async function sendDiscordClipDrop(opts: {
+  streamer: string
+  game: string
+  message: string
+  previewUrl: string
+  checkoutUrl: string
+}) {
+  const webhook = process.env.DISCORD_HEAT_WEBHOOK_URL?.trim()
+  if (!webhook) return { skipped: true, reason: 'DISCORD_HEAT_WEBHOOK_URL not set' }
+
+  const res = await fetch(webhook, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: `🔥 **HEAT SPIKE · @${opts.streamer}**\n${opts.message}\n\n👉 [Unlock clean clip ($15)](${opts.checkoutUrl})`,
+      embeds: [
+        {
+          title: `${opts.game} · Thermal preview`,
+          url: opts.previewUrl,
+          description: `[Watch watermarked preview](${opts.previewUrl})`,
+          color: 0xff6b35,
+        },
+      ],
+    }),
+  })
+  if (!res.ok) throw new Error(`Discord clip drop webhook ${res.status}`)
+  return { ok: true }
+}
