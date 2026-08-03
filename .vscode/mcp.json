@@ -1,5 +1,5 @@
 {
-  "servers": {
+  "mcpServers": {
     "voice-print": {
       "type": "stdio",
       "command": "node",
