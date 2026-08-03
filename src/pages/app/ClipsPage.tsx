@@ -77,9 +77,11 @@ export function ClipsPage() {
                   {clip.autopilot_status && (
                     <p className={clip.autopilot_status === 'failed' ? 'chip warn' : 'chip ready'}>
                       AI autopilot: {clip.autopilot_status}
-                      {clip.autopilot_status === 'failed' && clip.autopilot_error
-                        ? ` — ${clip.autopilot_error}`
-                        : ''}
+                    </p>
+                  )}
+                  {clip.autopilot_error && (
+                    <p className="chip warn" style={{ whiteSpace: 'pre-wrap' }}>
+                      Autopilot notes: {clip.autopilot_error}
                     </p>
                   )}
                   {clip.autopilot_error && (
