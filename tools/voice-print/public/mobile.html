@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Cutline Ops" />
+    <meta name="theme-color" content="#0b0f14" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Cutline Ops</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #0b0f14;
+        color: #e8eef5;
+        --bar-h: 3.25rem;
+        --safe-b: env(safe-area-inset-bottom, 0px);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        padding: 1rem 1rem calc(var(--bar-h) + var(--safe-b) + 1.25rem);
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.35rem;
+      }
+      .sub {
+        color: #9fb0c3;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        margin-bottom: 1rem;
+      }
+      select {
+        width: 100%;
+        font: inherit;
+        padding: 0.65rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        background: #111827;
+        color: inherit;
+        margin-bottom: 0.75rem;
+      }
+      .status {
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: #111827;
+        min-height: 2.5rem;
+        font-size: 0.9rem;
+      }
+      .ok {
+        color: #4ade80;
+      }
+      .err {
+        color: #f87171;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+      .links {
+        margin-top: 1rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .links a {
+        color: #7dd3fc;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      /* Bottom bar — same zone as Cursor mobile chat toolbar */
+      .bottom-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 0.5rem 0.65rem calc(0.5rem + var(--safe-b));
+        background: rgba(17, 24, 39, 0.96);
+        border-top: 1px solid #334155;
+        backdrop-filter: blur(12px);
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        z-index: 10;
+      }
+      .bar-btn {
+        border: 1px solid #334155;
+        background: #1e293b;
+        color: inherit;
+        border-radius: 999px;
+        height: 2.5rem;
+        min-width: 2.5rem;
+        padding: 0 0.65rem;
+        font: inherit;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .bar-btn:active {
+        transform: scale(0.97);
+      }
+      .bar-label {
+        flex: 1;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #9fb0c3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bar-btn.print {
+        background: #0ea5e9;
+        border-color: #0ea5e9;
+        color: #001018;
+        font-weight: 700;
+        padding: 0 1rem;
+        min-width: 4.5rem;
+      }
+      .bar-btn.mic.listening {
+        box-shadow: 0 0 0 2px #22c55e;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Cutline Ops</h1>
+    <p class="sub" id="intro">
+      Tap <strong>Print</strong> in the bottom bar (same spot as a Cursor chat button). PC must run
+      <code>npm start</code> in <code>tools/voice-print</code>.
+    </p>
+
+    <label for="file">Blueprint</label>
+    <select id="file"></select>
+    <div id="status" class="status">Loading…</div>
+
+    <div class="links">
+      <a href="/">Full voice-print page</a>
+      <a href="https://cutline-industries.studio/app/dashboard" target="_blank" rel="noopener"
+        >Thermal Mission Control</a
+      >
+    </div>
+
+    <!-- Fixed bottom toolbar (Cursor-style slot) -->
+    <nav class="bottom-bar" aria-label="Cutline actions">
+      <button type="button" class="bar-btn" id="moreBtn" title="Refresh catalog">＋</button>
+      <span class="bar-label" id="barLabel">Cutline Ops</span>
+      <button type="button" class="bar-btn print" id="printBtn">Print</button>
+      <button type="button" class="bar-btn mic" id="micBtn" title="Say print">🎤</button>
+    </nav>
+
+    <script>
+      const fileEl = document.getElementById('file')
+      const statusEl = document.getElementById('status')
+      const printBtn = document.getElementById('printBtn')
+      const micBtn = document.getElementById('micBtn')
+      const moreBtn = document.getElementById('moreBtn')
+      const barLabel = document.getElementById('barLabel')
+
+      let wakeWord = 'print'
+      let recognition = null
+      let listening = false
+      let lastPrintAt = 0
+
+      function setStatus(html, cls = '') {
+        statusEl.innerHTML = html
+        statusEl.className = 'status ' + cls
+      }
+
+      async function loadCatalog() {
+        const res = await fetch('/api/catalog')
+        const data = await res.json()
+        fileEl.innerHTML = ''
+        for (const item of data.items) {
+          const opt = document.createElement('option')
+          opt.value = item.path
+          opt.textContent = item.label
+          fileEl.appendChild(opt)
+        }
+        setStatus(`Ready — ${data.items.length} files.`)
+        barLabel.textContent = fileEl.selectedOptions[0]?.textContent?.slice(0, 24) || 'Cutline Ops'
+      }
+
+      fileEl.addEventListener('change', () => {
+        barLabel.textContent = fileEl.selectedOptions[0]?.textContent?.slice(0, 24) || 'Cutline Ops'
+      })
+
+      async function doPrint(source) {
+        const file = fileEl.value
+        if (!file) {
+          setStatus('<span class="err">Pick a file.</span>')
+          return
+        }
+        printBtn.disabled = true
+        setStatus(`<span class="warn">Printing…</span> (${source})`)
+        try {
+          const res = await fetch('/api/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file }),
+          })
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || res.statusText)
+          setStatus(`<span class="ok">Sent to printer.</span> ${data.file}`)
+        } catch (err) {
+          setStatus(`<span class="err">${err.message}</span>`)
+        } finally {
+          printBtn.disabled = false
+        }
+      }
+
+      printBtn.addEventListener('click', () => doPrint('button'))
+
+      moreBtn.addEventListener('click', () => loadCatalog())
+
+      function toggleMic() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+        if (!SpeechRecognition) {
+          setStatus('<span class="err">Mic needs Safari or Chrome.</span>')
+          return
+        }
+        if (listening && recognition) {
+          recognition.stop()
+          return
+        }
+        recognition = new SpeechRecognition()
+        recognition.continuous = true
+        recognition.interimResults = true
+        recognition.lang = 'en-US'
+        recognition.onstart = () => {
+          listening = true
+          micBtn.classList.add('listening')
+          setStatus('Listening — say <strong>print</strong>.')
+        }
+        recognition.onend = () => {
+          listening = false
+          micBtn.classList.remove('listening')
+        }
+        recognition.onresult = (event) => {
+          let t = ''
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            t += event.results[i][0].transcript
+          }
+          if (
+            t.toLowerCase().includes(wakeWord) &&
+            Date.now() - lastPrintAt > 4000
+          ) {
+            lastPrintAt = Date.now()
+            doPrint('voice')
+          }
+        }
+        recognition.start()
+      }
+
+      micBtn.addEventListener('click', toggleMic)
+
+      fetch('/api/health')
+        .then((r) => r.json())
+        .then((h) => {
+          wakeWord = h.wakeWord || 'print'
+        })
+        .finally(loadCatalog)
+    </script>
+  </body>
+</html>

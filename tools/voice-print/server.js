@@ -74,8 +74,11 @@ app.listen(PORT, HOST, () => {
   const ips = lanAddresses()
   console.log(`Voice Print listening on http://${HOST}:${PORT}`)
   if (ips.length) {
-    console.log('Phone (same Wi‑Fi): open one of these URLs and tap Print or say "print":')
-    for (const ip of ips) console.log(`  http://${ip}:${PORT}`)
+    console.log('Phone (same Wi‑Fi):')
+    for (const ip of ips) {
+      console.log(`  Ops bar:  http://${ip}:${PORT}/mobile.html  ← Print button (Add to Home Screen)`)
+      console.log(`  Full UI:  http://${ip}:${PORT}/`)
+    }
   }
   console.log(`Wake word: "${WAKE_WORD}" → HP at ${process.env.VOICE_PRINT_PRINTER_IP || '192.168.1.157'}`)
 })

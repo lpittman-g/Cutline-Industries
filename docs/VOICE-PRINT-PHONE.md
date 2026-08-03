@@ -20,11 +20,15 @@ Send Cutline docs to the **HP OfficeJet Pro 9120** (`192.168.1.157`) straight fr
    Phone URL → http://192.168.1.42:8791
    ```
 
-3. **On your phone** (same Wi‑Fi), open that URL in Safari or Chrome.
+3. **On your phone** (same Wi‑Fi), open the **Ops bar** (bottom Print button — same spot as Cursor chat toolbar):
 
-4. Tap **Print** (sends the default blueprint pack), or tap **Say "print"** and speak the word.
+   ```
+   http://192.168.1.42:8791/mobile.html
+   ```
 
-> **Tip:** Add the URL to your phone's home screen for one-tap access.
+4. Tap **Print** in the bottom bar, or tap **🎤** and say **print**.
+
+> **Tip:** Safari → Share → **Add to Home Screen** for a Cutline Ops app with the Print button always at the bottom.
 
 ## Troubleshooting
 
