@@ -78,13 +78,13 @@
         left: 0;
         right: 0;
         bottom: 0;
-        padding: 0.5rem 0.65rem calc(0.5rem + var(--safe-b));
+        padding: 0.5rem 0.5rem calc(0.5rem + var(--safe-b));
         background: rgba(17, 24, 39, 0.96);
         border-top: 1px solid #334155;
         backdrop-filter: blur(12px);
         display: flex;
         align-items: center;
-        gap: 0.45rem;
+        gap: 0.35rem;
         z-index: 10;
       }
       .bar-btn {
@@ -94,13 +94,14 @@
         border-radius: 999px;
         height: 2.5rem;
         min-width: 2.5rem;
-        padding: 0 0.65rem;
+        padding: 0 0.55rem;
         font: inherit;
         font-size: 0.85rem;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        text-decoration: none;
       }
       .bar-btn:active {
         transform: scale(0.97);
@@ -108,22 +109,66 @@
       .bar-label {
         flex: 1;
         text-align: center;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: #9fb0c3;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        min-width: 0;
       }
       .bar-btn.print {
         background: #0ea5e9;
         border-color: #0ea5e9;
         color: #001018;
         font-weight: 700;
-        padding: 0 1rem;
-        min-width: 4.5rem;
+        padding: 0 0.9rem;
+        min-width: 4.25rem;
       }
       .bar-btn.mic.listening {
         box-shadow: 0 0 0 2px #22c55e;
+      }
+
+      /* Action sheet above bottom bar */
+      .sheet {
+        display: none;
+        position: fixed;
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: calc(var(--bar-h) + var(--safe-b) + 0.35rem);
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 0.35rem;
+        z-index: 11;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      }
+      .sheet.open {
+        display: grid;
+        gap: 0.15rem;
+      }
+      .sheet button,
+      .sheet a {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-size: 0.95rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 8px;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .sheet button:active,
+      .sheet a:active {
+        background: #1e293b;
+      }
+      .sheet .hint {
+        color: #9fb0c3;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.85rem 0.5rem;
       }
     </style>
   </head>
@@ -131,7 +176,8 @@
     <h1>Cutline Ops</h1>
     <p class="sub" id="intro">
       Tap <strong>Print</strong> in the bottom bar (same spot as a Cursor chat button). PC must run
-      <code>npm start</code> in <code>tools/voice-print</code>.
+      <code>npm start</code> in <code>tools/voice-print</code>. Use <strong>⋯</strong> for catalog
+      actions and Mission Control.
     </p>
 
     <label for="file">Blueprint</label>
@@ -145,10 +191,27 @@
       >
     </div>
 
+    <div id="sheet" class="sheet" role="menu" aria-label="Ops actions">
+      <p class="hint">LAN print · Cursor Ops (not Copilot)</p>
+      <button type="button" id="refreshAction" role="menuitem">Refresh catalog</button>
+      <button type="button" id="cardAction" role="menuitem">Select AI Application Card</button>
+      <button type="button" id="listAction" role="menuitem">Show printable list</button>
+      <a
+        id="mcAction"
+        href="https://cutline-industries.studio/app/dashboard"
+        target="_blank"
+        rel="noopener"
+        role="menuitem"
+        >Open Mission Control</a
+      >
+    </div>
+
     <!-- Fixed bottom toolbar (Cursor-style slot) -->
     <nav class="bottom-bar" aria-label="Cutline actions">
-      <button type="button" class="bar-btn" id="moreBtn" title="Refresh catalog">＋</button>
+      <button type="button" class="bar-btn" id="moreBtn" title="More actions" aria-expanded="false" aria-controls="sheet">⋯</button>
+      <button type="button" class="bar-btn" id="prevBtn" title="Previous printable">◀</button>
       <span class="bar-label" id="barLabel">Cutline Ops</span>
+      <button type="button" class="bar-btn" id="nextBtn" title="Next printable">▶</button>
       <button type="button" class="bar-btn print" id="printBtn">Print</button>
       <button type="button" class="bar-btn mic" id="micBtn" title="Say print">🎤</button>
     </nav>
@@ -159,7 +222,15 @@
       const printBtn = document.getElementById('printBtn')
       const micBtn = document.getElementById('micBtn')
       const moreBtn = document.getElementById('moreBtn')
+      const prevBtn = document.getElementById('prevBtn')
+      const nextBtn = document.getElementById('nextBtn')
       const barLabel = document.getElementById('barLabel')
+      const sheet = document.getElementById('sheet')
+      const refreshAction = document.getElementById('refreshAction')
+      const cardAction = document.getElementById('cardAction')
+      const listAction = document.getElementById('listAction')
+
+      const AI_CARD_PATH = 'docs/ai-application-card-blueprint.html'
 
       let wakeWord = 'print'
       let recognition = null
@@ -171,9 +242,54 @@
         statusEl.className = 'status ' + cls
       }
 
+      function syncLabel() {
+        const opt = fileEl.selectedOptions[0]
+        barLabel.textContent = opt?.textContent?.slice(0, 22) || 'Cutline Ops'
+      }
+
+      function closeSheet() {
+        sheet.classList.remove('open')
+        moreBtn.setAttribute('aria-expanded', 'false')
+      }
+
+      function toggleSheet() {
+        const open = sheet.classList.toggle('open')
+        moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+      }
+
+      function cycle(delta) {
+        const n = fileEl.options.length
+        if (!n) return
+        fileEl.selectedIndex = (fileEl.selectedIndex + delta + n) % n
+        syncLabel()
+      }
+
+      function selectAiCard() {
+        const idx = Array.from(fileEl.options).findIndex((o) => o.value === AI_CARD_PATH)
+        if (idx < 0) {
+          setStatus('<span class="err">AI Application Card not in catalog.</span>', 'err')
+          return
+        }
+        fileEl.selectedIndex = idx
+        syncLabel()
+        setStatus('<span class="ok">Selected AI Application Card.</span>', 'ok')
+      }
+
+      function showPrintableList() {
+        const lines = Array.from(fileEl.options).map(
+          (o, i) => `${i === fileEl.selectedIndex ? '→' : '·'} ${o.textContent}`
+        )
+        setStatus(
+          lines.length
+            ? `<strong>${lines.length} printables</strong><br>${lines.join('<br>')}`
+            : '<span class="err">Catalog empty.</span>'
+        )
+      }
+
       async function loadCatalog() {
         const res = await fetch('/api/catalog')
         const data = await res.json()
+        const previous = fileEl.value
         fileEl.innerHTML = ''
         for (const item of data.items) {
           const opt = document.createElement('option')
@@ -181,13 +297,15 @@
           opt.textContent = item.label
           fileEl.appendChild(opt)
         }
+        if (previous) {
+          const keep = Array.from(fileEl.options).findIndex((o) => o.value === previous)
+          if (keep >= 0) fileEl.selectedIndex = keep
+        }
         setStatus(`Ready — ${data.items.length} files.`)
-        barLabel.textContent = fileEl.selectedOptions[0]?.textContent?.slice(0, 24) || 'Cutline Ops'
+        syncLabel()
       }
 
-      fileEl.addEventListener('change', () => {
-        barLabel.textContent = fileEl.selectedOptions[0]?.textContent?.slice(0, 24) || 'Cutline Ops'
-      })
+      fileEl.addEventListener('change', syncLabel)
 
       async function doPrint(source) {
         const file = fileEl.value
@@ -196,6 +314,7 @@
           return
         }
         printBtn.disabled = true
+        closeSheet()
         setStatus(`<span class="warn">Printing…</span> (${source})`)
         try {
           const res = await fetch('/api/print', {
@@ -214,8 +333,33 @@
       }
 
       printBtn.addEventListener('click', () => doPrint('button'))
+      prevBtn.addEventListener('click', () => {
+        closeSheet()
+        cycle(-1)
+      })
+      nextBtn.addEventListener('click', () => {
+        closeSheet()
+        cycle(1)
+      })
+      moreBtn.addEventListener('click', toggleSheet)
+      refreshAction.addEventListener('click', () => {
+        closeSheet()
+        loadCatalog()
+      })
+      cardAction.addEventListener('click', () => {
+        closeSheet()
+        selectAiCard()
+      })
+      listAction.addEventListener('click', () => {
+        closeSheet()
+        showPrintableList()
+      })
 
-      moreBtn.addEventListener('click', () => loadCatalog())
+      document.addEventListener('click', (e) => {
+        if (!sheet.classList.contains('open')) return
+        if (sheet.contains(e.target) || moreBtn.contains(e.target)) return
+        closeSheet()
+      })
 
       function toggleMic() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -234,6 +378,7 @@
         recognition.onstart = () => {
           listening = true
           micBtn.classList.add('listening')
+          closeSheet()
           setStatus('Listening — say <strong>print</strong>.')
         }
         recognition.onend = () => {

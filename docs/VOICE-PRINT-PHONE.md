@@ -27,8 +27,11 @@ Send Cutline docs to the **HP OfficeJet Pro 9120** (`192.168.1.157`) straight fr
    ```
 
 4. Tap **Print** in the bottom bar, or tap **🎤** and say **print**.
+5. Use **◀ / ▶** to cycle printables. Tap **⋯** for: refresh catalog, select **AI Application Card**, show list, or open Mission Control.
 
 > **Tip:** Safari → Share → **Add to Home Screen** for a Cutline Ops app with the Print button always at the bottom.
+
+> **Cursor only:** Cloud/mobile Cursor chat cannot reach the LAN printer — this Ops bar on your phone + PC `npm start` is the path. Copilot is optional.
 
 ## Troubleshooting
 
