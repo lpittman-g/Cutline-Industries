@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { CLIP_CHECKOUT_LOCK_CLASS } from './db/thermalRepo.ts'
+import { CLIP_CHECKOUT_LOCK_CLASS, RETAINER_CHECKOUT_LOCK_CLASS } from './db/thermalRepo.ts'
 import { isAlreadyRefundedError } from './stripeCheckout.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -13,6 +13,10 @@ const apiSrc = readFileSync(join(here, 'thermalApi.ts'), 'utf8')
 describe('stripe lost-claim race handling', () => {
   it('exports a stable advisory-lock class for clip checkout', () => {
     assert.equal(CLIP_CHECKOUT_LOCK_CLASS, 42001)
+  })
+
+  it('exports a stable advisory-lock class for retainer checkout', () => {
+    assert.equal(RETAINER_CHECKOUT_LOCK_CLASS, 42002)
   })
 
   it('detects Stripe already-refunded errors', () => {
@@ -62,6 +66,17 @@ describe('stripe lost-claim race handling', () => {
     assert.match(body, /ClipAlreadyClaimedError/)
   })
 
+  it('createRetainerCheckoutSession holds advisory + row lock across Stripe create', () => {
+    const start = src.indexOf('export async function createRetainerCheckoutSession')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 2800)
+    assert.match(body, /pg_advisory_xact_lock/)
+    assert.match(body, /RETAINER_CHECKOUT_LOCK_CLASS/)
+    assert.match(body, /FOR UPDATE/)
+    assert.match(body, /checkout\.sessions\.expire/)
+    assert.match(body, /RetainerAlreadyActiveError/)
+  })
+
   it('refund runs before markSaleLostClaimRace in resolveLostClaimRace', () => {
     const start = src.indexOf('export async function resolveLostClaimRace')
     const next = src.indexOf('\nexport async function', start + 1)
@@ -84,5 +99,6 @@ describe('stripe lost-claim race handling', () => {
     assert.match(apiSrc, /ClipAlreadyClaimedError/)
     assert.match(apiSrc, /retainer_already_active/)
     assert.match(apiSrc, /RetainerAlreadyActiveError/)
+    assert.match(apiSrc, /\/api\/developers\/:id\/checkout/)
   })
 })

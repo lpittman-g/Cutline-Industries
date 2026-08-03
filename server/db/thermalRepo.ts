@@ -521,6 +521,9 @@ export async function countQueuedBountyPosts(): Promise<number> {
 /** Advisory-lock class for clip checkout session creation (see createCheckoutSession). */
 export const CLIP_CHECKOUT_LOCK_CLASS = 42001
 
+/** Advisory-lock class for retainer checkout session creation. */
+export const RETAINER_CHECKOUT_LOCK_CLASS = 42002
+
 /**
  * Stripe webhook / confirm may retry. Allow unclaimed → claimed, or the same
  * checkout session replaying; reject a second buyer session.

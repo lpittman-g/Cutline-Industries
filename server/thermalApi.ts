@@ -452,6 +452,15 @@ export function registerThermalRoutes(app: Express) {
       })
       res.json({ ok: true, developer, ...session })
     } catch (err) {
+      if (err instanceof RetainerAlreadyActiveError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'retainer_already_active',
+          retainerId: err.retainerId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
@@ -575,6 +584,15 @@ export function registerThermalRoutes(app: Express) {
       })
       res.json({ ok: true, ...session })
     } catch (err) {
+      if (err instanceof RetainerAlreadyActiveError) {
+        res.status(409).json({
+          error: err.message,
+          code: 'retainer_already_active',
+          retainerId: err.retainerId,
+          existingSessionId: err.existingSessionId,
+        })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })

@@ -6,16 +6,14 @@ import {
   claimClip,
   CLIP_CHECKOUT_LOCK_CLASS,
   ClipAlreadyClaimedError,
-  getRetainerById,
-  insertPendingSale,
   markSaleLostClaimRace,
+  RETAINER_CHECKOUT_LOCK_CLASS,
   RetainerAlreadyActiveError,
-  setRetainerCheckoutSession,
   type ClipWithMeta,
 } from './db/thermalRepo.ts'
 import { withClient } from './db/pool.ts'
 import { publicBaseUrl } from './auth/authCrypto.ts'
-import type { SaleTier } from './db/thermalTypes.ts'
+import type { RetainerRow, SaleTier } from './db/thermalTypes.ts'
 import { ROOT } from './youtubeAuth.ts'
 
 const TIER_AMOUNTS: Record<SaleTier, number> = {
@@ -169,74 +167,123 @@ export async function createRetainerCheckoutSession(input: {
   retainerId: number
   monthlyMrrOverride?: number
 }) {
-  const retainer = await getRetainerById(input.retainerId)
-  if (!retainer) throw new Error('Retainer not found')
-  if (retainer.status === 'active' && retainer.stripe_subscription_id) {
-    throw new Error('Retainer already active')
-  }
-  if (retainer.status === 'cancelled') {
-    throw new Error('Retainer is cancelled — create a new prospect')
-  }
+  // Hold a transaction + advisory lock across Stripe session create so two
+  // buyers cannot both mint subscription checkout URLs for the same retainer.
+  return withClient(async (client) => {
+    await client.query('BEGIN')
+    let createdSessionId: string | null = null
+    try {
+      await client.query('SELECT pg_advisory_xact_lock($1, $2)', [
+        RETAINER_CHECKOUT_LOCK_CLASS,
+        input.retainerId,
+      ])
+      const locked = await client.query(
+        `SELECT * FROM retainers WHERE id = $1 FOR UPDATE`,
+        [input.retainerId],
+      )
+      const row = locked.rows[0] as Record<string, unknown> | undefined
+      if (!row) throw new Error('Retainer not found')
+      const retainer = row as unknown as RetainerRow
 
-  const mrrUsd = input.monthlyMrrOverride ?? Number(retainer.monthly_mrr)
-  const amountCents = amountForTier(
-    'retainer',
-    Number.isFinite(mrrUsd) ? Math.round(mrrUsd * 100) : undefined,
-  )
-  const stripe = getStripe()
-  const base = publicBaseUrl()
-  const productName = `Thermal Indie Retainer — ${retainer.game_title}`
+      if (retainer.status === 'active' && retainer.stripe_subscription_id) {
+        throw new RetainerAlreadyActiveError(
+          retainer.id,
+          retainer.stripe_checkout_session_id ?? null,
+        )
+      }
+      if (retainer.status === 'cancelled') {
+        throw new Error('Retainer is cancelled — create a new prospect')
+      }
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
-  const priceId = priceIdForTier('retainer')
-  if (priceId) {
-    lineItems.push({ price: priceId, quantity: 1 })
-  } else {
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        unit_amount: amountCents,
-        recurring: { interval: 'month' },
-        product_data: {
-          name: productName,
-          description: `${retainer.dev_name} · monthly TikTok/Shorts wishlist packs`,
+      const mrrUsd = input.monthlyMrrOverride ?? Number(retainer.monthly_mrr)
+      const amountCents = amountForTier(
+        'retainer',
+        Number.isFinite(mrrUsd) ? Math.round(mrrUsd * 100) : undefined,
+      )
+      const stripe = getStripe()
+      const base = publicBaseUrl()
+      const productName = `Thermal Indie Retainer — ${retainer.game_title}`
+
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+      const priceId = priceIdForTier('retainer')
+      if (priceId) {
+        lineItems.push({ price: priceId, quantity: 1 })
+      } else {
+        lineItems.push({
+          price_data: {
+            currency: 'usd',
+            unit_amount: amountCents,
+            recurring: { interval: 'month' },
+            product_data: {
+              name: productName,
+              description: `${retainer.dev_name} · monthly TikTok/Shorts wishlist packs`,
+            },
+          },
+          quantity: 1,
+        })
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: lineItems,
+        success_url: `${base}/developers?session_id={CHECKOUT_SESSION_ID}&retainer=${retainer.id}&paid=1`,
+        cancel_url: `${base}/developers?canceled=1&retainer=${retainer.id}`,
+        client_reference_id: `retainer:${retainer.id}`,
+        customer_email: retainer.contact_email ?? undefined,
+        metadata: {
+          retainer_id: String(retainer.id),
+          tier: 'retainer',
+          dev_name: retainer.dev_name,
+          game_title: retainer.game_title,
         },
-      },
-      quantity: 1,
-    })
-  }
+      })
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    line_items: lineItems,
-    success_url: `${base}/developers?session_id={CHECKOUT_SESSION_ID}&retainer=${retainer.id}&paid=1`,
-    cancel_url: `${base}/developers?canceled=1&retainer=${retainer.id}`,
-    client_reference_id: `retainer:${retainer.id}`,
-    customer_email: retainer.contact_email ?? undefined,
-    metadata: {
-      retainer_id: String(retainer.id),
-      tier: 'retainer',
-      dev_name: retainer.dev_name,
-      game_title: retainer.game_title,
-    },
+      if (!session.url) throw new Error('Stripe did not return checkout URL')
+      createdSessionId = session.id
+
+      await client.query(
+        `UPDATE retainers
+         SET stripe_checkout_session_id = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [retainer.id, session.id],
+      )
+      await client.query(
+        `INSERT INTO sales (clip_id, tier, amount_cents, stripe_checkout_session_id, status, metadata)
+         VALUES ($1, $2, $3, $4, 'pending', $5)`,
+        [
+          null,
+          'retainer',
+          amountCents,
+          session.id,
+          JSON.stringify({
+            retainer_id: retainer.id,
+            dev_name: retainer.dev_name,
+            game_title: retainer.game_title,
+          }),
+        ],
+      )
+      await client.query('COMMIT')
+      return {
+        url: session.url,
+        sessionId: session.id,
+        tier: 'retainer' as const,
+        amountCents,
+      }
+    } catch (err) {
+      await client.query('ROLLBACK')
+      if (createdSessionId && process.env.CUTLINE_DRY_RUN !== '1') {
+        try {
+          await getStripe().checkout.sessions.expire(createdSessionId)
+        } catch (expireErr) {
+          console.warn('[stripe] failed to expire orphan retainer checkout session', {
+            sessionId: createdSessionId,
+            error: expireErr instanceof Error ? expireErr.message : String(expireErr),
+          })
+        }
+      }
+      throw err
+    }
   })
-
-  if (!session.url) throw new Error('Stripe did not return checkout URL')
-
-  await setRetainerCheckoutSession(retainer.id, session.id)
-  await insertPendingSale({
-    clip_id: null,
-    tier: 'retainer',
-    amount_cents: amountCents,
-    stripe_checkout_session_id: session.id,
-    metadata: {
-      retainer_id: retainer.id,
-      dev_name: retainer.dev_name,
-      game_title: retainer.game_title,
-    },
-  })
-
-  return { url: session.url, sessionId: session.id, tier: 'retainer' as const, amountCents }
 }
 
 async function fulfillClipCheckoutSession(session: Stripe.Checkout.Session) {
