@@ -72,7 +72,7 @@ Docs: [`docs/AI-VIDEO-PIPELINE.md`](docs/AI-VIDEO-PIPELINE.md)
 
 ## Agent tools (Cursor primary)
 
-**Setup:** [`.cursor/README.md`](.cursor/README.md) · [`docs/CURSOR-PRIMARY.md`](docs/CURSOR-PRIMARY.md)
+**Setup:** [`.cursor/README.md`](.cursor/README.md) · [`docs/CURSOR-PRIMARY.md`](docs/CURSOR-PRIMARY.md) · [`docs/COPILOT-VS-CURSOR.md`](docs/COPILOT-VS-CURSOR.md)
 
 Open this repo in **Cursor** — Copilot/VS Code optional.
 

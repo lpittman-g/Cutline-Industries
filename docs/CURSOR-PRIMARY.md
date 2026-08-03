@@ -70,7 +70,16 @@ Requires **Cursor on your PC** for MCP (not mobile cloud chat).
 
 ## Copilot optional?
 
-Yes. If you already use Copilot, these stay in sync:
+Full comparison: **[COPILOT-VS-CURSOR.md](COPILOT-VS-CURSOR.md)**
+
+| Copilot | Cursor (use this) |
+| --- | --- |
+| Copilot Chat | **Cursor chat** |
+| `copilot-instructions.md` | **`cutline-primary.mdc`** |
+| Cloud agent tasks | **Cursor Cloud Agent** |
+| VS Code MCP | **`~/.cursor/mcp.json`** |
+
+Config mirrors (if you still use Copilot):
 
 | Cursor | Copilot mirror |
 |--------|----------------|
@@ -79,6 +88,18 @@ Yes. If you already use Copilot, these stay in sync:
 | `.cursor/mcp.json.example` | `.vscode/mcp.json`, `.mcp.json` |
 
 You only need one IDE agent stack — **prefer Cursor**.
+
+## Cursor mobile — custom button?
+
+You **cannot** add buttons inside the Cursor mobile chat UI (that toolbar is controlled by Cursor).
+
+**Workaround:** Add **Cutline Ops** to your home screen — bottom **Print** button in the same spot:
+
+1. PC: `cd tools/voice-print && npm start`
+2. Phone: open `http://<PC-IP>:8791/mobile.html`
+3. Safari → **Add to Home Screen**
+
+See [VOICE-PRINT-PHONE.md](VOICE-PRINT-PHONE.md).
 
 ## Related
 

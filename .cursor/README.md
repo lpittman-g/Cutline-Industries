@@ -32,15 +32,17 @@ Restart Cursor. MCP gives you:
 
 ## What to use instead of Copilot
 
-| Copilot | Cursor equivalent |
-|---------|-----------------|
-| Copilot Chat | **Cursor chat** (Agent mode) |
-| `@voice-print` agent | **`print`** + voice-print MCP + rule |
-| `.github/copilot-instructions.md` | **`.cursor/rules/cutline-primary.mdc`** |
-| Copilot cloud task | **Cursor Cloud Agent** (this repo) |
-| `.vscode/mcp.json` | **`.cursor/mcp.json`** |
+See **[docs/COPILOT-VS-CURSOR.md](../docs/COPILOT-VS-CURSOR.md)** for the full table.
+
+| Copilot | Cursor (use this) |
+| --- | --- |
+| Copilot Chat | **Cursor chat** |
+| `copilot-instructions.md` | **`cutline-primary.mdc`** |
+| Cloud agent tasks | **Cursor Cloud Agent** |
+| VS Code MCP | **`~/.cursor/mcp.json`** |
 
 ## Docs
 
+- [docs/COPILOT-VS-CURSOR.md](../docs/COPILOT-VS-CURSOR.md) — Copilot ↔ Cursor map
 - [docs/CURSOR-PRIMARY.md](../docs/CURSOR-PRIMARY.md) — full guide
-- [docs/COPILOT-ARCHITECTURE.md](../docs/COPILOT-ARCHITECTURE.md) — stack diagram (Cursor vs Copilot)
+- [docs/COPILOT-ARCHITECTURE.md](../docs/COPILOT-ARCHITECTURE.md) — stack diagram
