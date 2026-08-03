@@ -45,8 +45,18 @@ Cutline Industries is configured for **Cursor** first. Copilot files in `.github
 └─────────────────────────────────┬───────────────────────────────────────┘
                                   │
 ┌─────────────────────────────────▼───────────────────────────────────────┐
-│  GitHub: repos · PRs · Actions · Cursor Cloud Agent runs                   │
+│  Runtime: PC LAN · Cloud VM · Cursor  (GitHub for repos / PRs / Actions) │
 └────────────────────────────────────────────────────────────────────────────┘
+```
+
+Flow:
+
+```
+Surfaces (Cursor desktop · Cloud · Phone Ops)
+    → Client (chat · rules · MCP)
+    → Agent loop (context · think → act)
+    → Tools (edit · shell · phone-approval · voice-print)
+    → Runtime (PC LAN · Cloud VM · Cursor)
 ```
 
 ## Repo map for agents
