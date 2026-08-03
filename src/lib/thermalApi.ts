@@ -206,7 +206,12 @@ export function fetchClipDownload(clipId: number, sessionId: string) {
     url: string
     storage: 's3' | 'local'
     expiresIn?: number
+    captions?: { social: string | null; discord: string | null }
   }>(`/api/clips/${clipId}/download`, { sessionId })
+}
+
+export function rerunClipAutopilot(clipId: number) {
+  return postJson<{ ok: boolean; clip: ThermalClip | null }>(`/api/clips/${clipId}/autopilot`, {})
 }
 
 export type ThermalRetainerStatus = 'prospect' | 'sample_sent' | 'active' | 'cancelled'
