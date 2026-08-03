@@ -361,6 +361,43 @@ export async function getBountyCaptionNotes(
   return { x, tiktok }
 }
 
+/** Prefer clip columns; fall back to bounty_posts.notes when empty. */
+export function resolveFulfillmentCaptions(
+  clip: {
+    ai_caption?: string | null
+    ai_tiktok_caption?: string | null
+    ai_discord_message?: string | null
+  },
+  bountyNotes: { x: string | null; tiktok: string | null },
+): {
+  social: string | null
+  x: string | null
+  tiktok: string | null
+  discord: string | null
+} {
+  const trim = (value: string | null | undefined) => {
+    if (typeof value !== 'string') return null
+    const next = value.trim()
+    return next ? next : null
+  }
+  const x = trim(clip.ai_caption) ?? bountyNotes.x
+  const tiktok = trim(clip.ai_tiktok_caption) ?? bountyNotes.tiktok
+  return {
+    // `social` aliases x for older checkout clients
+    social: x,
+    x,
+    tiktok,
+    discord: trim(clip.ai_discord_message),
+  }
+}
+
+/** Autopilot retry must not un-post live bounty rows. */
+export function nextBountyStatusOnQueueRetry(
+  currentStatus: string,
+): 'queued' | 'posted' {
+  return currentStatus === 'posted' ? 'posted' : 'queued'
+}
+
 export async function markBountyPosted(input: {
   id: number
   post_url: string

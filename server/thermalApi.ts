@@ -8,6 +8,7 @@ import {
   countQueuedBountyPosts,
   getBountyCaptionNotes,
   getClipById,
+  resolveFulfillmentCaptions,
   getRetainerById,
   insertRetainer,
   isRetainerStatus,
@@ -153,14 +154,9 @@ export function registerThermalRoutes(app: Express) {
         res.status(403).json({ error: 'Paid checkout session required' })
         return
       }
+      const bountyNotes = await getBountyCaptionNotes(id)
       const fulfillment = {
-        captions: {
-          // `social` aliases x for older checkout clients
-          social: clip.ai_caption ?? null,
-          x: clip.ai_caption ?? null,
-          tiktok: clip.ai_tiktok_caption ?? null,
-          discord: clip.ai_discord_message ?? null,
-        },
+        captions: resolveFulfillmentCaptions(clip, bountyNotes),
       }
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
         res.json({
