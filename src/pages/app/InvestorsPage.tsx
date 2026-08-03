@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react'
-import { fetchInvestorMetrics, formatUsd, type InvestorMetricsResponse } from '../../lib/thermalApi'
+import {
+  fetchInvestorMetrics,
+  fetchRevenueTimeline,
+  formatUsd,
+  type InvestorMetricsResponse,
+  type RevenueTimelinePoint,
+} from '../../lib/thermalApi'
 
 export function InvestorsPage() {
   const [data, setData] = useState<InvestorMetricsResponse | null>(null)
+  const [timeline, setTimeline] = useState<RevenueTimelinePoint[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        setData(await fetchInvestorMetrics())
+        const [metrics, revenue] = await Promise.all([
+          fetchInvestorMetrics(),
+          fetchRevenueTimeline(30),
+        ])
+        setData(metrics)
+        setTimeline(revenue.timeline)
         setError(null)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Metrics unavailable')
@@ -54,6 +66,11 @@ export function InvestorsPage() {
           <div className="label">Annual run-rate (ARR)</div>
           <div className="value lime">{formatUsd(arrCents)}</div>
         </div>
+      </div>
+
+      <h2 style={{ margin: '1.5rem 0 0.75rem' }}>Revenue trend (30d)</h2>
+      <div className="panel" style={{ padding: '1rem' }}>
+        <RevenueTrend timeline={timeline} />
       </div>
 
       <h2 style={{ margin: '1.5rem 0 0.75rem' }}>Funnel</h2>
@@ -118,6 +135,92 @@ export function InvestorsPage() {
           <div className="label">Total engagement</div>
           <div className="value">{(m?.bountyEngagement ?? 0).toLocaleString()}</div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function RevenueTrend({ timeline }: { timeline: RevenueTimelinePoint[] }) {
+  const dailyMap = new Map<string, number>()
+  for (const p of timeline) dailyMap.set(p.date, (dailyMap.get(p.date) ?? 0) + p.amountCents)
+  const days = [...dailyMap.entries()].map(([date, cents]) => ({ date, cents }))
+
+  if (days.length === 0) {
+    return (
+      <p style={{ color: 'var(--muted)', margin: 0 }}>
+        No completed sales in the last 30 days yet.
+      </p>
+    )
+  }
+
+  let run = 0
+  const points = days.map((d) => {
+    run += d.cents
+    return { ...d, cumulative: run }
+  })
+
+  const W = 720
+  const H = 200
+  const padX = 44
+  const padY = 20
+  const chartW = W - padX * 2
+  const chartH = H - padY * 2
+  const maxDaily = Math.max(...points.map((p) => p.cents), 1)
+  const maxCum = Math.max(run, 1)
+  const slot = chartW / points.length
+  const barW = Math.max(4, Math.min(28, slot * 0.6))
+
+  const x = (i: number) => padX + slot * i + slot / 2
+  const yBar = (cents: number) => padY + chartH - (cents / maxDaily) * chartH
+  const yLine = (cum: number) => padY + chartH - (cum / maxCum) * chartH
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${yLine(p.cumulative).toFixed(1)}`)
+    .join(' ')
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Revenue trend chart">
+        <line
+          x1={padX}
+          y1={padY + chartH}
+          x2={W - padX}
+          y2={padY + chartH}
+          stroke="var(--muted)"
+          strokeOpacity="0.3"
+        />
+        {points.map((p, i) => (
+          <rect
+            key={p.date}
+            x={x(i) - barW / 2}
+            y={yBar(p.cents)}
+            width={barW}
+            height={padY + chartH - yBar(p.cents)}
+            fill="var(--cyan)"
+            fillOpacity="0.55"
+            rx="2"
+          />
+        ))}
+        <path d={linePath} fill="none" stroke="var(--lime)" strokeWidth="2.5" />
+        {points.map((p, i) => (
+          <circle key={`c-${p.date}`} cx={x(i)} cy={yLine(p.cumulative)} r="2.5" fill="var(--lime)" />
+        ))}
+      </svg>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          color: 'var(--muted)',
+          fontSize: '0.8rem',
+          marginTop: '0.25rem',
+        }}
+      >
+        <span>{points[0].date}</span>
+        <span>
+          <span style={{ color: 'var(--cyan)' }}>daily</span> ·{' '}
+          <span style={{ color: 'var(--lime)' }}>cumulative {formatUsd(run)}</span>
+        </span>
+        <span>{points[points.length - 1].date}</span>
       </div>
     </div>
   )
