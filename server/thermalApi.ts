@@ -8,6 +8,7 @@ import {
   countQueuedBountyPosts,
   getBountyCaptionNotes,
   getClipById,
+  localCleanDownloadUrl,
   resolveFulfillmentCaptions,
   getRetainerById,
   insertRetainer,
@@ -161,7 +162,7 @@ export function registerThermalRoutes(app: Express) {
       if (!s3Configured() || !clip.s3_clean_url?.startsWith('s3://')) {
         res.json({
           ok: true,
-          url: `/thermal-media/clips/${id}/heat_clip.mp4`,
+          url: localCleanDownloadUrl(clip),
           storage: 'local',
           ...fulfillment,
         })
