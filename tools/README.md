@@ -52,14 +52,15 @@ Kept in repo for reference only. Use **phone-approval-lite** instead.
 
 ## Voice Print — say “print” in chat
 
-Send blueprints to your **HP OfficeJet Pro 9120** (`192.168.1.157`). Type **`print`** in Cursor chat (local agent on your PC).
+Send blueprints to your **HP OfficeJet Pro 9120** (`192.168.1.157`). Type **`print`** in Cursor, VS Code Copilot, or Copilot CLI (local PC on your Wi‑Fi).
 
 ```bash
 cd tools/voice-print && npm install
-# Enable voice-print in ~/.cursor/mcp.json — see .cursor/mcp.json.example
 ```
 
-Setup: [`voice-print/README.md`](voice-print/README.md)
+Copilot MCP configs: `.vscode/mcp.json`, `.github/mcp.json`, `.mcp.json`
+
+Setup: [`voice-print/README.md`](voice-print/README.md) · [`.github/instructions/voice-print.instructions.md`](../.github/instructions/voice-print.instructions.md)
 
 ---
 
