@@ -198,11 +198,14 @@ service.
 OPENAI_API_KEY=...
 OPENAI_THERMAL_MODEL=gpt-4o-mini
 GOOGLE_WORKSPACE_SENDER_EMAIL=lpittman@cutline-industries.studio
+# Prefer THERMAL_PUBLIC_URL for Discord / checkout / autopilot links (falls back to CUTLINE_PUBLIC_URL)
+THERMAL_PUBLIC_URL=http://127.0.0.1:5173
 ```
 
 Google OAuth must be re-authorized once with the `gmail.send` scope before the
-pitch email step can send. Missing credentials skip/fail that channel without
-losing the rendered clip. Full setup: [`GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md).
+pitch email step can send. Missing Discord webhook or Gmail sender records a
+skip reason on the clip without losing the rendered media. Full setup:
+[`GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md).
 
 ## Next steps
 
