@@ -2,10 +2,13 @@ import type { Express, Request, Response } from 'express'
 import express from 'express'
 import Stripe from 'stripe'
 import {
+  activateRetainer,
   claimClip,
   getClipById,
+  getRetainerById,
   insertPendingSale,
   setClipCheckoutSession,
+  setRetainerCheckoutSession,
 } from './db/thermalRepo.ts'
 import type { SaleTier } from './db/thermalTypes.ts'
 import { ROOT } from './youtubeAuth.ts'
@@ -40,12 +43,18 @@ function tierForClip(clipTier: string | undefined, override?: string): SaleTier 
   return 'gateway'
 }
 
-function amountForTier(tier: SaleTier) {
+function amountForTier(tier: SaleTier, overrideCents?: number) {
+  if (overrideCents && Number.isFinite(overrideCents) && overrideCents > 0) {
+    return Math.round(overrideCents)
+  }
   if (tier === 'gateway' && process.env.STRIPE_GATEWAY_AMOUNT_CENTS) {
     return Number(process.env.STRIPE_GATEWAY_AMOUNT_CENTS)
   }
   if (tier === 'bounty' && process.env.STRIPE_BOUNTY_AMOUNT_CENTS) {
     return Number(process.env.STRIPE_BOUNTY_AMOUNT_CENTS)
+  }
+  if (tier === 'retainer' && process.env.STRIPE_RETAINER_AMOUNT_CENTS) {
+    return Number(process.env.STRIPE_RETAINER_AMOUNT_CENTS)
   }
   return TIER_AMOUNTS[tier]
 }
@@ -116,7 +125,81 @@ export async function createCheckoutSession(input: {
   return { url: session.url, sessionId: session.id, tier, amountCents }
 }
 
-async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
+export async function createRetainerCheckoutSession(input: {
+  retainerId: number
+  monthlyMrrOverride?: number
+}) {
+  const retainer = await getRetainerById(input.retainerId)
+  if (!retainer) throw new Error('Retainer not found')
+  if (retainer.status === 'active' && retainer.stripe_subscription_id) {
+    throw new Error('Retainer already active')
+  }
+  if (retainer.status === 'cancelled') {
+    throw new Error('Retainer is cancelled — create a new prospect')
+  }
+
+  const mrrUsd = input.monthlyMrrOverride ?? Number(retainer.monthly_mrr)
+  const amountCents = amountForTier(
+    'retainer',
+    Number.isFinite(mrrUsd) ? Math.round(mrrUsd * 100) : undefined,
+  )
+  const stripe = getStripe()
+  const base = publicBaseUrl()
+  const productName = `Thermal Indie Retainer — ${retainer.game_title}`
+
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+  const priceId = priceIdForTier('retainer')
+  if (priceId) {
+    lineItems.push({ price: priceId, quantity: 1 })
+  } else {
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        unit_amount: amountCents,
+        recurring: { interval: 'month' },
+        product_data: {
+          name: productName,
+          description: `${retainer.dev_name} · monthly TikTok/Shorts wishlist packs`,
+        },
+      },
+      quantity: 1,
+    })
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: lineItems,
+    success_url: `${base}/developers?session_id={CHECKOUT_SESSION_ID}&retainer=${retainer.id}&paid=1`,
+    cancel_url: `${base}/developers?canceled=1&retainer=${retainer.id}`,
+    client_reference_id: `retainer:${retainer.id}`,
+    customer_email: retainer.contact_email ?? undefined,
+    metadata: {
+      retainer_id: String(retainer.id),
+      tier: 'retainer',
+      dev_name: retainer.dev_name,
+      game_title: retainer.game_title,
+    },
+  })
+
+  if (!session.url) throw new Error('Stripe did not return checkout URL')
+
+  await setRetainerCheckoutSession(retainer.id, session.id)
+  await insertPendingSale({
+    clip_id: null,
+    tier: 'retainer',
+    amount_cents: amountCents,
+    stripe_checkout_session_id: session.id,
+    metadata: {
+      retainer_id: retainer.id,
+      dev_name: retainer.dev_name,
+      game_title: retainer.game_title,
+    },
+  })
+
+  return { url: session.url, sessionId: session.id, tier: 'retainer' as const, amountCents }
+}
+
+async function fulfillClipCheckoutSession(session: Stripe.Checkout.Session) {
   const clipId = Number(session.metadata?.clip_id ?? session.client_reference_id)
   if (!clipId) throw new Error('Missing clip_id in checkout session')
 
@@ -134,6 +217,39 @@ async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
         : session.payment_intent?.id ?? null,
     buyerEmail: session.customer_details?.email ?? session.customer_email ?? null,
   })
+}
+
+async function fulfillRetainerCheckoutSession(session: Stripe.Checkout.Session) {
+  const retainerId = Number(
+    session.metadata?.retainer_id ??
+      String(session.client_reference_id ?? '').replace(/^retainer:/, ''),
+  )
+  if (!retainerId) throw new Error('Missing retainer_id in checkout session')
+
+  const amountCents = session.amount_total ?? amountForTier('retainer')
+  const subscriptionId =
+    typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id ?? null
+
+  await activateRetainer({
+    retainerId,
+    stripeCheckoutSessionId: session.id,
+    stripeSubscriptionId: subscriptionId,
+    saleAmountCents: amountCents,
+    buyerEmail: session.customer_details?.email ?? session.customer_email ?? null,
+  })
+
+  return retainerId
+}
+
+async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
+  const tier = session.metadata?.tier
+  if (tier === 'retainer' || session.mode === 'subscription') {
+    await fulfillRetainerCheckoutSession(session)
+    return
+  }
+  await fulfillClipCheckoutSession(session)
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -162,7 +278,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session
-      if (session.payment_status === 'paid') {
+      // Subscriptions may report payment_status unpaid briefly; paid or no_payment_required OK
+      if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
         await fulfillCheckoutSession(session)
       }
     }
@@ -188,11 +305,24 @@ export function registerStripeWebhookRoute(app: Express) {
 export async function confirmCheckoutSession(sessionId: string) {
   const stripe = getStripe()
   const session = await stripe.checkout.sessions.retrieve(sessionId)
-  if (session.payment_status !== 'paid') {
+  const paid =
+    session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+  if (!paid) {
     return { ok: false as const, status: session.payment_status }
   }
   await fulfillCheckoutSession(session)
-  return { ok: true as const, clipId: Number(session.metadata?.clip_id ?? session.client_reference_id) }
+  if (session.metadata?.tier === 'retainer' || session.mode === 'subscription') {
+    const retainerId = Number(
+      session.metadata?.retainer_id ??
+        String(session.client_reference_id ?? '').replace(/^retainer:/, ''),
+    )
+    return { ok: true as const, retainerId, tier: 'retainer' as const }
+  }
+  return {
+    ok: true as const,
+    clipId: Number(session.metadata?.clip_id ?? session.client_reference_id),
+    tier: (session.metadata?.tier as SaleTier) || 'gateway',
+  }
 }
 
 export function stripeModeLabel() {

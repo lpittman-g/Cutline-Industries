@@ -184,9 +184,95 @@ export function createCheckoutSession(clipId: number, tier?: string) {
 }
 
 export function confirmCheckoutSession(sessionId: string) {
-  return postJson<{ ok: boolean; clipId?: number; status?: string }>('/api/checkout/confirm', {
+  return postJson<{
+    ok: boolean
+    clipId?: number
+    retainerId?: number
+    tier?: string
+    status?: string
+  }>('/api/checkout/confirm', {
     sessionId,
   })
+}
+
+export type ThermalRetainerStatus = 'prospect' | 'sample_sent' | 'active' | 'cancelled'
+
+export type ThermalRetainer = {
+  id: number
+  dev_name: string
+  game_title: string
+  stripe_subscription_id: string | null
+  monthly_mrr: string
+  status: ThermalRetainerStatus | string
+  contact_email?: string | null
+  notes?: string | null
+  sample_clip_id?: number | null
+  stripe_checkout_session_id?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export type ThermalPipelineCount = {
+  status: ThermalRetainerStatus | string
+  count: number
+}
+
+export function fetchDevelopers() {
+  return getJson<{ developers: ThermalRetainer[] }>('/api/developers')
+}
+
+export function fetchDeveloperPipeline() {
+  return getJson<{ pipeline: ThermalPipelineCount[] }>('/api/developers/pipeline')
+}
+
+export function createDeveloper(input: {
+  devName: string
+  gameTitle: string
+  monthlyMrr?: number
+  contactEmail?: string
+  notes?: string
+  sampleClipId?: number
+  status?: ThermalRetainerStatus
+}) {
+  return postJson<{ ok: boolean; developer: ThermalRetainer }>('/api/developers', input)
+}
+
+export function updateDeveloper(
+  id: number,
+  input: {
+    status?: ThermalRetainerStatus
+    monthlyMrr?: number
+    contactEmail?: string | null
+    notes?: string | null
+    sampleClipId?: number | null
+    devName?: string
+    gameTitle?: string
+  },
+) {
+  return patchJson<{ ok: boolean; developer: ThermalRetainer }>(`/api/developers/${id}`, input)
+}
+
+export function createRetainerCheckout(id: number, monthlyMrr?: number) {
+  return postJson<{ ok: boolean; url: string; tier: string; amountCents: number }>(
+    `/api/developers/${id}/checkout`,
+    monthlyMrr != null ? { monthlyMrr } : {},
+  )
+}
+
+export function startPublicRetainerCheckout(input: {
+  devName: string
+  gameTitle: string
+  monthlyMrr?: number
+  contactEmail?: string
+  notes?: string
+}) {
+  return postJson<{
+    ok: boolean
+    url: string
+    tier: string
+    amountCents: number
+    developer: ThermalRetainer
+  }>('/api/developers/checkout', input)
 }
 
 export function mediaUrl(path: string | null | undefined) {
@@ -199,7 +285,22 @@ export function formatUsd(cents: number) {
   return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
+export function formatMrr(usd: string | number) {
+  const n = typeof usd === 'string' ? Number(usd) : usd
+  if (!Number.isFinite(n)) return String(usd)
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo`
+}
+
 export function tierPriceLabel(tier: string) {
   if (tier === 'bounty') return '$50 Bounty'
+  if (tier === 'retainer') return '$750+ Retainer'
   return '$15 Gateway'
+}
+
+export function retainerStatusLabel(status: string) {
+  if (status === 'prospect') return 'Lead Identified'
+  if (status === 'sample_sent') return 'Sample Sent'
+  if (status === 'active') return 'Retainer Closed'
+  if (status === 'cancelled') return 'Cancelled'
+  return status
 }

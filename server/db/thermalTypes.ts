@@ -1,6 +1,6 @@
 export type HeatSpikeStatus = 'detected' | 'processing' | 'rendered' | 'failed'
 export type ClipStatus = 'unclaimed' | 'claimed'
-export type RetainerStatus = 'active' | 'paused' | 'canceled'
+export type RetainerStatus = 'prospect' | 'sample_sent' | 'active' | 'cancelled'
 
 export type StreamerRow = {
   id: number
@@ -74,6 +74,12 @@ export type RetainerRow = {
   stripe_subscription_id: string | null
   monthly_mrr: string
   status: RetainerStatus
+  contact_email?: string | null
+  notes?: string | null
+  sample_clip_id?: number | null
+  stripe_checkout_session_id?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 export type BountyPlatform = 'x' | 'tiktok'

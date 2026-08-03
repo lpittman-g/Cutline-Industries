@@ -83,11 +83,45 @@ Clip ready → POST /api/bounty-posts (queue X/TikTok)
 
 Mission Control: `/app/bounty` — queue, mark posted, update metrics.
 
+## Step 4 (implemented): Indie Dev CRM + retainers (Tier 3)
+
+### Flow
+
+```
+Mission Control /app/developers or public /developers
+  → retainers row (prospect)
+  → advance to sample_sent
+  → POST /api/developers/:id/checkout (Stripe subscription)
+  → webhook / confirm → status active + sales tier=retainer
+  → Revenue ledger includes retainer MRR
+```
+
+### API routes (added)
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/developers` | GET | Retainer CRM list (seeds demo leads if empty) |
+| `/api/developers/pipeline` | GET | Counts by status |
+| `/api/developers` | POST | Create prospect `{ devName, gameTitle, monthlyMrr? }` |
+| `/api/developers/:id` | GET / PATCH | Read / update status, MRR, contact |
+| `/api/developers/:id/checkout` | POST | Stripe subscription Checkout |
+| `/api/developers/checkout` | POST | Public: create prospect + Checkout |
+
+Statuses: `prospect` → `sample_sent` → `active` (or `cancelled`).
+
+### Stripe env (retainer)
+
+```bash
+STRIPE_PRICE_RETAINER=price_...   # optional recurring Price
+# STRIPE_RETAINER_AMOUNT_CENTS=75000
+```
+
+Without `STRIPE_SECRET_KEY`, retainer checkout returns 503; CRM CRUD still works.
+
 ## Next steps
 
-4. S3 persistence (optional)
-5. Auth + roles
-6. Developer CRM + retainers
+5. S3 persistence (optional)
+6. Auth + roles
 
 ```bash
 # Postgres
@@ -114,6 +148,8 @@ npm run start   # UI + API
 - **Streams** — live velocity, **Force heat spike** → real clip
 - **Dashboard** — real heat toast from latest `heat_spikes` row
 - **Clips** — thumbnails + video playback from `/thermal-media/`
+- **Developers** — retainer CRM + Stripe subscription checkout
+- **Revenue** — gateway / bounty / retainer ledger
 
 ### Media storage
 

@@ -4,28 +4,37 @@ import { thermalDbEnabled } from './db/pool.ts'
 import {
   countClipsToday,
   countLiveStreamers,
+  countPendingRetainerOutreaches,
   countQueuedBountyPosts,
   getClipById,
+  getRetainerById,
+  insertRetainer,
+  isRetainerStatus,
   listBountyClips,
   listBountyPosts,
   listClips,
   listHeatEvents,
   listRecentHeatAlert,
+  listRetainers,
   listSales,
   listStreamers,
   listTopClips,
   markBountyPosted,
   queueBountyPost,
+  retainerPipelineCounts,
   revenueByTier,
   revenueTimeline,
+  seedRetainersIfEmpty,
   seedStreamersIfEmpty,
   totalRevenueCents,
   updateBountyMetrics,
+  updateRetainer,
 } from './db/thermalRepo.ts'
 import { triggerHeatEvent } from './heatPipeline.ts'
 import {
   confirmCheckoutSession,
   createCheckoutSession,
+  createRetainerCheckoutSession,
   stripeConfigured,
   stripeModeLabel,
 } from './stripeCheckout.ts'
@@ -160,6 +169,7 @@ export function registerThermalRoutes(app: Express) {
     const liveChannels = await countLiveStreamers()
     const revenueCents = await totalRevenueCents()
     const pendingBounty = await countQueuedBountyPosts()
+    const pendingRetainers = await countPendingRetainerOutreaches()
     res.json({
       heatAlert: alert
         ? {
@@ -172,7 +182,7 @@ export function registerThermalRoutes(app: Express) {
       activeLiveChannels: liveChannels,
       dailyClipsRendered: clipsToday,
       totalRevenueCents: revenueCents,
-      pendingOutreaches: pendingBounty,
+      pendingOutreaches: pendingBounty + pendingRetainers,
       stripeMode: stripeModeLabel(),
     })
   })
@@ -286,11 +296,175 @@ export function registerThermalRoutes(app: Express) {
   })
 
   app.get('/api/developers', dbRequired, async (_req, res) => {
-    res.json({ developers: [], note: 'Developer CRM uses retainers table — step 6' })
+    await seedRetainersIfEmpty()
+    res.json({ developers: await listRetainers() })
   })
 
   app.get('/api/developers/pipeline', dbRequired, async (_req, res) => {
-    res.json({ pipeline: [], note: 'Developer pipeline step 6' })
+    await seedRetainersIfEmpty()
+    res.json({ pipeline: await retainerPipelineCounts() })
+  })
+
+  /** Public onboarding: create prospect + Stripe subscription checkout in one step. */
+  app.post('/api/developers/checkout', dbRequired, async (req, res) => {
+    if (!stripeConfigured()) {
+      res.status(503).json({
+        error: 'Stripe not configured',
+        hint: 'Set STRIPE_SECRET_KEY in environment',
+      })
+      return
+    }
+    try {
+      const devName = String(req.body?.devName ?? '').trim()
+      const gameTitle = String(req.body?.gameTitle ?? '').trim()
+      if (!devName || !gameTitle) {
+        res.status(400).json({ error: 'devName and gameTitle required' })
+        return
+      }
+      const monthlyMrr = req.body?.monthlyMrr != null ? Number(req.body.monthlyMrr) : 750
+      if (!Number.isFinite(monthlyMrr) || monthlyMrr < 750) {
+        res.status(400).json({ error: 'monthlyMrr must be >= 750' })
+        return
+      }
+      const developer = await insertRetainer({
+        dev_name: devName,
+        game_title: gameTitle,
+        monthly_mrr: monthlyMrr,
+        contact_email: req.body?.contactEmail ? String(req.body.contactEmail).trim() : null,
+        notes: req.body?.notes ? String(req.body.notes).trim() : null,
+        status: 'prospect',
+      })
+      const session = await createRetainerCheckoutSession({
+        retainerId: developer.id,
+        monthlyMrrOverride: monthlyMrr,
+      })
+      res.json({ ok: true, developer, ...session })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.post('/api/developers', dbRequired, async (req, res) => {
+    try {
+      const devName = String(req.body?.devName ?? '').trim()
+      const gameTitle = String(req.body?.gameTitle ?? '').trim()
+      if (!devName || !gameTitle) {
+        res.status(400).json({ error: 'devName and gameTitle required' })
+        return
+      }
+      const statusRaw = req.body?.status ? String(req.body.status) : 'prospect'
+      if (!isRetainerStatus(statusRaw)) {
+        res.status(400).json({
+          error: 'status must be prospect, sample_sent, active, or cancelled',
+        })
+        return
+      }
+      const monthlyMrr = req.body?.monthlyMrr != null ? Number(req.body.monthlyMrr) : 750
+      if (!Number.isFinite(monthlyMrr) || monthlyMrr < 750) {
+        res.status(400).json({ error: 'monthlyMrr must be >= 750' })
+        return
+      }
+      const developer = await insertRetainer({
+        dev_name: devName,
+        game_title: gameTitle,
+        monthly_mrr: monthlyMrr,
+        contact_email: req.body?.contactEmail ? String(req.body.contactEmail).trim() : null,
+        notes: req.body?.notes ? String(req.body.notes).trim() : null,
+        sample_clip_id: req.body?.sampleClipId ? Number(req.body.sampleClipId) : null,
+        status: statusRaw,
+      })
+      res.json({ ok: true, developer })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.get('/api/developers/:id', dbRequired, async (req, res) => {
+    const id = Number(req.params.id)
+    if (!id) {
+      res.status(400).json({ error: 'Invalid retainer id' })
+      return
+    }
+    const developer = await getRetainerById(id)
+    if (!developer) {
+      res.status(404).json({ error: 'Retainer not found' })
+      return
+    }
+    res.json({ developer })
+  })
+
+  app.patch('/api/developers/:id', dbRequired, async (req, res) => {
+    try {
+      const id = Number(req.params.id)
+      if (!id) {
+        res.status(400).json({ error: 'Invalid retainer id' })
+        return
+      }
+      const statusRaw = req.body?.status != null ? String(req.body.status) : undefined
+      if (statusRaw != null && !isRetainerStatus(statusRaw)) {
+        res.status(400).json({
+          error: 'status must be prospect, sample_sent, active, or cancelled',
+        })
+        return
+      }
+      const monthlyMrr =
+        req.body?.monthlyMrr != null ? Number(req.body.monthlyMrr) : undefined
+      if (monthlyMrr != null && (!Number.isFinite(monthlyMrr) || monthlyMrr < 750)) {
+        res.status(400).json({ error: 'monthlyMrr must be >= 750' })
+        return
+      }
+      const developer = await updateRetainer(id, {
+        status: statusRaw && isRetainerStatus(statusRaw) ? statusRaw : undefined,
+        monthly_mrr: monthlyMrr,
+        contact_email:
+          req.body?.contactEmail !== undefined
+            ? String(req.body.contactEmail || '').trim() || null
+            : undefined,
+        notes:
+          req.body?.notes !== undefined ? String(req.body.notes || '').trim() || null : undefined,
+        sample_clip_id:
+          req.body?.sampleClipId !== undefined
+            ? req.body.sampleClipId
+              ? Number(req.body.sampleClipId)
+              : null
+            : undefined,
+        dev_name: req.body?.devName ? String(req.body.devName).trim() : undefined,
+        game_title: req.body?.gameTitle ? String(req.body.gameTitle).trim() : undefined,
+      })
+      if (!developer) {
+        res.status(404).json({ error: 'Retainer not found' })
+        return
+      }
+      res.json({ ok: true, developer })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
+  })
+
+  app.post('/api/developers/:id/checkout', dbRequired, async (req, res) => {
+    if (!stripeConfigured()) {
+      res.status(503).json({
+        error: 'Stripe not configured',
+        hint: 'Set STRIPE_SECRET_KEY in environment',
+      })
+      return
+    }
+    try {
+      const id = Number(req.params.id)
+      if (!id) {
+        res.status(400).json({ error: 'Invalid retainer id' })
+        return
+      }
+      const monthlyMrr =
+        req.body?.monthlyMrr != null ? Number(req.body.monthlyMrr) : undefined
+      const session = await createRetainerCheckoutSession({
+        retainerId: id,
+        monthlyMrrOverride: monthlyMrr,
+      })
+      res.json({ ok: true, ...session })
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
+    }
   })
 
   app.get('/api/sales', dbRequired, async (_req, res) => {
