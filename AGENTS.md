@@ -1,0 +1,40 @@
+# AGENTS.md
+
+Repo-wide agent guidance for the Cutline Industries monorepo (flagship product: **Thermal** — turn live-stream heat into monetized Shorts).
+
+Start with `README.md` and `docs/PLATFORM.md` for architecture. Standard commands live in the root `package.json` `scripts` block — use those rather than reinventing them.
+
+## Cursor Cloud specific instructions
+
+The update script (run automatically on VM startup) installs npm dependencies only. Everything below is service startup / run-time context that is NOT in the update script.
+
+### Services (Thermal core)
+
+| Service | Command | Port | Notes |
+|---------|---------|------|-------|
+| Frontend (Vite SPA) | `npm run dev` | 5173 | Proxies `/api` + `/thermal-media` to the API on 8787 |
+| Backend API (Express) | `npm run api` | 8787 | `tsx server/api.ts` |
+| Both together | `npm run start` | 5173 + 8787 | `concurrently` runs API + Vite |
+| PostgreSQL | `sudo pg_ctlcluster 16 main start` | 5432 | System Postgres 16; not auto-started on boot |
+
+### Postgres (must be started each session)
+
+- Postgres 16 is installed system-wide but is NOT started automatically. Start it with `sudo pg_ctlcluster 16 main start` before running the API for full functionality.
+- Local role/DB used for dev: user `postgres` / password `postgres`, database `thermal`. The default `DATABASE_URL` in `.env.example` (`postgres://postgres:postgres@127.0.0.1:5432/thermal`) already matches this, so a copied `.env` works out of the box.
+- If the `thermal` database is missing, create it: `sudo -u postgres psql -c "CREATE DATABASE thermal;"` (and `ALTER USER postgres PASSWORD 'postgres';` if the password was reset).
+- Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). Run this after starting Postgres and whenever new files land in `db/migrations/`.
+- `DATABASE_SSL` auto-enables for non-localhost hosts; keep it off (default) for the local `127.0.0.1` DB.
+
+### `.env`
+
+- `scripts/setup-cursor.sh` / the update flow copies `.env.example` → `.env`. All external integrations (Stripe, YouTube/Google, AWS S3, Twitch, OpenAI) are gated behind env vars and default to dry-run (`CUTLINE_DRY_RUN=1`), so the app runs fully without any of those credentials — with reduced/no-op integration behavior.
+
+### Non-obvious gotchas
+
+- The API's `thermal-monitor` background job logs recurring `ffprobe ... No such file or directory` errors for demo VOD files under `inbox/` that do not exist. This is harmless noise — the API and all HTTP endpoints run fine regardless.
+- Public `/feedback` submissions and AI-pipeline audience input persist to `inbox/audience_inputs.json` (a JSON file store), NOT to Postgres. Postgres backs the Thermal pipeline tables (`streamers`, `heat_spikes`, `clips`, `retainers`, `sales`, `bounty_posts`) and auth.
+- The API degrades gracefully when Postgres is down (endpoints report `connected: false`), so a healthy `/api/health` alone does not prove the DB is up — check `/api/thermal/schema` for `connected: true` / `migrated: true`.
+
+### Lint / test / build
+
+Use the root `package.json` scripts: `npm run lint` (oxlint), `npm run typecheck` (tsc), `npm test` (node test runner), `npm run verify` (all three), `npm run build` (production build; not needed for dev). None of these require Postgres.
