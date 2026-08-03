@@ -19,14 +19,15 @@ const LABELS = {
 
 export function resolvePrintablePath(repoRoot, input) {
   const normalized = input.replace(/\\/g, '/')
+  const safeRoot = repoRoot.endsWith(path.sep) ? repoRoot : repoRoot + path.sep
   if (path.isAbsolute(input)) {
-    if (!input.startsWith(repoRoot)) {
+    if (!path.resolve(input).startsWith(safeRoot)) {
       throw new Error('Only files inside the Cutline repo can be printed')
     }
     return path.resolve(input)
   }
   const resolved = path.resolve(repoRoot, normalized)
-  if (!resolved.startsWith(repoRoot)) {
+  if (!resolved.startsWith(safeRoot)) {
     throw new Error('Path escapes repo root')
   }
   return resolved
