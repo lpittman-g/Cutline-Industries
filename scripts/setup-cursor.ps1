@@ -1,9 +1,6 @@
 # One-time Cursor setup for Cutline Industries (no Copilot required)
 $ErrorActionPreference = 'Stop'
-$Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-if (-not (Test-Path (Join-Path $Root 'package.json'))) {
-  $Root = Resolve-Path (Join-Path $PSScriptRoot '..')
-}
+$Root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $CursorMcp = Join-Path $env:USERPROFILE '.cursor\mcp.json'
 $Example = Join-Path $Root '.cursor\mcp.json.example'
 
