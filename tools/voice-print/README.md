@@ -93,6 +93,7 @@ npm run print -- docs/combined-print.html
 ## Printable catalog
 
 - `docs/architecture-blueprint.html`
+- `docs/ai-application-card-blueprint.html` — AI Application Card (Cursor primary)
 - `docs/combined-print.html`
 - `docs/cover-sheet.html`
 - `docs/cutline-4-week-outreach.html`
