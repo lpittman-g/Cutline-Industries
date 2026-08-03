@@ -6,6 +6,7 @@ import {
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  getBountyCaptionNotes,
   getClipById,
   getRetainerById,
   insertRetainer,
@@ -152,9 +153,12 @@ export function registerThermalRoutes(app: Express) {
         res.status(403).json({ error: 'Paid checkout session required' })
         return
       }
+      const bountyCaptions = await getBountyCaptionNotes(id)
       const fulfillment = {
         captions: {
-          social: clip.ai_caption ?? null,
+          social: clip.ai_caption ?? bountyCaptions.x ?? null,
+          x: clip.ai_caption ?? bountyCaptions.x ?? null,
+          tiktok: bountyCaptions.tiktok ?? null,
           discord: clip.ai_discord_message ?? null,
         },
       }

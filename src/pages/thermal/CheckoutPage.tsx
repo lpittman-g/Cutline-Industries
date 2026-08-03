@@ -18,7 +18,10 @@ export function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [fulfillmentCaption, setFulfillmentCaption] = useState<string | null>(null)
+  const [fulfillmentCaptions, setFulfillmentCaptions] = useState<{
+    x: string | null
+    tiktok: string | null
+  } | null>(null)
   const paid = search.get('paid') === '1'
   const canceled = search.get('canceled') === '1'
   const requestedTier = search.get('tier')
@@ -44,7 +47,10 @@ export function CheckoutPage() {
             fetchClip(numericId).then((data) => setClip(data.clip)),
             fetchClipDownload(numericId, sessionId).then((data) => {
               setDownloadUrl(data.url)
-              setFulfillmentCaption(data.captions?.social ?? null)
+              setFulfillmentCaptions({
+                x: data.captions?.x ?? data.captions?.social ?? null,
+                tiktok: data.captions?.tiktok ?? null,
+              })
             }),
           ])
         }
@@ -103,10 +109,17 @@ export function CheckoutPage() {
             ) : (
               <p className="chip">Stripe Checkout — live when STRIPE_SECRET_KEY is set</p>
             )}
-            {(fulfillmentCaption || (paid && clip.ai_caption)) && (
-              <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
-                Social caption: {fulfillmentCaption || clip.ai_caption}
-              </p>
+            {(fulfillmentCaptions?.x ||
+              fulfillmentCaptions?.tiktok ||
+              (paid && clip.ai_caption)) && (
+              <div style={{ color: 'var(--muted)', marginTop: '1rem', lineHeight: 1.7 }}>
+                {(fulfillmentCaptions?.x || clip.ai_caption) && (
+                  <p>X caption: {fulfillmentCaptions?.x || clip.ai_caption}</p>
+                )}
+                {fulfillmentCaptions?.tiktok && (
+                  <p>TikTok caption: {fulfillmentCaptions.tiktok}</p>
+                )}
+              </div>
             )}
             <div className="btn-row" style={{ marginTop: '1rem' }}>
               {downloadUrl && (
