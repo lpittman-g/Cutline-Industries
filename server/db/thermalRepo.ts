@@ -275,12 +275,21 @@ export async function getClipById(id: number): Promise<ClipWithMeta | null> {
 }
 
 export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
+  // EXISTS (not DISTINCT + ORDER BY bp.*) — Postgres rejects ORDER BY cols
+  // outside a SELECT DISTINCT select-list when a clip has multiple posts.
   const res = await getPool().query(
-    `SELECT DISTINCT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
+    `SELECT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
      FROM clips c
-     INNER JOIN bounty_posts bp ON bp.clip_id = c.id
-     WHERE c.media_url IS NOT NULL AND bp.status = 'posted'
-     ORDER BY bp.posted_at DESC NULLS LAST, c.created_at DESC
+     WHERE c.media_url IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM bounty_posts bp
+         WHERE bp.clip_id = c.id AND bp.status = 'posted'
+       )
+     ORDER BY (
+       SELECT MAX(bp.posted_at) FROM bounty_posts bp
+       WHERE bp.clip_id = c.id AND bp.status = 'posted'
+     ) DESC NULLS LAST,
+     c.created_at DESC
      LIMIT $1`,
     [limit],
   )
