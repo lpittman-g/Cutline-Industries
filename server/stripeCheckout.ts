@@ -24,11 +24,6 @@ function publicBaseUrl() {
   ).replace(/\/$/, '')
 }
 
-function apiBaseUrl() {
-  const port = process.env.CUTLINE_API_PORT || '8787'
-  return (process.env.THERMAL_API_URL || `http://127.0.0.1:${port}`).replace(/\/$/, '')
-}
-
 export function stripeConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim())
 }
