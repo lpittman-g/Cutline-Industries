@@ -163,7 +163,7 @@ describe('checkout lock + lost-claim sale marker', () => {
     assert.equal(CLIP_CHECKOUT_LOCK_CLASS, 42001)
   })
 
-  it('markSaleLostClaimRace SQL only refunds non-refunded rows', async () => {
+  it('markSaleLostClaimRace SQL accepts refunded|failed and skips terminal rows', async () => {
     const { readFileSync } = await import('node:fs')
     const { fileURLToPath } = await import('node:url')
     const { dirname, join } = await import('node:path')
@@ -171,9 +171,10 @@ describe('checkout lock + lost-claim sale marker', () => {
     const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
     const start = src.indexOf('export async function markSaleLostClaimRace')
     const next = src.indexOf('\nexport async function', start + 1)
-    const body = src.slice(start, next > start ? next : start + 900)
-    assert.match(body, /status = 'refunded'/)
+    const body = src.slice(start, next > start ? next : start + 1100)
+    assert.match(body, /status: 'refunded' \| 'failed'/)
+    assert.match(body, /SET status = \$2/)
     assert.match(body, /lost_claim_race/)
-    assert.match(body, /status <> 'refunded'/)
+    assert.match(body, /status NOT IN \('refunded', 'failed', 'completed'\)/)
   })
 })

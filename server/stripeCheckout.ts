@@ -172,23 +172,57 @@ function paymentIntentIdFromSession(session: Stripe.Checkout.Session): string | 
     : session.payment_intent?.id ?? null
 }
 
-/** Losing buyer paid after another claim won — ledger + best-effort Stripe refund. */
+/** True when Stripe reports the PaymentIntent/charge was already refunded. */
+export function isAlreadyRefundedError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  const code =
+    err && typeof err === 'object' && 'code' in err
+      ? String((err as { code?: unknown }).code ?? '')
+      : ''
+  return (
+    code === 'charge_already_refunded' ||
+    /already (been )?refunded|charge_already_refunded/i.test(msg)
+  )
+}
+
+/**
+ * Losing buyer paid after another claim won — Stripe refund then ledger update.
+ * Marks sale `refunded` only when the refund succeeded (or was already refunded);
+ * otherwise `failed` so ops can retry. Skips Stripe calls when `CUTLINE_DRY_RUN=1`.
+ */
 export async function handleLostClaimRace(session: Stripe.Checkout.Session) {
   const paymentIntentId = paymentIntentIdFromSession(session)
-  const sale = await markSaleLostClaimRace({
-    stripeCheckoutSessionId: session.id,
-    stripePaymentIntentId: paymentIntentId,
-  })
 
   if (!paymentIntentId) {
-    return { sale, refunded: false as const, reason: 'no_payment_intent' as const }
+    const sale = await markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: null,
+      status: 'failed',
+    })
+    return {
+      sale,
+      refunded: false as const,
+      saleStatus: 'failed' as const,
+      reason: 'no_payment_intent' as const,
+    }
   }
+
   if (process.env.CUTLINE_DRY_RUN === '1') {
     console.warn('[stripe] dry-run: skip refund for lost claim race', {
       sessionId: session.id,
       paymentIntentId,
     })
-    return { sale, refunded: false as const, reason: 'dry_run' as const }
+    const sale = await markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      status: 'refunded',
+    })
+    return {
+      sale,
+      refunded: false as const,
+      saleStatus: 'refunded' as const,
+      reason: 'dry_run' as const,
+    }
   }
 
   try {
@@ -200,14 +234,47 @@ export async function handleLostClaimRace(session: Stripe.Checkout.Session) {
         lost_claim_race: '1',
       },
     })
-    return { sale, refunded: true as const, refundId: refund.id }
+    const sale = await markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      status: 'refunded',
+    })
+    return {
+      sale,
+      refunded: true as const,
+      saleStatus: 'refunded' as const,
+      refundId: refund.id,
+    }
   } catch (err) {
+    if (isAlreadyRefundedError(err)) {
+      const sale = await markSaleLostClaimRace({
+        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        status: 'refunded',
+      })
+      return {
+        sale,
+        refunded: true as const,
+        saleStatus: 'refunded' as const,
+        reason: 'already_refunded' as const,
+      }
+    }
     console.error('[stripe] lost-claim refund failed', {
       sessionId: session.id,
       paymentIntentId,
       error: err instanceof Error ? err.message : String(err),
     })
-    return { sale, refunded: false as const, reason: 'stripe_error' as const }
+    const sale = await markSaleLostClaimRace({
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      status: 'failed',
+    })
+    return {
+      sale,
+      refunded: false as const,
+      saleStatus: 'failed' as const,
+      reason: 'stripe_error' as const,
+    }
   }
 }
 
@@ -369,18 +436,20 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         try {
           await fulfillCheckoutSession(session)
         } catch (err) {
-          // Lost claim race: mark loser refunded, best-effort Stripe refund, ack webhook.
+          // Lost claim race: refund loser (or mark failed), ack so Stripe stops retrying.
           if (err instanceof ClipAlreadyClaimedError) {
             const refund = await handleLostClaimRace(session)
             console.warn('[stripe] clip already claimed; acknowledging webhook', {
               clipId: err.clipId,
               existingSessionId: err.existingSessionId,
               refunded: refund.refunded,
+              saleStatus: refund.saleStatus,
             })
             res.json({
               received: true,
               skipped: 'clip_already_claimed',
               refunded: refund.refunded,
+              saleStatus: refund.saleStatus,
             })
             return
           }
@@ -419,8 +488,15 @@ export async function confirmCheckoutSession(sessionId: string) {
     await fulfillCheckoutSession(session)
   } catch (err) {
     if (err instanceof ClipAlreadyClaimedError) {
-      await handleLostClaimRace(session)
-      throw err
+      const refund = await handleLostClaimRace(session)
+      return {
+        ok: false as const,
+        status: 'clip_already_claimed' as const,
+        clipId: err.clipId,
+        existingSessionId: err.existingSessionId,
+        refunded: refund.refunded,
+        saleStatus: refund.saleStatus,
+      }
     }
     throw err
   }

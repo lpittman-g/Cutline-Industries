@@ -556,26 +556,32 @@ export class ClipAlreadyClaimedError extends Error {
 }
 
 /**
- * Mark the losing checkout's sales row refunded after a claim race.
- * Idempotent for already-refunded rows.
+ * Mark the losing checkout's sales row after a claim race.
+ * Use `refunded` when Stripe refund succeeded (or was already refunded);
+ * use `failed` when the refund could not be created. Idempotent for terminal rows.
  */
 export async function markSaleLostClaimRace(input: {
   stripeCheckoutSessionId: string
   stripePaymentIntentId?: string | null
+  status: 'refunded' | 'failed'
 }): Promise<SaleRow | null> {
   const res = await getPool().query(
     `UPDATE sales
-     SET status = 'refunded',
-         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+     SET status = $2,
+         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
          metadata = COALESCE(metadata, '{}'::jsonb) ||
            jsonb_build_object(
              'lost_claim_race', true,
              'refund_reason', 'clip_already_claimed'
            )
      WHERE stripe_checkout_session_id = $1
-       AND status <> 'refunded'
+       AND status NOT IN ('refunded', 'failed', 'completed')
      RETURNING *`,
-    [input.stripeCheckoutSessionId, input.stripePaymentIntentId ?? null],
+    [
+      input.stripeCheckoutSessionId,
+      input.status,
+      input.stripePaymentIntentId ?? null,
+    ],
   )
   if (res.rows[0]) return mapSale(res.rows[0])
   const existing = await getPool().query(

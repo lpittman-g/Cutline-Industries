@@ -251,17 +251,19 @@ export function registerThermalRoutes(app: Express) {
         return
       }
       const result = await confirmCheckoutSession(sessionId)
-      res.json(result)
-    } catch (err) {
-      if (err instanceof ClipAlreadyClaimedError) {
+      if (!result.ok && result.status === 'clip_already_claimed') {
         res.status(409).json({
-          error: err.message,
+          error: 'Clip already claimed by another checkout session',
           code: 'clip_already_claimed',
-          clipId: err.clipId,
-          existingSessionId: err.existingSessionId,
+          clipId: result.clipId,
+          existingSessionId: result.existingSessionId,
+          refunded: result.refunded,
+          saleStatus: result.saleStatus,
         })
         return
       }
+      res.json(result)
+    } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
