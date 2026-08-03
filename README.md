@@ -25,6 +25,8 @@ This repository is the **full Cutline platform monorepo**: the Thermal web app, 
 
 See [`docs/PLATFORM.md`](docs/PLATFORM.md) for the full architecture.
 
+**Workstreams** (keep separate): [`docs/WORKSTREAMS.md`](docs/WORKSTREAMS.md) — A = Gaming/Thermal · B = Cursor AI layer / print / Excel MCP.
+
 ## Quick start (Thermal web + API)
 
 ```bash

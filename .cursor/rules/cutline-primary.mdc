@@ -15,6 +15,7 @@ This repo is built for **Cursor**, not GitHub Copilot. Do repo work here. Do **n
 | [docs/THERMAL-MISSION-CONTROL.md](../docs/THERMAL-MISSION-CONTROL.md) | Heat → clip → Stripe → bounty |
 | [docs/CURSOR-PRIMARY.md](../docs/CURSOR-PRIMARY.md) | Cursor setup (MCP, cloud vs local) |
 | [docs/AI-APPLICATION-CARD-BLUEPRINT.md](../docs/AI-APPLICATION-CARD-BLUEPRINT.md) | AI Application Card blueprint |
+| [docs/WORKSTREAMS.md](../docs/WORKSTREAMS.md) | A = Gaming/Thermal · B = AI layer (separate) |
 | [tools/README.md](../tools/README.md) | MCP tools |
 
 ## Stack
