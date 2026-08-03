@@ -1,4 +1,5 @@
 import dotenv from 'dotenv'
+import { publicBaseUrl } from './auth/authCrypto.ts'
 import { ROOT } from './youtubeAuth.ts'
 
 dotenv.config({ path: `${ROOT}/.env` })
@@ -11,7 +12,7 @@ export async function notifyDiscordHeat(opts: {
   const webhook = process.env.DISCORD_HEAT_WEBHOOK_URL?.trim()
   if (!webhook) return { skipped: true, reason: 'DISCORD_HEAT_WEBHOOK_URL not set' }
 
-  const base = process.env.CUTLINE_PUBLIC_URL || 'https://cutline-industries.studio'
+  const base = publicBaseUrl()
   const body = {
     content: `🔥 **HEAT DETECTED** · @${opts.streamer} · ${opts.msgPerMin} msg/min · spike #${opts.spikeId}`,
     embeds: [

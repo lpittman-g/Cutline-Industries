@@ -21,6 +21,7 @@ export type ThermalClip = {
   price_usd?: string
   sale_amount_cents?: number | null
   ai_caption?: string | null
+  ai_tiktok_caption?: string | null
   autopilot_status?: string | null
   autopilot_error?: string | null
 }
@@ -208,8 +209,8 @@ export function fetchClipDownload(clipId: number, sessionId: string) {
     expiresIn?: number
     captions?: {
       social: string | null
-      x?: string | null
-      tiktok?: string | null
+      x: string | null
+      tiktok: string | null
       discord: string | null
     }
   }>(`/api/clips/${clipId}/download`, { sessionId })
