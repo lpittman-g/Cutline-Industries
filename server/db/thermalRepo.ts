@@ -401,8 +401,8 @@ export function resolveFulfillmentCaptions(
   tiktok: string | null
   discord: string | null
 } {
-  const x = trimCaption(clip.ai_caption) ?? bountyNotes.x
-  const tiktok = trimCaption(clip.ai_tiktok_caption) ?? bountyNotes.tiktok
+  const x = trimCaption(clip.ai_caption) ?? trimCaption(bountyNotes.x)
+  const tiktok = trimCaption(clip.ai_tiktok_caption) ?? trimCaption(bountyNotes.tiktok)
   return {
     // `social` aliases x for older checkout clients
     social: x,
