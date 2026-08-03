@@ -104,3 +104,19 @@ describe('localCleanDownloadUrl', () => {
     )
   })
 })
+
+describe('listBountyClips SQL shape', () => {
+  it('avoids DISTINCT + ORDER BY non-selected bounty columns', async () => {
+    // Read the query source so regressions cannot reintroduce invalid Postgres SQL.
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const { dirname, join } = await import('node:path')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
+    const start = src.indexOf('export async function listBountyClips')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 800)
+    assert.match(body, /EXISTS\s*\(/)
+    assert.doesNotMatch(body, /SELECT\s+DISTINCT\s+c\.\*/)
+  })
+})
