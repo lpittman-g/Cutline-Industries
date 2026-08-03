@@ -43,7 +43,7 @@ Surfaces (Cursor desktop · Cloud · Phone Ops)
     → Client (chat · rules · MCP)
     → Agent loop (context · think → act)
     → Tools (edit · shell · phone-approval · voice-print)
-    → Runtime (PC LAN · Cloud VM · GitHub)
+    → Runtime (PC LAN · Cloud VM · Cursor)
 ```
 
 | Runtime | Can reach HP printer? |
