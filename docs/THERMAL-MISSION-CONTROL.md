@@ -211,7 +211,8 @@ npm run db:migrate
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
 
-# Optional Discord heat alerts
+# Optional Discord heat alerts + clip drops
+# Server Settings → Integrations → Webhooks → Copy URL (see Setup below)
 DISCORD_HEAT_WEBHOOK_URL=
 
 # VOD source for clips when live VOD unavailable
