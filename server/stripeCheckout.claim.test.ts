@@ -23,12 +23,21 @@ describe('stripe lost-claim race handling', () => {
     assert.match(src, /CUTLINE_DRY_RUN/)
   })
 
+  it('acks RetainerAlreadyActiveError in the webhook path', () => {
+    assert.match(src, /RetainerAlreadyActiveError/)
+    assert.match(src, /skipped:\s*'retainer_already_active'/)
+    assert.match(src, /resolveLostRetainerRace/)
+    assert.match(src, /subscriptions\.cancel/)
+  })
+
   it('confirmCheckoutSession returns clip_already_claimed instead of throwing', () => {
     const start = src.indexOf('export async function confirmCheckoutSession')
     const next = src.indexOf('\nexport async function', start + 1)
-    const body = src.slice(start, next > start ? next : start + 1200)
+    const body = src.slice(start, next > start ? next : start + 1600)
     assert.match(body, /status:\s*'clip_already_claimed'/)
     assert.match(body, /resolveLostClaimRace/)
+    assert.match(body, /status:\s*'retainer_already_active'/)
+    assert.match(body, /resolveLostRetainerRace/)
   })
 
   it('createCheckoutSession holds advisory + row lock across Stripe create', () => {
@@ -42,9 +51,11 @@ describe('stripe lost-claim race handling', () => {
     assert.match(body, /ClipAlreadyClaimedError/)
   })
 
-  it('checkout API routes map claim conflicts to HTTP 409', () => {
+  it('checkout API routes map claim/retainer conflicts to HTTP 409', () => {
     assert.match(apiSrc, /status\(409\)/)
     assert.match(apiSrc, /clip_already_claimed/)
     assert.match(apiSrc, /ClipAlreadyClaimedError/)
+    assert.match(apiSrc, /retainer_already_active/)
+    assert.match(apiSrc, /RetainerAlreadyActiveError/)
   })
 })
