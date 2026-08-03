@@ -37,5 +37,6 @@ Send Cutline docs to the **HP OfficeJet Pro 9120** (`192.168.1.157`) straight fr
 
 ## Related
 
+- **Apps (Cursor, Copilot, phone):** [`tools/voice-print/APPS.md`](../tools/voice-print/APPS.md)
 - Full tool docs: [`tools/voice-print/README.md`](../tools/voice-print/README.md)
-- Copilot chat command: [`.github/copilot-instructions.md`](../.github/copilot-instructions.md)
+- Copilot agent `@voice-print`: [`.github/agents/voice-print.agent.md`](../.github/agents/voice-print.agent.md)

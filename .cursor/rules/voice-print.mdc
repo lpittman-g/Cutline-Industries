@@ -3,21 +3,18 @@ description: When the user says "print" in chat, send blueprints to the HP Offic
 alwaysApply: true
 ---
 
-# Voice Print — chat command
+# Voice Print — shared with GitHub Copilot
 
-When the user's message is **only** `print` (case-insensitive), or clearly means "print this now" with no other task:
+Follow [tools/voice-print/CHAT-PRINT.md](../tools/voice-print/CHAT-PRINT.md).
 
-1. Use the **voice-print** MCP tool `print` immediately (no file arg → prints the default combined pack).
-2. If MCP is unavailable, run locally:
-   ```bash
-   cd tools/voice-print && npm run print -- docs/combined-print.html
-   ```
-3. Confirm what was sent and which printer IP was used.
+When the user's message is **only** `print` (case-insensitive), or clearly means "print this now":
 
-If they say **print** plus a specific doc (e.g. "print architecture blueprint"), pass that path or catalog id to `print`.
+1. Use MCP **`print`** immediately (no file → default combined pack).
+2. If MCP unavailable: `cd tools/voice-print && npm run print -- docs/combined-print.html`
+3. Confirm file and printer IP `192.168.1.157`.
 
-If they ask to **list** printable files, call `list_printables`.
+**Copilot equivalent:** `@voice-print` agent — see `.github/agents/voice-print.agent.md`.
 
-**Requires local Cursor** on the same Wi‑Fi as the HP OfficeJet (`192.168.1.157`). Cloud agents cannot reach the printer.
+**Apps:** [tools/voice-print/APPS.md](../tools/voice-print/APPS.md) — Cursor mobile/cloud cannot print; use phone browser.
 
-Setup: enable `voice-print` in `.cursor/mcp.json` (see `.cursor/mcp.json.example`) and run `cd tools/voice-print && npm install`.
+Setup: `voice-print` in `~/.cursor/mcp.json` (see `.cursor/mcp.json.example`).
