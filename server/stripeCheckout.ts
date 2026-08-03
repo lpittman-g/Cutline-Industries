@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import {
   activateRetainer,
   claimClip,
+  ClipAlreadyClaimedError,
   getClipById,
   getRetainerById,
   insertPendingSale,
@@ -278,6 +279,15 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
     res.json({ received: true })
   } catch (err) {
+    // Lost claim race: payment already fulfilled for another session — ack so Stripe stops retrying.
+    if (err instanceof ClipAlreadyClaimedError) {
+      console.warn('[stripe] clip already claimed; acknowledging webhook', {
+        clipId: err.clipId,
+        existingSessionId: err.existingSessionId,
+      })
+      res.json({ received: true, skipped: 'clip_already_claimed' })
+      return
+    }
     console.error('[stripe] webhook handler error', err)
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }

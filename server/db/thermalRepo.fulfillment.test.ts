@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  canClaimClip,
+  ClipAlreadyClaimedError,
   localCleanDownloadUrl,
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
@@ -102,5 +104,55 @@ describe('localCleanDownloadUrl', () => {
       }),
       null,
     )
+  })
+})
+
+describe('listBountyClips SQL shape', () => {
+  it('avoids DISTINCT + ORDER BY non-selected bounty columns', async () => {
+    // Read the query source so regressions cannot reintroduce invalid Postgres SQL.
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const { dirname, join } = await import('node:path')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
+    const start = src.indexOf('export async function listBountyClips')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 800)
+    assert.match(body, /EXISTS\s*\(/)
+    assert.doesNotMatch(body, /SELECT\s+DISTINCT\s+c\.\*/)
+  })
+})
+
+describe('canClaimClip', () => {
+  it('allows unclaimed clips', () => {
+    assert.equal(canClaimClip({ status: 'unclaimed' }, 'cs_1'), true)
+  })
+
+  it('allows Stripe webhook retry for the same session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_1',
+      ),
+      true,
+    )
+  })
+
+  it('rejects a second buyer session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_2',
+      ),
+      false,
+    )
+  })
+
+  it('ClipAlreadyClaimedError carries clip and session ids', () => {
+    const err = new ClipAlreadyClaimedError(42, 'cs_winner')
+    assert.equal(err.name, 'ClipAlreadyClaimedError')
+    assert.equal(err.clipId, 42)
+    assert.equal(err.existingSessionId, 'cs_winner')
+    assert.match(err.message, /42/)
   })
 })
