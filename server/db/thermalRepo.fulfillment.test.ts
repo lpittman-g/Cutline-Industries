@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  localCleanDownloadUrl,
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
 } from './thermalRepo.ts'
@@ -46,5 +47,25 @@ describe('nextBountyStatusOnQueueRetry', () => {
     assert.equal(nextBountyStatusOnQueueRetry('posted'), 'posted')
     assert.equal(nextBountyStatusOnQueueRetry('queued'), 'queued')
     assert.equal(nextBountyStatusOnQueueRetry('failed'), 'queued')
+  })
+})
+
+describe('localCleanDownloadUrl', () => {
+  it('uses spike id when present (heat render folder)', () => {
+    assert.equal(
+      localCleanDownloadUrl({ id: 99, spike_id: 12 }),
+      '/thermal-media/clips/12/heat_clip.mp4',
+    )
+  })
+
+  it('derives folder from watermarked media_url when spike_id is missing', () => {
+    assert.equal(
+      localCleanDownloadUrl({
+        id: 99,
+        spike_id: null,
+        media_url: '/thermal-media/clips/7/heat_clip_wm.mp4',
+      }),
+      '/thermal-media/clips/7/heat_clip.mp4',
+    )
   })
 })

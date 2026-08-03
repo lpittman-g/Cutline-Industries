@@ -412,6 +412,26 @@ export function resolveFulfillmentCaptions(
   }
 }
 
+/**
+ * Local (non-S3) paid clean download path.
+ * Heat renders under `thermal_media/clips/{spikeId}/`, not the clip PK.
+ */
+export function localCleanDownloadUrl(clip: {
+  id: number
+  spike_id?: number | null
+  media_url?: string | null
+}): string {
+  if (clip.spike_id) {
+    return `/thermal-media/clips/${clip.spike_id}/heat_clip.mp4`
+  }
+  const media = clip.media_url ?? ''
+  const match = media.match(/^\/thermal-media\/clips\/([^/]+)\//)
+  if (match?.[1]) {
+    return `/thermal-media/clips/${match[1]}/heat_clip.mp4`
+  }
+  return `/thermal-media/clips/${clip.id}/heat_clip.mp4`
+}
+
 export async function markBountyPosted(input: {
   id: number
   post_url: string
