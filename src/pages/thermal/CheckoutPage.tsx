@@ -18,6 +18,7 @@ export function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [fulfillmentCaption, setFulfillmentCaption] = useState<string | null>(null)
   const paid = search.get('paid') === '1'
   const canceled = search.get('canceled') === '1'
   const requestedTier = search.get('tier')
@@ -41,7 +42,10 @@ export function CheckoutPage() {
         if (result.ok && numericId) {
           return Promise.all([
             fetchClip(numericId).then((data) => setClip(data.clip)),
-            fetchClipDownload(numericId, sessionId).then((data) => setDownloadUrl(data.url)),
+            fetchClipDownload(numericId, sessionId).then((data) => {
+              setDownloadUrl(data.url)
+              setFulfillmentCaption(data.captions?.social ?? null)
+            }),
           ])
         }
       })
@@ -91,12 +95,18 @@ export function CheckoutPage() {
             <ul style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
               <li>Unwatermarked vertical MP4</li>
               <li>Private download after verified payment</li>
+              <li>Pre-written social caption from Thermal autopilot</li>
               <li>15-minute secure S3 link when cloud storage is enabled</li>
             </ul>
             {clip.status === 'claimed' ? (
               <p className="chip ok">Already claimed</p>
             ) : (
               <p className="chip">Stripe Checkout — live when STRIPE_SECRET_KEY is set</p>
+            )}
+            {(fulfillmentCaption || (paid && clip.ai_caption)) && (
+              <p style={{ color: 'var(--muted)', marginTop: '1rem' }}>
+                Social caption: {fulfillmentCaption || clip.ai_caption}
+              </p>
             )}
             <div className="btn-row" style={{ marginTop: '1rem' }}>
               {downloadUrl && (

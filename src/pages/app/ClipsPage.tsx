@@ -4,6 +4,7 @@ import {
   fetchClips,
   formatUsd,
   mediaUrl,
+  rerunClipAutopilot,
   tierPriceLabel,
   type ThermalClip,
 } from '../../lib/thermalApi'
@@ -12,6 +13,7 @@ export function ClipsPage() {
   const [clips, setClips] = useState<ThermalClip[]>([])
   const [error, setError] = useState<string | null>(null)
   const [playing, setPlaying] = useState<number | null>(null)
+  const [rerunning, setRerunning] = useState<number | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +77,9 @@ export function ClipsPage() {
                   {clip.autopilot_status && (
                     <p className={clip.autopilot_status === 'failed' ? 'chip warn' : 'chip ready'}>
                       AI autopilot: {clip.autopilot_status}
+                      {clip.autopilot_status === 'failed' && clip.autopilot_error
+                        ? ` — ${clip.autopilot_error}`
+                        : ''}
                     </p>
                   )}
                   {clip.ai_caption && (
@@ -86,6 +91,31 @@ export function ClipsPage() {
                     {video && (
                       <button type="button" className="btn" onClick={() => setPlaying(clip.id)}>
                         {playing === clip.id ? 'Hide' : 'Play preview'}
+                      </button>
+                    )}
+                    {clip.media_url && (
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={rerunning === clip.id}
+                        onClick={() => {
+                          setRerunning(clip.id)
+                          void rerunClipAutopilot(clip.id)
+                            .then((result) => {
+                              if (result.clip) {
+                                setClips((prev) =>
+                                  prev.map((row) => (row.id === clip.id ? result.clip! : row)),
+                                )
+                              }
+                              setError(null)
+                            })
+                            .catch((e) =>
+                              setError(e instanceof Error ? e.message : 'Autopilot retry failed'),
+                            )
+                            .finally(() => setRerunning(null))
+                        }}
+                      >
+                        {rerunning === clip.id ? 'Running…' : 'Retry AI autopilot'}
                       </button>
                     )}
                     {clip.status !== 'claimed' && (
