@@ -45,7 +45,7 @@ Cutline Industries is configured for **Cursor** first. Copilot files in `.github
 └─────────────────────────────────┬───────────────────────────────────────┘
                                   │
 ┌─────────────────────────────────▼───────────────────────────────────────┐
-│  Runtime: PC LAN · Cloud VM · Cursor  (GitHub for repos / PRs / Actions) │
+│  Runtime: PC LAN · Cloud VM · Cursor                                       │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
