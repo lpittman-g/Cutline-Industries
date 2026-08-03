@@ -6,6 +6,7 @@ import {
   fetchClip,
   fetchClipDownload,
   formatUsd,
+  mediaUrl,
   tierPriceLabel,
   type ThermalClip,
 } from '../../lib/thermalApi'
@@ -41,7 +42,9 @@ export function CheckoutPage() {
         if (result.ok && numericId) {
           return Promise.all([
             fetchClip(numericId).then((data) => setClip(data.clip)),
-            fetchClipDownload(numericId, sessionId).then((data) => setDownloadUrl(data.url)),
+            fetchClipDownload(numericId, sessionId).then((data) =>
+              setDownloadUrl(mediaUrl(data.url) ?? data.url),
+            ),
           ])
         }
       })

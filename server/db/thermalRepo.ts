@@ -98,10 +98,20 @@ export async function upsertStreamer(input: {
   return mapStreamer(res.rows[0])
 }
 
-export async function updateStreamerVelocity(id: number, mpm: number, isLive: boolean) {
+export async function updateStreamerVelocity(
+  id: number,
+  mpm: number,
+  isLive: boolean,
+  game?: string | null,
+) {
   await getPool().query(
-    `UPDATE streamers SET current_msg_per_min = $2, is_live = $3, avg_chat_velocity = GREATEST(avg_chat_velocity, $2) WHERE id = $1`,
-    [id, mpm, isLive],
+    `UPDATE streamers
+     SET current_msg_per_min = $2,
+         is_live = $3,
+         avg_chat_velocity = GREATEST(avg_chat_velocity, $2),
+         game = COALESCE($4, game)
+     WHERE id = $1`,
+    [id, mpm, isLive, game?.trim() || null],
   )
 }
 
@@ -636,6 +646,7 @@ export async function seedRetainersIfEmpty() {
     game_title: string
     status: RetainerStatus
     monthly_mrr: number
+    contact_email: string
     notes: string
   }> = [
     {
@@ -643,6 +654,7 @@ export async function seedRetainersIfEmpty() {
       game_title: 'Hollow Paths',
       status: 'sample_sent',
       monthly_mrr: 750,
+      contact_email: 'northbark@example.com',
       notes: 'High-heat variety coverage — sample ad pack sent',
     },
     {
@@ -650,6 +662,7 @@ export async function seedRetainersIfEmpty() {
       game_title: 'Neon Circuit',
       status: 'prospect',
       monthly_mrr: 1250,
+      contact_email: 'arcbyte@example.com',
       notes: 'Detected in heat window — awaiting pitch',
     },
     {
@@ -657,6 +670,7 @@ export async function seedRetainersIfEmpty() {
       game_title: 'Tideforge',
       status: 'active',
       monthly_mrr: 2000,
+      contact_email: 'saltpixel@example.com',
       notes: 'Monthly TikTok/Shorts wishlist pack',
     },
   ]

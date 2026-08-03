@@ -10,6 +10,7 @@ import {
   setClipCheckoutSession,
   setRetainerCheckoutSession,
 } from './db/thermalRepo.ts'
+import { publicBaseUrl } from './auth/authCrypto.ts'
 import type { SaleTier } from './db/thermalTypes.ts'
 import { ROOT } from './youtubeAuth.ts'
 
@@ -17,14 +18,6 @@ const TIER_AMOUNTS: Record<SaleTier, number> = {
   gateway: 1500,
   bounty: 5000,
   retainer: 75000,
-}
-
-function publicBaseUrl() {
-  return (
-    process.env.THERMAL_PUBLIC_URL ||
-    process.env.CUTLINE_PUBLIC_URL ||
-    'http://127.0.0.1:5173'
-  ).replace(/\/$/, '')
 }
 
 export function stripeConfigured() {

@@ -130,6 +130,7 @@ export async function triggerHeatEvent(opts: {
   msgPerMin?: number
   vodUrl?: string | null
   title?: string
+  game?: string | null
 }) {
   const { insertHeatSpike } = await import('./db/thermalRepo.ts')
   const streamer = await getStreamerById(opts.streamerId)
@@ -140,7 +141,7 @@ export async function triggerHeatEvent(opts: {
     msg_per_min: opts.msgPerMin ?? Math.max(streamer.current_msg_per_min, 150),
     vod_url: opts.vodUrl ?? streamer.vod_fallback_url,
     title: opts.title ?? `Heat on @${streamer.username}`,
-    game: streamer.game,
+    game: opts.game?.trim() || streamer.game,
   })
 
   const { notifyDiscordHeat } = await import('./discordNotify.ts')

@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { publicBaseUrl } from './auth/authCrypto.ts'
 import {
   findRetainerByGameTitle,
   queueBountyPost,
@@ -11,30 +12,34 @@ import { sendDiscordClipDrop } from './discordNotify.ts'
 export type ThermalAutopilotCopy = {
   discordHypeMessage: string
   xCaption: string
+  tiktokCaption: string
   devEmailSubject: string
   devEmailBody: string
 }
 
-function fallbackCopy(input: {
+export function fallbackCopy(input: {
   streamerName: string
   gameTitle: string
   msgPerMin: number
 }): ThermalAutopilotCopy {
+  const xCaption = `Chat exploded during @${input.streamerName}'s ${input.gameTitle} run 🔥 #Gaming #IndieGames #Shorts`
   return {
     discordHypeMessage: `Chat hit ${input.msgPerMin} messages/min while you played ${input.gameTitle}. Thermal cut the moment while it was hot.`,
-    xCaption: `Chat exploded during @${input.streamerName}'s ${input.gameTitle} run 🔥 #Gaming #IndieGames #Shorts`,
+    xCaption,
+    tiktokCaption: `Chat went nuclear on ${input.gameTitle} 🔥 Clip cut live by Thermal. #Gaming #IndieGames #FYP`,
     devEmailSubject: `${input.gameTitle} creator heat → wishlist-ready Shorts`,
     devEmailBody: `Thermal detected a high-engagement moment from @${input.streamerName} playing ${input.gameTitle}. We turn creator reactions into vertical ad cuts designed for TikTok and YouTube Shorts, with a clear Steam wishlist call to action. Would you like a monthly creator gameplay pack?`,
   }
 }
 
-function asCopy(value: unknown, fallback: ThermalAutopilotCopy): ThermalAutopilotCopy {
+export function asCopy(value: unknown, fallback: ThermalAutopilotCopy): ThermalAutopilotCopy {
   const row = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
   const text = (key: keyof ThermalAutopilotCopy) =>
     typeof row[key] === 'string' && row[key].trim() ? row[key].trim() : fallback[key]
   return {
     discordHypeMessage: text('discordHypeMessage'),
     xCaption: text('xCaption'),
+    tiktokCaption: text('tiktokCaption'),
     devEmailSubject: text('devEmailSubject'),
     devEmailBody: text('devEmailBody'),
   }
@@ -76,7 +81,8 @@ Clip title: ${input.clipTitle}
 
 Return JSON string keys:
 - discordHypeMessage: energetic but factual heat alert
-- xCaption: short social caption with 2-4 relevant hashtags
+- xCaption: short X/Twitter caption with 2-4 relevant hashtags
+- tiktokCaption: short TikTok caption with 2-4 relevant hashtags
 - devEmailSubject: concise indie developer outreach subject
 - devEmailBody: short cold email about turning creator gameplay into vertical ads that support Steam wishlist campaigns`,
         },
@@ -92,6 +98,19 @@ Return JSON string keys:
       warning: `openai: ${err instanceof Error ? err.message : String(err)}`,
     }
   }
+}
+
+function skippedReason(result: unknown, channel: string): string | null {
+  if (
+    result &&
+    typeof result === 'object' &&
+    'skipped' in result &&
+    (result as { skipped?: boolean }).skipped
+  ) {
+    const reason = (result as { reason?: string }).reason
+    return `${channel}: ${reason || 'skipped'}`
+  }
+  return null
 }
 
 /**
@@ -112,10 +131,7 @@ export async function processHeatSpikeAutopilot(input: {
 
   try {
     const { copy, source, warning } = await generateCopy(input)
-    const base = (process.env.CUTLINE_PUBLIC_URL || 'https://cutline-industries.studio').replace(
-      /\/$/,
-      '',
-    )
+    const base = publicBaseUrl()
     const gatewayUrl = `${base}/checkout/${input.clipId}?tier=gateway`
     const previewUrl = input.previewUrl.startsWith('http')
       ? input.previewUrl
@@ -123,17 +139,22 @@ export async function processHeatSpikeAutopilot(input: {
     const warnings: string[] = []
     if (warning) warnings.push(warning)
 
-    await sendDiscordClipDrop({
+    const discordResult = await sendDiscordClipDrop({
       streamer: input.streamerName,
       game: input.gameTitle,
       message: copy.discordHypeMessage,
       previewUrl,
       checkoutUrl: gatewayUrl,
-    }).catch((err) => warnings.push(`discord: ${err instanceof Error ? err.message : String(err)}`))
+    }).catch((err) => {
+      warnings.push(`discord: ${err instanceof Error ? err.message : String(err)}`)
+      return null
+    })
+    const discordSkip = skippedReason(discordResult, 'discord')
+    if (discordSkip) warnings.push(discordSkip)
 
     await Promise.all([
       queueBountyPost({ clip_id: input.clipId, platform: 'x', notes: copy.xCaption }),
-      queueBountyPost({ clip_id: input.clipId, platform: 'tiktok', notes: copy.xCaption }),
+      queueBountyPost({ clip_id: input.clipId, platform: 'tiktok', notes: copy.tiktokCaption }),
     ])
 
     const developer = await findRetainerByGameTitle(input.gameTitle)
@@ -146,6 +167,8 @@ export async function processHeatSpikeAutopilot(input: {
         warnings.push(`email: ${err instanceof Error ? err.message : String(err)}`)
         return null
       })
+      const emailSkip = skippedReason(result, 'email')
+      if (emailSkip) warnings.push(emailSkip)
       if (result && 'ok' in result && result.ok) {
         await updateRetainer(developer.id, {
           status: 'sample_sent',
@@ -153,6 +176,8 @@ export async function processHeatSpikeAutopilot(input: {
           notes: `Thermal autopilot pitch sent for ${input.gameTitle}`,
         })
       }
+    } else {
+      warnings.push('email: no retainer contact_email matched game title')
     }
 
     await updateClipAutopilot({
