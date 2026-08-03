@@ -518,25 +518,22 @@ export async function countQueuedBountyPosts(): Promise<number> {
   return res.rows[0]?.n ?? 0
 }
 
-export async function setClipCheckoutSession(clipId: number, sessionId: string) {
-  await getPool().query(
-    `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
-    [clipId, sessionId],
-  )
-}
+/** Advisory-lock class for clip checkout session creation (see createCheckoutSession). */
+export const CLIP_CHECKOUT_LOCK_CLASS = 42001
 
 /**
  * Stripe webhook / confirm may retry. Allow unclaimed → claimed, or the same
  * checkout session replaying; reject a second buyer session.
  */
-export function canClaimClip(row: {
-  status: string
-  stripe_checkout_session_id?: string | null
-}, sessionId: string): boolean {
+export function canClaimClip(
+  row: {
+    status: string
+    stripe_checkout_session_id?: string | null
+  },
+  sessionId: string,
+): boolean {
   if (row.status === 'unclaimed') return true
-  return (
-    row.status === 'claimed' && row.stripe_checkout_session_id === sessionId
-  )
+  return row.status === 'claimed' && row.stripe_checkout_session_id === sessionId
 }
 
 /** Concurrent checkout lost the race; webhook should ack (not 500-retry). */
@@ -552,11 +549,19 @@ export class ClipAlreadyClaimedError extends Error {
   }
 }
 
+export async function setClipCheckoutSession(clipId: number, sessionId: string) {
+  await getPool().query(
+    `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
+    [clipId, sessionId],
+  )
+}
+
 /**
- * Attach a Checkout Session to an unclaimed clip under row lock.
- * Rejects if another buyer already claimed between session create and attach.
+ * Persist a checkout session only while the clip is still unclaimed.
+ * Prefer createCheckoutSession's advisory lock path; this helper remains for
+ * narrower reserve-after-Stripe call sites and regression tests.
  */
-export async function attachClipCheckoutSession(
+export async function reserveClipCheckoutSession(
   clipId: number,
   sessionId: string,
 ): Promise<void> {
@@ -587,23 +592,6 @@ export async function attachClipCheckoutSession(
       throw err
     }
   })
-}
-
-/** Mark a sale after a lost claim race (refunded) or refund failure (failed). */
-export async function markSaleStatusByCheckoutSession(
-  stripeCheckoutSessionId: string,
-  status: 'refunded' | 'failed',
-  stripePaymentIntentId?: string | null,
-): Promise<void> {
-  await getPool().query(
-    `UPDATE sales
-     SET status = $2,
-         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
-         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
-     WHERE stripe_checkout_session_id = $1
-       AND status <> 'completed'`,
-    [stripeCheckoutSessionId, status, stripePaymentIntentId ?? null],
-  )
 }
 
 export async function claimClip(input: {
@@ -658,6 +646,38 @@ export async function claimClip(input: {
       throw err
     }
   })
+}
+
+/** Mark a losing checkout sale refunded after a claim race. Idempotent. */
+export async function markSaleLostClaimRace(input: {
+  stripeCheckoutSessionId: string
+  stripePaymentIntentId?: string | null
+  winningSessionId?: string | null
+}): Promise<SaleRow | null> {
+  const res = await getPool().query(
+    `UPDATE sales
+     SET status = 'refunded',
+         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+         metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
+     WHERE stripe_checkout_session_id = $1
+       AND status <> 'refunded'
+     RETURNING *`,
+    [
+      input.stripeCheckoutSessionId,
+      input.stripePaymentIntentId ?? null,
+      JSON.stringify({
+        lost_claim_race: true,
+        refund_reason: 'clip_already_claimed',
+        winning_session_id: input.winningSessionId ?? null,
+      }),
+    ],
+  )
+  if (res.rows[0]) return mapSale(res.rows[0])
+  const existing = await getPool().query(
+    `SELECT * FROM sales WHERE stripe_checkout_session_id = $1 LIMIT 1`,
+    [input.stripeCheckoutSessionId],
+  )
+  return existing.rows[0] ? mapSale(existing.rows[0]) : null
 }
 
 function mapSale(row: Record<string, unknown>): SaleRow {

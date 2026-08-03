@@ -3,15 +3,16 @@ import express from 'express'
 import Stripe from 'stripe'
 import {
   activateRetainer,
-  attachClipCheckoutSession,
   claimClip,
+  CLIP_CHECKOUT_LOCK_CLASS,
   ClipAlreadyClaimedError,
-  getClipById,
   getRetainerById,
   insertPendingSale,
-  markSaleStatusByCheckoutSession,
+  markSaleLostClaimRace,
   setRetainerCheckoutSession,
+  type ClipWithMeta,
 } from './db/thermalRepo.ts'
+import { withClient } from './db/pool.ts'
 import { publicBaseUrl } from './auth/authCrypto.ts'
 import type { SaleTier } from './db/thermalTypes.ts'
 import { ROOT } from './youtubeAuth.ts'
@@ -60,141 +61,107 @@ function priceIdForTier(tier: SaleTier): string | null {
   return process.env.STRIPE_PRICE_RETAINER?.trim() || null
 }
 
-function paymentIntentIdFromSession(session: Stripe.Checkout.Session): string | null {
-  if (typeof session.payment_intent === 'string') return session.payment_intent
-  return session.payment_intent?.id ?? null
-}
-
-/** True when Stripe reports the PaymentIntent/charge was already refunded. */
-export function isAlreadyRefundedError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err)
-  const code =
-    err && typeof err === 'object' && 'code' in err
-      ? String((err as { code?: unknown }).code ?? '')
-      : ''
-  return (
-    code === 'charge_already_refunded' ||
-    /already (been )?refunded|charge_already_refunded/i.test(msg)
-  )
-}
-
-/**
- * Losing concurrent checkout: refund the paid session and mark the sale
- * refunded (or failed if Stripe refund cannot be created).
- */
-export async function refundLostClaimCheckout(session: Stripe.Checkout.Session): Promise<{
-  saleStatus: 'refunded' | 'failed'
-  paymentIntentId: string | null
-}> {
-  const stripe = getStripe()
-  const paymentIntentId = paymentIntentIdFromSession(session)
-  let saleStatus: 'refunded' | 'failed' = 'failed'
-
-  if (paymentIntentId) {
-    try {
-      await stripe.refunds.create({
-        payment_intent: paymentIntentId,
-        reason: 'duplicate',
-      })
-      saleStatus = 'refunded'
-    } catch (err) {
-      if (isAlreadyRefundedError(err)) {
-        saleStatus = 'refunded'
-      } else {
-        console.error('[stripe] lost-claim refund failed', {
-          sessionId: session.id,
-          paymentIntentId,
-          err,
-        })
-        saleStatus = 'failed'
-      }
-    }
-  } else {
-    console.warn('[stripe] lost-claim race with no payment_intent; marking sale failed', {
-      sessionId: session.id,
-    })
-  }
-
-  await markSaleStatusByCheckoutSession(session.id, saleStatus, paymentIntentId)
-  return { saleStatus, paymentIntentId }
-}
-
 export async function createCheckoutSession(input: {
   clipId: number
   tierOverride?: string
 }) {
-  const clip = await getClipById(input.clipId)
-  if (!clip) throw new Error('Clip not found')
-  if (clip.status === 'claimed') {
-    throw new ClipAlreadyClaimedError(clip.id, clip.stripe_checkout_session_id ?? null)
-  }
+  // Hold a transaction + advisory lock across Stripe session create so two
+  // buyers cannot both mint checkout URLs for the same unclaimed clip.
+  return withClient(async (client) => {
+    await client.query('BEGIN')
+    let createdSessionId: string | null = null
+    try {
+      await client.query('SELECT pg_advisory_xact_lock($1, $2)', [
+        CLIP_CHECKOUT_LOCK_CLASS,
+        input.clipId,
+      ])
+      const locked = await client.query(`SELECT * FROM clips WHERE id = $1 FOR UPDATE`, [
+        input.clipId,
+      ])
+      const row = locked.rows[0] as Record<string, unknown> | undefined
+      if (!row) throw new Error('Clip not found')
+      const clip = row as unknown as ClipWithMeta
+      if (clip.status === 'claimed') {
+        throw new ClipAlreadyClaimedError(clip.id, clip.stripe_checkout_session_id ?? null)
+      }
 
-  const tier = tierForClip(clip.tier, input.tierOverride)
-  const amountCents = amountForTier(tier)
-  const stripe = getStripe()
-  const base = publicBaseUrl()
-  const title = clip.title ?? `Thermal clip #${clip.id}`
+      const tier = tierForClip(clip.tier, input.tierOverride)
+      const amountCents = amountForTier(tier)
+      const stripe = getStripe()
+      const base = publicBaseUrl()
+      const title = clip.title ?? `Thermal clip #${clip.id}`
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
-  const priceId = priceIdForTier(tier)
-  if (priceId) {
-    lineItems.push({ price: priceId, quantity: 1 })
-  } else {
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        unit_amount: amountCents,
-        product_data: {
-          name: tier === 'bounty' ? `Thermal Bounty — ${title}` : `Thermal Gateway — ${title}`,
-          description: `@${clip.streamer_username ?? 'streamer'} · ${clip.game ?? 'game'}`,
-        },
-      },
-      quantity: 1,
-    })
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: lineItems,
-    success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1&tier=${tier}`,
-    cancel_url: `${base}/checkout/${clip.id}?canceled=1&tier=${tier}`,
-    client_reference_id: String(clip.id),
-    metadata: {
-      clip_id: String(clip.id),
-      tier,
-      streamer: clip.streamer_username ?? '',
-      game: clip.game ?? '',
-    },
-  })
-
-  if (!session.url) throw new Error('Stripe did not return checkout URL')
-
-  try {
-    // Row-lock attach closes the TOCTOU gap between read and Stripe session create.
-    await attachClipCheckoutSession(clip.id, session.id)
-  } catch (err) {
-    if (err instanceof ClipAlreadyClaimedError) {
-      try {
-        await stripe.checkout.sessions.expire(session.id)
-      } catch (expireErr) {
-        console.warn('[stripe] failed to expire orphan checkout session', {
-          sessionId: session.id,
-          expireErr,
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+      const priceId = priceIdForTier(tier)
+      if (priceId) {
+        lineItems.push({ price: priceId, quantity: 1 })
+      } else {
+        lineItems.push({
+          price_data: {
+            currency: 'usd',
+            unit_amount: amountCents,
+            product_data: {
+              name: tier === 'bounty' ? `Thermal Bounty — ${title}` : `Thermal Gateway — ${title}`,
+              description: `@${clip.streamer_username ?? 'streamer'} · ${clip.game ?? 'game'}`,
+            },
+          },
+          quantity: 1,
         })
       }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: lineItems,
+        success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1&tier=${tier}`,
+        cancel_url: `${base}/checkout/${clip.id}?canceled=1&tier=${tier}`,
+        client_reference_id: String(clip.id),
+        metadata: {
+          clip_id: String(clip.id),
+          tier,
+          streamer: clip.streamer_username ?? '',
+          game: clip.game ?? '',
+        },
+      })
+
+      if (!session.url) throw new Error('Stripe did not return checkout URL')
+      createdSessionId = session.id
+
+      await client.query(
+        `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
+        [clip.id, session.id],
+      )
+      await client.query(
+        `INSERT INTO sales (clip_id, tier, amount_cents, stripe_checkout_session_id, status, metadata)
+         VALUES ($1, $2, $3, $4, 'pending', $5)`,
+        [
+          clip.id,
+          tier,
+          amountCents,
+          session.id,
+          JSON.stringify({
+            title,
+            streamer: clip.streamer_username,
+            game: clip.game,
+          }),
+        ],
+      )
+      await client.query('COMMIT')
+      return { url: session.url, sessionId: session.id, tier, amountCents }
+    } catch (err) {
+      await client.query('ROLLBACK')
+      if (createdSessionId && process.env.CUTLINE_DRY_RUN !== '1') {
+        try {
+          await getStripe().checkout.sessions.expire(createdSessionId)
+        } catch (expireErr) {
+          console.warn('[stripe] failed to expire orphan checkout session', {
+            sessionId: createdSessionId,
+            error: expireErr instanceof Error ? expireErr.message : String(expireErr),
+          })
+        }
+      }
+      throw err
     }
-    throw err
-  }
-
-  await insertPendingSale({
-    clip_id: clip.id,
-    tier,
-    amount_cents: amountCents,
-    stripe_checkout_session_id: session.id,
-    metadata: { title, streamer: clip.streamer_username, game: clip.game },
   })
-
-  return { url: session.url, sessionId: session.id, tier, amountCents }
 }
 
 export async function createRetainerCheckoutSession(input: {
@@ -324,6 +291,59 @@ async function fulfillCheckoutSession(session: Stripe.Checkout.Session) {
   await fulfillClipCheckoutSession(session)
 }
 
+async function paymentIntentId(session: Stripe.Checkout.Session): string | null {
+  if (typeof session.payment_intent === 'string') return session.payment_intent
+  return session.payment_intent?.id ?? null
+}
+
+/**
+ * Losing buyer paid but another session claimed the clip first.
+ * Mark the sale refunded and best-effort refund the PaymentIntent (skipped in dry-run).
+ */
+export async function resolveLostClaimRace(
+  err: ClipAlreadyClaimedError,
+  session: Stripe.Checkout.Session,
+): Promise<{ refunded: boolean; reason?: string }> {
+  const pi = paymentIntentId(session)
+  await markSaleLostClaimRace({
+    stripeCheckoutSessionId: session.id,
+    winningSessionId: err.existingSessionId,
+    stripePaymentIntentId: pi,
+  })
+
+  if (!pi) {
+    return { refunded: false, reason: 'no_payment_intent' }
+  }
+  if (process.env.CUTLINE_DRY_RUN === '1') {
+    console.warn('[stripe] dry-run: skip refund for lost claim race', {
+      clipId: err.clipId,
+      sessionId: session.id,
+      paymentIntentId: pi,
+    })
+    return { refunded: false, reason: 'dry_run' }
+  }
+
+  try {
+    await getStripe().refunds.create({
+      payment_intent: pi,
+      reason: 'duplicate',
+      metadata: {
+        clip_id: String(err.clipId),
+        lost_claim_race: '1',
+      },
+    })
+    return { refunded: true }
+  } catch (refundErr) {
+    console.warn('[stripe] lost-claim refund failed; sale already marked refunded for ops', {
+      clipId: err.clipId,
+      sessionId: session.id,
+      paymentIntentId: pi,
+      error: refundErr instanceof Error ? refundErr.message : String(refundErr),
+    })
+    return { refunded: false, reason: 'stripe_error' }
+  }
+}
+
 export async function handleStripeWebhook(req: Request, res: Response) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
   if (!secret) {
@@ -352,31 +372,33 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       const session = event.data.object as Stripe.Checkout.Session
       // Subscriptions may report payment_status unpaid briefly; paid or no_payment_required OK
       if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
-        try {
-          await fulfillCheckoutSession(session)
-        } catch (err) {
-          // Lost claim race: refund loser, mark sale, ack so Stripe stops retrying.
-          if (err instanceof ClipAlreadyClaimedError) {
-            const refund = await refundLostClaimCheckout(session)
-            console.warn('[stripe] clip already claimed; refunded losing checkout', {
-              clipId: err.clipId,
-              existingSessionId: err.existingSessionId,
-              sessionId: session.id,
-              saleStatus: refund.saleStatus,
-            })
-            res.json({
-              received: true,
-              skipped: 'clip_already_claimed',
-              saleStatus: refund.saleStatus,
-            })
-            return
-          }
-          throw err
-        }
+        await fulfillCheckoutSession(session)
       }
     }
     res.json({ received: true })
   } catch (err) {
+    // Lost claim race: payment already fulfilled for another session — ack so Stripe stops retrying.
+    if (err instanceof ClipAlreadyClaimedError) {
+      const session =
+        event.type === 'checkout.session.completed'
+          ? (event.data.object as Stripe.Checkout.Session)
+          : null
+      let refunded = false
+      if (session) {
+        const resolved = await resolveLostClaimRace(err, session).catch((resolveErr) => {
+          console.error('[stripe] lost-claim resolution failed', resolveErr)
+          return { refunded: false }
+        })
+        refunded = resolved.refunded
+      }
+      console.warn('[stripe] clip already claimed; acknowledging webhook', {
+        clipId: err.clipId,
+        existingSessionId: err.existingSessionId,
+        refunded,
+      })
+      res.json({ received: true, skipped: 'clip_already_claimed', refunded })
+      return
+    }
     console.error('[stripe] webhook handler error', err)
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
@@ -406,13 +428,13 @@ export async function confirmCheckoutSession(sessionId: string) {
     await fulfillCheckoutSession(session)
   } catch (err) {
     if (err instanceof ClipAlreadyClaimedError) {
-      const refund = await refundLostClaimCheckout(session)
+      const { refunded } = await resolveLostClaimRace(err, session)
       return {
         ok: false as const,
-        error: 'clip_already_claimed' as const,
+        status: 'clip_already_claimed' as const,
         clipId: err.clipId,
         existingSessionId: err.existingSessionId,
-        saleStatus: refund.saleStatus,
+        refunded,
       }
     }
     throw err

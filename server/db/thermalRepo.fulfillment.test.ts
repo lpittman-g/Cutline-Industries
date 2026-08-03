@@ -7,7 +7,6 @@ import {
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
 } from './thermalRepo.ts'
-import { isAlreadyRefundedError } from '../stripeCheckout.ts'
 
 describe('resolveFulfillmentCaptions', () => {
   it('prefers clip caption columns when present', () => {
@@ -158,14 +157,14 @@ describe('canClaimClip', () => {
   })
 })
 
-describe('attachClipCheckoutSession SQL shape', () => {
-  it('locks the clip row before attaching a session', async () => {
+describe('reserveClipCheckoutSession source guard', () => {
+  it('locks the clip row before binding a Stripe session id', async () => {
     const { readFileSync } = await import('node:fs')
     const { fileURLToPath } = await import('node:url')
     const { dirname, join } = await import('node:path')
     const here = dirname(fileURLToPath(import.meta.url))
     const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
-    const start = src.indexOf('export async function attachClipCheckoutSession')
+    const start = src.indexOf('export async function reserveClipCheckoutSession')
     const next = src.indexOf('\nexport async function', start + 1)
     const body = src.slice(start, next > start ? next : start + 900)
     assert.match(body, /FOR UPDATE/)
@@ -173,19 +172,23 @@ describe('attachClipCheckoutSession SQL shape', () => {
   })
 })
 
-describe('isAlreadyRefundedError', () => {
-  it('detects Stripe charge_already_refunded code', () => {
-    assert.equal(isAlreadyRefundedError({ code: 'charge_already_refunded' }), true)
+describe('checkout lock + lost-claim sale marker', () => {
+  it('exports a stable advisory-lock class for clip checkout', async () => {
+    const { CLIP_CHECKOUT_LOCK_CLASS } = await import('./thermalRepo.ts')
+    assert.equal(CLIP_CHECKOUT_LOCK_CLASS, 42001)
   })
 
-  it('detects already-refunded message text', () => {
-    assert.equal(
-      isAlreadyRefundedError(new Error('Charge ch_1 has already been refunded.')),
-      true,
-    )
-  })
-
-  it('ignores unrelated errors', () => {
-    assert.equal(isAlreadyRefundedError(new Error('card_declined')), false)
+  it('markSaleLostClaimRace SQL marks non-refunded rows refunded', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const { dirname, join } = await import('node:path')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
+    const start = src.indexOf('export async function markSaleLostClaimRace')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 900)
+    assert.match(body, /status = 'refunded'/)
+    assert.match(body, /lost_claim_race/)
+    assert.match(body, /status <> 'refunded'/)
   })
 })
