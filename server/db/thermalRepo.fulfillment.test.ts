@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
+  canClaimClip,
   localCleanDownloadUrl,
   nextBountyStatusOnQueueRetry,
   resolveFulfillmentCaptions,
@@ -66,6 +67,32 @@ describe('localCleanDownloadUrl', () => {
         media_url: '/thermal-media/clips/7/heat_clip_wm.mp4',
       }),
       '/thermal-media/clips/7/heat_clip.mp4',
+    )
+  })
+})
+
+describe('canClaimClip', () => {
+  it('allows unclaimed clips', () => {
+    assert.equal(canClaimClip({ status: 'unclaimed' }, 'cs_1'), true)
+  })
+
+  it('allows Stripe webhook retry for the same session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_1',
+      ),
+      true,
+    )
+  })
+
+  it('rejects a second buyer session', () => {
+    assert.equal(
+      canClaimClip(
+        { status: 'claimed', stripe_checkout_session_id: 'cs_1' },
+        'cs_2',
+      ),
+      false,
     )
   })
 })
