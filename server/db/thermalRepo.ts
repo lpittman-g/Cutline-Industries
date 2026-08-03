@@ -324,7 +324,11 @@ export async function queueBountyPost(input: {
     `INSERT INTO bounty_posts (clip_id, platform, status, notes)
      VALUES ($1, $2, 'queued', $3)
      ON CONFLICT (clip_id, platform) DO UPDATE SET
-       status = 'queued',
+       -- Autopilot retry refreshes caption notes without un-posting live bounties
+       status = CASE
+         WHEN bounty_posts.status = 'posted' THEN bounty_posts.status
+         ELSE 'queued'
+       END,
        notes = COALESCE(EXCLUDED.notes, bounty_posts.notes),
        updated_at = CURRENT_TIMESTAMP
      RETURNING id`,
@@ -334,6 +338,24 @@ export async function queueBountyPost(input: {
   const post = await getBountyPost(id)
   if (!post) throw new Error('Failed to create bounty post')
   return post
+}
+
+/** Platform caption notes queued for a clip (X / TikTok bounty copy). */
+export async function getBountyCaptionNotes(
+  clipId: number,
+): Promise<{ x: string | null; tiktok: string | null }> {
+  const res = await getPool().query(
+    `SELECT platform, notes FROM bounty_posts WHERE clip_id = $1`,
+    [clipId],
+  )
+  let x: string | null = null
+  let tiktok: string | null = null
+  for (const row of res.rows as Array<{ platform: string; notes: string | null }>) {
+    const notes = typeof row.notes === 'string' && row.notes.trim() ? row.notes.trim() : null
+    if (row.platform === 'x') x = notes
+    if (row.platform === 'tiktok') tiktok = notes
+  }
+  return { x, tiktok }
 }
 
 export async function markBountyPosted(input: {

@@ -186,8 +186,9 @@ After FFmpeg + S3 completes, `thermalHeatAutopilot.ts`:
 4. Queues separate X and TikTok bounty posts with platform-specific captions
 5. Looks up a matching developer contact and sends the sample pitch with Gmail
 6. Persists generated copy, completion state, and errors on the clip
-7. Paid checkout fulfillment returns the social caption with the clean download
-8. Operators can retry distribution via `POST /api/clips/:id/autopilot` (Clip Vault)
+7. Paid checkout fulfillment returns X + TikTok captions with the clean download
+8. Operators can retry distribution via `POST /api/clips/:id/autopilot` (Clip Vault);
+   retry refreshes bounty caption notes without un-posting live bounty rows
 
 No cron “keep alive” task is used. The existing Twitch monitor polls for live
 heat while the API process is running; production uptime belongs to the hosting

@@ -206,7 +206,12 @@ export function fetchClipDownload(clipId: number, sessionId: string) {
     url: string
     storage: 's3' | 'local'
     expiresIn?: number
-    captions?: { social: string | null; discord: string | null }
+    captions?: {
+      social: string | null
+      x?: string | null
+      tiktok?: string | null
+      discord: string | null
+    }
   }>(`/api/clips/${clipId}/download`, { sessionId })
 }
 
