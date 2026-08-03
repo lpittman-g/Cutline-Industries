@@ -518,6 +518,9 @@ export async function countQueuedBountyPosts(): Promise<number> {
   return res.rows[0]?.n ?? 0
 }
 
+/** Advisory-lock class for clip checkout session creation (see createCheckoutSession). */
+export const CLIP_CHECKOUT_LOCK_CLASS = 42001
+
 /**
  * Stripe webhook / confirm may retry. Allow unclaimed → claimed, or the same
  * checkout session replaying; reject a second buyer session.
@@ -555,8 +558,8 @@ export async function setClipCheckoutSession(clipId: number, sessionId: string) 
 
 /**
  * Persist a checkout session only while the clip is still unclaimed.
- * Holds FOR UPDATE so two concurrent createCheckoutSession calls cannot both
- * bind their Stripe session to the same clip after one has already claimed.
+ * Prefer createCheckoutSession's advisory lock path; this helper remains for
+ * narrower reserve-after-Stripe call sites and regression tests.
  */
 export async function reserveClipCheckoutSession(
   clipId: number,
@@ -645,34 +648,36 @@ export async function claimClip(input: {
   })
 }
 
-/** Mark a losing / abandoned checkout sale so the ledger is not stuck pending. */
+/** Mark a losing checkout sale refunded after a claim race. Idempotent. */
 export async function markSaleLostClaimRace(input: {
   stripeCheckoutSessionId: string
-  winningSessionId?: string | null
   stripePaymentIntentId?: string | null
-  refunded?: boolean
+  winningSessionId?: string | null
 }): Promise<SaleRow | null> {
-  const status = input.refunded ? 'refunded' : 'failed'
   const res = await getPool().query(
     `UPDATE sales
-     SET status = $2,
-         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
-         metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb
+     SET status = 'refunded',
+         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+         metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb
      WHERE stripe_checkout_session_id = $1
-       AND status = 'pending'
+       AND status <> 'refunded'
      RETURNING *`,
     [
       input.stripeCheckoutSessionId,
-      status,
       input.stripePaymentIntentId ?? null,
       JSON.stringify({
         lost_claim_race: true,
+        refund_reason: 'clip_already_claimed',
         winning_session_id: input.winningSessionId ?? null,
-        resolved_at: new Date().toISOString(),
       }),
     ],
   )
-  return res.rows[0] ? mapSale(res.rows[0]) : null
+  if (res.rows[0]) return mapSale(res.rows[0])
+  const existing = await getPool().query(
+    `SELECT * FROM sales WHERE stripe_checkout_session_id = $1 LIMIT 1`,
+    [input.stripeCheckoutSessionId],
+  )
+  return existing.rows[0] ? mapSale(existing.rows[0]) : null
 }
 
 function mapSale(row: Record<string, unknown>): SaleRow {

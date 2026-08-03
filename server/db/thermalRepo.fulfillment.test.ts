@@ -171,3 +171,24 @@ describe('reserveClipCheckoutSession source guard', () => {
     assert.match(body, /ClipAlreadyClaimedError/)
   })
 })
+
+describe('checkout lock + lost-claim sale marker', () => {
+  it('exports a stable advisory-lock class for clip checkout', async () => {
+    const { CLIP_CHECKOUT_LOCK_CLASS } = await import('./thermalRepo.ts')
+    assert.equal(CLIP_CHECKOUT_LOCK_CLASS, 42001)
+  })
+
+  it('markSaleLostClaimRace SQL marks non-refunded rows refunded', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const { dirname, join } = await import('node:path')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const src = readFileSync(join(here, 'thermalRepo.ts'), 'utf8')
+    const start = src.indexOf('export async function markSaleLostClaimRace')
+    const next = src.indexOf('\nexport async function', start + 1)
+    const body = src.slice(start, next > start ? next : start + 900)
+    assert.match(body, /status = 'refunded'/)
+    assert.match(body, /lost_claim_race/)
+    assert.match(body, /status <> 'refunded'/)
+  })
+})
