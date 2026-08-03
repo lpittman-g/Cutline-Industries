@@ -1,0 +1,97 @@
+name: Auto-approve Cursor PRs
+
+# After verification succeeds on a cursor/* PR: mark ready, approve, squash-merge.
+# One-time repo setup: docs/PR-AUTO-APPROVE.md
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: auto-approve-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  gate:
+    name: Verify before auto-merge
+    if: startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  approve_and_merge:
+    name: Approve and merge
+    needs: gate
+    if: startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    steps:
+      # Required: `gh` needs a git checkout / repo context for some operations
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ready + approve + squash merge
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          GH_REPO: ${{ github.repository }}
+          DEFAULT_TOKEN: ${{ github.token }}
+          OPTIONAL_PAT: ${{ secrets.AUTO_APPROVE_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${OPTIONAL_PAT:-}" ]; then
+            export GH_TOKEN="$OPTIONAL_PAT"
+          else
+            export GH_TOKEN="$DEFAULT_TOKEN"
+          fi
+
+          echo "Processing PR #$PR (repo: $GH_REPO, head: ${GITHUB_HEAD_REF:-unknown})"
+
+          gh pr ready "$PR" 2>/dev/null || true
+
+          if ! gh pr review "$PR" --approve --body "Auto-approved: verification passed on \`cursor/*\` branch (Cutline Industries)."; then
+            echo "Approve step skipped (already approved or policy blocked)."
+          fi
+
+          if gh pr merge "$PR" --squash --delete-branch; then
+            echo "Merged PR #$PR"
+            exit 0
+          fi
+
+          echo "Direct merge failed — trying auto-merge"
+          if gh pr merge "$PR" --squash --auto --delete-branch; then
+            echo "Auto-merge enabled for PR #$PR"
+            exit 0
+          fi
+
+          echo "::error::Could not merge PR #$PR. Enable Allow auto-merge and/or add AUTO_APPROVE_TOKEN — see docs/PR-AUTO-APPROVE.md"
+          exit 1
