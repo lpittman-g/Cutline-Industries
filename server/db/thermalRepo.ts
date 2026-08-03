@@ -637,46 +637,58 @@ export async function countPendingRetainerOutreaches(): Promise<number> {
   return res.rows[0]?.n ?? 0
 }
 
+const DEMO_RETAINER_SEEDS: Array<{
+  dev_name: string
+  game_title: string
+  status: RetainerStatus
+  monthly_mrr: number
+  contact_email: string
+  notes: string
+}> = [
+  {
+    dev_name: 'Northbark Games',
+    game_title: 'Hollow Paths',
+    status: 'sample_sent',
+    monthly_mrr: 750,
+    contact_email: 'northbark@example.com',
+    notes: 'High-heat variety coverage — sample ad pack sent',
+  },
+  {
+    dev_name: 'Arc Byte',
+    game_title: 'Neon Circuit',
+    status: 'prospect',
+    monthly_mrr: 1250,
+    contact_email: 'arcbyte@example.com',
+    notes: 'Detected in heat window — awaiting pitch',
+  },
+  {
+    dev_name: 'Saltpixel',
+    game_title: 'Tideforge',
+    status: 'active',
+    monthly_mrr: 2000,
+    contact_email: 'saltpixel@example.com',
+    notes: 'Monthly TikTok/Shorts wishlist pack',
+  },
+]
+
 export async function seedRetainersIfEmpty() {
   const count = await getPool().query(`SELECT COUNT(*)::int AS n FROM retainers`)
-  if ((count.rows[0]?.n ?? 0) > 0) return
+  if ((count.rows[0]?.n ?? 0) === 0) {
+    for (const s of DEMO_RETAINER_SEEDS) {
+      await insertRetainer(s)
+    }
+    return
+  }
 
-  const seeds: Array<{
-    dev_name: string
-    game_title: string
-    status: RetainerStatus
-    monthly_mrr: number
-    contact_email: string
-    notes: string
-  }> = [
-    {
-      dev_name: 'Northbark Games',
-      game_title: 'Hollow Paths',
-      status: 'sample_sent',
-      monthly_mrr: 750,
-      contact_email: 'northbark@example.com',
-      notes: 'High-heat variety coverage — sample ad pack sent',
-    },
-    {
-      dev_name: 'Arc Byte',
-      game_title: 'Neon Circuit',
-      status: 'prospect',
-      monthly_mrr: 1250,
-      contact_email: 'arcbyte@example.com',
-      notes: 'Detected in heat window — awaiting pitch',
-    },
-    {
-      dev_name: 'Saltpixel',
-      game_title: 'Tideforge',
-      status: 'active',
-      monthly_mrr: 2000,
-      contact_email: 'saltpixel@example.com',
-      notes: 'Monthly TikTok/Shorts wishlist pack',
-    },
-  ]
-
-  for (const s of seeds) {
-    await insertRetainer(s)
+  // Existing DBs may predate demo emails; fill only blank contact_email rows.
+  for (const s of DEMO_RETAINER_SEEDS) {
+    await getPool().query(
+      `UPDATE retainers
+       SET contact_email = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE LOWER(game_title) = LOWER($1)
+         AND (contact_email IS NULL OR BTRIM(contact_email) = '')`,
+      [s.game_title, s.contact_email],
+    )
   }
 }
 
