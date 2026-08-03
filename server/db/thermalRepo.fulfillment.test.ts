@@ -40,6 +40,19 @@ describe('resolveFulfillmentCaptions', () => {
       discord: null,
     })
   })
+
+  it('returns nulls when both clip columns and bounty notes are blank', () => {
+    const captions = resolveFulfillmentCaptions(
+      { ai_caption: '', ai_tiktok_caption: '  ', ai_discord_message: null },
+      { x: '   ', tiktok: null },
+    )
+    assert.deepEqual(captions, {
+      social: null,
+      x: null,
+      tiktok: null,
+      discord: null,
+    })
+  })
 })
 
 describe('nextBountyStatusOnQueueRetry', () => {
@@ -47,6 +60,8 @@ describe('nextBountyStatusOnQueueRetry', () => {
     assert.equal(nextBountyStatusOnQueueRetry('posted'), 'posted')
     assert.equal(nextBountyStatusOnQueueRetry('queued'), 'queued')
     assert.equal(nextBountyStatusOnQueueRetry('failed'), 'queued')
+    assert.equal(nextBountyStatusOnQueueRetry(null), 'queued')
+    assert.equal(nextBountyStatusOnQueueRetry(undefined), 'queued')
   })
 })
 
@@ -58,6 +73,12 @@ describe('localCleanDownloadUrl', () => {
     )
   })
 
+  it('never uses clip id when it diverges from spike id', () => {
+    const url = localCleanDownloadUrl({ id: 1, spike_id: 9 })
+    assert.equal(url, '/thermal-media/clips/9/heat_clip.mp4')
+    assert.doesNotMatch(url ?? '', /\/clips\/1\//)
+  })
+
   it('derives folder from watermarked media_url when spike_id is missing', () => {
     assert.equal(
       localCleanDownloadUrl({
@@ -66,6 +87,29 @@ describe('localCleanDownloadUrl', () => {
         media_url: '/thermal-media/clips/7/heat_clip_wm.mp4',
       }),
       '/thermal-media/clips/7/heat_clip.mp4',
+    )
+  })
+
+  it('maps absolute local thermal_media paths', () => {
+    assert.equal(
+      localCleanDownloadUrl({
+        id: 99,
+        spike_id: null,
+        s3_clean_url: '/workspace/thermal_media/clips/3/heat_clip.mp4',
+      }),
+      '/thermal-media/clips/3/heat_clip.mp4',
+    )
+  })
+
+  it('returns null when no spike folder can be derived', () => {
+    assert.equal(
+      localCleanDownloadUrl({
+        id: 99,
+        spike_id: null,
+        media_url: null,
+        s3_clean_url: 's3://bucket/clips/1/clean.mp4',
+      }),
+      null,
     )
   })
 })

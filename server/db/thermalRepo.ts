@@ -401,8 +401,8 @@ export function resolveFulfillmentCaptions(
   tiktok: string | null
   discord: string | null
 } {
-  const x = trimCaption(clip.ai_caption) ?? bountyNotes.x
-  const tiktok = trimCaption(clip.ai_tiktok_caption) ?? bountyNotes.tiktok
+  const x = trimCaption(clip.ai_caption) ?? trimCaption(bountyNotes.x)
+  const tiktok = trimCaption(clip.ai_tiktok_caption) ?? trimCaption(bountyNotes.tiktok)
   return {
     // `social` aliases x for older checkout clients
     social: x,
@@ -414,22 +414,42 @@ export function resolveFulfillmentCaptions(
 
 /**
  * Local (non-S3) paid clean download path.
- * Heat renders under `thermal_media/clips/{spikeId}/`, not the clip PK.
+ * Heat renders under `thermal_media/clips/{spikeId}/` — never the clip PK.
+ * Returns null when no spike folder can be derived (avoids 404s from clip-id paths).
  */
 export function localCleanDownloadUrl(clip: {
-  id: number
+  id?: number
   spike_id?: number | null
   media_url?: string | null
-}): string {
-  if (clip.spike_id) {
+  s3_clean_url?: string | null
+}): string | null {
+  if (clip.spike_id && Number.isFinite(clip.spike_id) && clip.spike_id > 0) {
     return `/thermal-media/clips/${clip.spike_id}/heat_clip.mp4`
   }
-  const media = clip.media_url ?? ''
-  const match = media.match(/^\/thermal-media\/clips\/([^/]+)\//)
-  if (match?.[1]) {
-    return `/thermal-media/clips/${match[1]}/heat_clip.mp4`
+
+  const media = typeof clip.media_url === 'string' ? clip.media_url.trim() : ''
+  if (media) {
+    const fromWm = media.match(/^(\/thermal-media\/clips\/\d+\/)(.+)_wm(\.mp4)$/i)
+    if (fromWm) return `${fromWm[1]}${fromWm[2]}${fromWm[3]}`
+    const match = media.match(/^\/thermal-media\/clips\/([^/]+)\//)
+    if (match?.[1]) {
+      return `/thermal-media/clips/${match[1]}/heat_clip.mp4`
+    }
   }
-  return `/thermal-media/clips/${clip.id}/heat_clip.mp4`
+
+  const clean = typeof clip.s3_clean_url === 'string' ? clip.s3_clean_url.trim() : ''
+  if (clean && !clean.startsWith('s3://')) {
+    const normalized = clean.replace(/\\/g, '/')
+    const marker = '/thermal_media/'
+    const idx = normalized.lastIndexOf(marker)
+    if (idx >= 0) {
+      return `/thermal-media/${normalized.slice(idx + marker.length)}`
+    }
+    const clipsMatch = normalized.match(/\/clips\/(\d+)\/([^/]+\.mp4)$/i)
+    if (clipsMatch) return `/thermal-media/clips/${clipsMatch[1]}/${clipsMatch[2]}`
+  }
+
+  return null
 }
 
 export async function markBountyPosted(input: {
