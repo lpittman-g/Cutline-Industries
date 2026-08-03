@@ -1,6 +1,5 @@
 import type {
   BountyPlatform,
-  BountyPostStatus,
   BountyPostWithClip,
   ClipRow,
   HeatSpikeRow,
