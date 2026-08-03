@@ -6,6 +6,7 @@ import {
   countLiveStreamers,
   countPendingRetainerOutreaches,
   countQueuedBountyPosts,
+  getBountyCaptionNotes,
   getClipById,
   getRetainerById,
   insertRetainer,
