@@ -4,12 +4,15 @@ import Stripe from 'stripe'
 import {
   activateRetainer,
   claimClip,
+  ClipClaimConflictError,
   getClipById,
   getRetainerById,
   insertPendingSale,
+  markSaleRefunded,
   setClipCheckoutSession,
   setRetainerCheckoutSession,
 } from './db/thermalRepo.ts'
+import { withClient } from './db/pool.ts'
 import { publicBaseUrl } from './auth/authCrypto.ts'
 import type { SaleTier } from './db/thermalTypes.ts'
 import { ROOT } from './youtubeAuth.ts'
@@ -22,6 +25,14 @@ const TIER_AMOUNTS: Record<SaleTier, number> = {
 
 export function stripeConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim())
+}
+
+export class CheckoutConflictError extends Error {
+  statusCode = 409
+  constructor(message: string) {
+    super(message)
+    this.name = 'CheckoutConflictError'
+  }
 }
 
 function getStripe() {
@@ -62,60 +73,68 @@ export async function createCheckoutSession(input: {
   clipId: number
   tierOverride?: string
 }) {
-  const clip = await getClipById(input.clipId)
-  if (!clip) throw new Error('Clip not found')
-  if (clip.status === 'claimed') throw new Error('Clip already claimed')
+  return withClient(async (client) => {
+    await client.query(`SELECT pg_advisory_lock($1)`, [input.clipId])
+    try {
+      const clip = await getClipById(input.clipId)
+      if (!clip) throw new Error('Clip not found')
+      if (clip.status === 'claimed') throw new CheckoutConflictError('Clip already claimed')
 
-  const tier = tierForClip(clip.tier, input.tierOverride)
-  const amountCents = amountForTier(tier)
-  const stripe = getStripe()
-  const base = publicBaseUrl()
-  const title = clip.title ?? `Thermal clip #${clip.id}`
+      const tier = tierForClip(clip.tier, input.tierOverride)
+      const amountCents = amountForTier(tier)
+      const stripe = getStripe()
+      const base = publicBaseUrl()
+      const title = clip.title ?? `Thermal clip #${clip.id}`
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
-  const priceId = priceIdForTier(tier)
-  if (priceId) {
-    lineItems.push({ price: priceId, quantity: 1 })
-  } else {
-    lineItems.push({
-      price_data: {
-        currency: 'usd',
-        unit_amount: amountCents,
-        product_data: {
-          name: tier === 'bounty' ? `Thermal Bounty — ${title}` : `Thermal Gateway — ${title}`,
-          description: `@${clip.streamer_username ?? 'streamer'} · ${clip.game ?? 'game'}`,
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = []
+      const priceId = priceIdForTier(tier)
+      if (priceId) {
+        lineItems.push({ price: priceId, quantity: 1 })
+      } else {
+        lineItems.push({
+          price_data: {
+            currency: 'usd',
+            unit_amount: amountCents,
+            product_data: {
+              name:
+                tier === 'bounty' ? `Thermal Bounty — ${title}` : `Thermal Gateway — ${title}`,
+              description: `@${clip.streamer_username ?? 'streamer'} · ${clip.game ?? 'game'}`,
+            },
+          },
+          quantity: 1,
+        })
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: lineItems,
+        success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1&tier=${tier}`,
+        cancel_url: `${base}/checkout/${clip.id}?canceled=1&tier=${tier}`,
+        client_reference_id: String(clip.id),
+        metadata: {
+          clip_id: String(clip.id),
+          tier,
+          streamer: clip.streamer_username ?? '',
+          game: clip.game ?? '',
         },
-      },
-      quantity: 1,
-    })
-  }
+      })
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: lineItems,
-    success_url: `${base}/checkout/${clip.id}?session_id={CHECKOUT_SESSION_ID}&paid=1&tier=${tier}`,
-    cancel_url: `${base}/checkout/${clip.id}?canceled=1&tier=${tier}`,
-    client_reference_id: String(clip.id),
-    metadata: {
-      clip_id: String(clip.id),
-      tier,
-      streamer: clip.streamer_username ?? '',
-      game: clip.game ?? '',
-    },
+      if (!session.url) throw new Error('Stripe did not return checkout URL')
+
+      await setClipCheckoutSession(clip.id, session.id)
+      await insertPendingSale({
+        clip_id: clip.id,
+        tier,
+        amount_cents: amountCents,
+        stripe_checkout_session_id: session.id,
+        metadata: { title, streamer: clip.streamer_username, game: clip.game },
+      })
+
+      return { url: session.url, sessionId: session.id, tier, amountCents }
+    } finally {
+      await client.query(`SELECT pg_advisory_unlock($1)`, [input.clipId])
+    }
   })
-
-  if (!session.url) throw new Error('Stripe did not return checkout URL')
-
-  await setClipCheckoutSession(clip.id, session.id)
-  await insertPendingSale({
-    clip_id: clip.id,
-    tier,
-    amount_cents: amountCents,
-    stripe_checkout_session_id: session.id,
-    metadata: { title, streamer: clip.streamer_username, game: clip.game },
-  })
-
-  return { url: session.url, sessionId: session.id, tier, amountCents }
 }
 
 export async function createRetainerCheckoutSession(input: {
@@ -199,17 +218,49 @@ async function fulfillClipCheckoutSession(session: Stripe.Checkout.Session) {
   const amountCents =
     session.amount_total ??
     amountForTier((session.metadata?.tier as SaleTier) || 'gateway')
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null
 
-  await claimClip({
-    clipId,
-    saleAmountCents: amountCents,
-    stripeCheckoutSessionId: session.id,
-    stripePaymentIntentId:
-      typeof session.payment_intent === 'string'
-        ? session.payment_intent
-        : session.payment_intent?.id ?? null,
-    buyerEmail: session.customer_details?.email ?? session.customer_email ?? null,
-  })
+  try {
+    await claimClip({
+      clipId,
+      saleAmountCents: amountCents,
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      buyerEmail: session.customer_details?.email ?? session.customer_email ?? null,
+    })
+  } catch (err) {
+    if (!(err instanceof ClipClaimConflictError)) {
+      throw err
+    }
+
+    await markSaleRefunded({
+      stripeCheckoutSessionId: session.id,
+      stripePaymentIntentId: paymentIntentId,
+      buyerEmail: session.customer_details?.email ?? session.customer_email ?? null,
+      reason: 'clip_already_claimed',
+    })
+
+    if (paymentIntentId) {
+      try {
+        await getStripe().refunds.create({
+          payment_intent: paymentIntentId,
+          reason: 'requested_by_customer',
+          metadata: {
+            checkout_session_id: session.id,
+            clip_id: String(clipId),
+            conflict: 'already_claimed',
+          },
+        })
+      } catch (refundErr) {
+        console.warn('[stripe] best-effort refund failed', refundErr)
+      }
+    }
+
+    throw new CheckoutConflictError('Clip already claimed by another checkout session')
+  }
 }
 
 async function fulfillRetainerCheckoutSession(session: Stripe.Checkout.Session) {
@@ -273,7 +324,15 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       const session = event.data.object as Stripe.Checkout.Session
       // Subscriptions may report payment_status unpaid briefly; paid or no_payment_required OK
       if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
-        await fulfillCheckoutSession(session)
+        try {
+          await fulfillCheckoutSession(session)
+        } catch (err) {
+          if (err instanceof CheckoutConflictError) {
+            res.json({ received: true, conflict: true })
+            return
+          }
+          throw err
+        }
       }
     }
     res.json({ received: true })

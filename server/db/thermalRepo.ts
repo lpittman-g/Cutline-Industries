@@ -36,6 +36,18 @@ export type HeatEventWithStreamer = HeatSpikeRow & {
   streamer?: StreamerWithVelocity
 }
 
+export class ClipClaimConflictError extends Error {
+  clipId: number
+  existingSessionId: string | null
+
+  constructor(clipId: number, existingSessionId: string | null) {
+    super('Clip already claimed')
+    this.name = 'ClipClaimConflictError'
+    this.clipId = clipId
+    this.existingSessionId = existingSessionId
+  }
+}
+
 function mapStreamer(row: Record<string, unknown>): StreamerWithVelocity {
   return row as unknown as StreamerWithVelocity
 }
@@ -276,11 +288,16 @@ export async function getClipById(id: number): Promise<ClipWithMeta | null> {
 
 export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
   const res = await getPool().query(
-    `SELECT DISTINCT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
+    `SELECT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
      FROM clips c
-     INNER JOIN bounty_posts bp ON bp.clip_id = c.id
-     WHERE c.media_url IS NOT NULL AND bp.status = 'posted'
-     ORDER BY bp.posted_at DESC NULLS LAST, c.created_at DESC
+     INNER JOIN (
+       SELECT clip_id, MAX(posted_at) AS latest_posted_at
+       FROM bounty_posts
+       WHERE status = 'posted'
+       GROUP BY clip_id
+     ) bp ON bp.clip_id = c.id
+     WHERE c.media_url IS NOT NULL
+     ORDER BY bp.latest_posted_at DESC NULLS LAST, c.created_at DESC
      LIMIT $1`,
     [limit],
   )
@@ -524,25 +541,87 @@ export async function claimClip(input: {
   buyerEmail?: string | null
 }) {
   await withClient(async (client) => {
-    await client.query(
-      `UPDATE clips
-       SET status = 'claimed',
-           sale_amount_cents = $2,
-           claimed_at = CURRENT_TIMESTAMP,
-           stripe_checkout_session_id = $3
-       WHERE id = $1`,
-      [input.clipId, input.saleAmountCents, input.stripeCheckoutSessionId],
-    )
-    await client.query(
-      `UPDATE sales
-       SET status = 'completed',
-           stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-           buyer_email = COALESCE($3, buyer_email),
-           completed_at = CURRENT_TIMESTAMP
-       WHERE stripe_checkout_session_id = $1`,
-      [input.stripeCheckoutSessionId, input.stripePaymentIntentId ?? null, input.buyerEmail ?? null],
-    )
+    await client.query('BEGIN')
+    try {
+      await client.query(`SELECT pg_advisory_xact_lock($1)`, [input.clipId])
+
+      const clipRes = await client.query(
+        `SELECT status, stripe_checkout_session_id
+         FROM clips
+         WHERE id = $1
+         FOR UPDATE`,
+        [input.clipId],
+      )
+      const clip = clipRes.rows[0] as
+        | { status: string; stripe_checkout_session_id: string | null }
+        | undefined
+      if (!clip) {
+        throw new Error('Clip not found')
+      }
+
+      if (
+        clip.status === 'claimed' &&
+        clip.stripe_checkout_session_id !== input.stripeCheckoutSessionId
+      ) {
+        throw new ClipClaimConflictError(input.clipId, clip.stripe_checkout_session_id ?? null)
+      }
+
+      await client.query(
+        `UPDATE clips
+         SET status = 'claimed',
+             sale_amount_cents = $2,
+             claimed_at = COALESCE(claimed_at, CURRENT_TIMESTAMP),
+             stripe_checkout_session_id = $3
+         WHERE id = $1`,
+        [input.clipId, input.saleAmountCents, input.stripeCheckoutSessionId],
+      )
+      await client.query(
+        `UPDATE sales
+         SET status = 'completed',
+             stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+             buyer_email = COALESCE($3, buyer_email),
+             completed_at = CURRENT_TIMESTAMP
+         WHERE stripe_checkout_session_id = $1`,
+        [
+          input.stripeCheckoutSessionId,
+          input.stripePaymentIntentId ?? null,
+          input.buyerEmail ?? null,
+        ],
+      )
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
   })
+}
+
+export async function markSaleRefunded(input: {
+  stripeCheckoutSessionId: string
+  stripePaymentIntentId?: string | null
+  buyerEmail?: string | null
+  reason?: string
+}) {
+  await getPool().query(
+    `UPDATE sales
+     SET status = 'refunded',
+         stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+         buyer_email = COALESCE($3, buyer_email),
+         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+         metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+           'refund_reason',
+           COALESCE($4, 'clip_claim_conflict'),
+           'refunded_at',
+           NOW()::text
+         )
+     WHERE stripe_checkout_session_id = $1`,
+    [
+      input.stripeCheckoutSessionId,
+      input.stripePaymentIntentId ?? null,
+      input.buyerEmail ?? null,
+      input.reason ?? 'clip_claim_conflict',
+    ],
+  )
 }
 
 function mapSale(row: Record<string, unknown>): SaleRow {

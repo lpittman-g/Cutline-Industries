@@ -37,6 +37,7 @@ import {
 import { triggerHeatEvent } from './heatPipeline.ts'
 import { rerunClipAutopilot } from './thermalHeatAutopilot.ts'
 import {
+  CheckoutConflictError,
   confirmCheckoutSession,
   createCheckoutSession,
   createRetainerCheckoutSession,
@@ -226,6 +227,10 @@ export function registerThermalRoutes(app: Express) {
       })
       res.json({ ok: true, ...session })
     } catch (err) {
+      if (err instanceof CheckoutConflictError) {
+        res.status(409).json({ error: err.message })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
@@ -244,6 +249,10 @@ export function registerThermalRoutes(app: Express) {
       const result = await confirmCheckoutSession(sessionId)
       res.json(result)
     } catch (err) {
+      if (err instanceof CheckoutConflictError) {
+        res.status(409).json({ error: err.message })
+        return
+      }
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
     }
   })
