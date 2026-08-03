@@ -1,0 +1,6 @@
+secrets/
+node_modules/
+dist/
+*.p8
+.env
+.DS_Store
