@@ -97,6 +97,8 @@ PDFs in [`docs/business/`](docs/business/):
 - 4-Week Outreach Plan
 - Stripe Authorization Letter
 
+AI Application Card (Cursor primary): [`docs/AI-APPLICATION-CARD-BLUEPRINT.md`](docs/AI-APPLICATION-CARD-BLUEPRINT.md) · printable [`docs/ai-application-card-blueprint.html`](docs/ai-application-card-blueprint.html)
+
 ## Secrets (never commit)
 
 | File | Purpose |
