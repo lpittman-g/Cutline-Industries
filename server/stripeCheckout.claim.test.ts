@@ -29,7 +29,7 @@ describe('stripe lost-claim race handling', () => {
     assert.match(src, /markSaleLostClaimRace/)
     assert.match(src, /CUTLINE_DRY_RUN/)
     assert.match(src, /saleStatus/)
-    assert.match(src, /status:\s*'failed'/)
+    assert.match(src, /await mark\('failed'\)/)
   })
 
   it('acks RetainerAlreadyActiveError in the webhook path', () => {
