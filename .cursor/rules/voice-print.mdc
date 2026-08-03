@@ -1,0 +1,23 @@
+---
+description: When the user says "print" in chat, send blueprints to the HP OfficeJet printer.
+alwaysApply: true
+---
+
+# Voice Print — chat command
+
+When the user's message is **only** `print` (case-insensitive), or clearly means "print this now" with no other task:
+
+1. Use the **voice-print** MCP tool `print` immediately (no file arg → prints the default combined pack).
+2. If MCP is unavailable, run locally:
+   ```bash
+   cd tools/voice-print && npm run print -- docs/combined-print.html
+   ```
+3. Confirm what was sent and which printer IP was used.
+
+If they say **print** plus a specific doc (e.g. "print architecture blueprint"), pass that path or catalog id to `print`.
+
+If they ask to **list** printable files, call `list_printables`.
+
+**Requires local Cursor** on the same Wi‑Fi as the HP OfficeJet (`192.168.1.157`). Cloud agents cannot reach the printer.
+
+Setup: enable `voice-print` in `.cursor/mcp.json` (see `.cursor/mcp.json.example`) and run `cd tools/voice-print && npm install`.

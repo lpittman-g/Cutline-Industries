@@ -50,13 +50,13 @@ Kept in repo for reference only. Use **phone-approval-lite** instead.
 
 ---
 
-## Voice Print — say “print”
+## Voice Print — say “print” in chat
 
-Send blueprints and docs to your **HP OfficeJet Pro 9120** (`192.168.1.157`) via voice.
+Send blueprints to your **HP OfficeJet Pro 9120** (`192.168.1.157`). Type **`print`** in Cursor chat (local agent on your PC).
 
 ```bash
-cd tools/voice-print && npm install && npm start
-# Open http://127.0.0.1:8791 → pick file → say "print"
+cd tools/voice-print && npm install
+# Enable voice-print in ~/.cursor/mcp.json — see .cursor/mcp.json.example
 ```
 
 Setup: [`voice-print/README.md`](voice-print/README.md)
