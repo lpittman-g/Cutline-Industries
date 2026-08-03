@@ -158,18 +158,21 @@ FFmpeg local render
   → paid checkout session → 15-minute presigned clean download
 ```
 
-Required deployment secrets:
+Required deployment config (and optional local keys):
 
 ```bash
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
 AWS_S3_BUCKET_NAME=thermal-video-clips
 AWS_CLOUDFRONT_DOMAIN=https://clips.example.com # optional
+# Local/dev only — prefer an IAM role in production instead of permanent access keys
+# AWS_ACCESS_KEY_ID=...
+# AWS_SECRET_ACCESS_KEY=...
 AUTH_BOOTSTRAP_ADMIN_EMAIL=lpittman@cutline-industries.studio
 ```
 
-If AWS variables are blank, the pipeline falls back to local `thermal_media/`.
+Console: [IAM users](https://console.aws.amazon.com/iam/home#/users) · [S3 buckets](https://s3.console.aws.amazon.com/s3/buckets) · [CloudFront](https://console.aws.amazon.com/cloudfront/v4/home#/distributions)
+
+If `AWS_REGION` / `AWS_S3_BUCKET_NAME` are blank, the pipeline falls back to local `thermal_media/`.
 
 ## Step 7 (implemented): AI heat autopilot
 
