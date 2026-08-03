@@ -212,6 +212,8 @@ DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/thermal
 npm run db:migrate
 
 # Optional Twitch (credentialed mode)
+# Console: https://dev.twitch.tv/console/apps
+# Register: https://dev.twitch.tv/docs/authentication/register-app
 TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
 
@@ -239,3 +241,26 @@ npm run start   # UI + API
 Clips stored under `thermal_media/clips/{spikeId}/` and served at `/thermal-media/...`.
 
 ### Setup
+
+#### Twitch
+
+- `TWITCH_CLIENT_ID`
+- `TWITCH_CLIENT_SECRET`
+
+Links:
+
+- [Twitch Developer applications](https://dev.twitch.tv/console/apps)
+- [Registration instructions](https://dev.twitch.tv/docs/authentication/register-app)
+
+1. Enable 2FA on your Twitch account, then open the developer console.
+2. **Register Your Application** — name it (e.g. Cutline Thermal), pick a category (Application Integration), and set an OAuth Redirect URL (e.g. `http://localhost` — unused for client-credentials).
+3. **Manage** → copy **Client ID** → **New Secret** → copy **Client Secret**.
+
+Paste into `.env`:
+
+```bash
+TWITCH_CLIENT_ID=...
+TWITCH_CLIENT_SECRET=...
+```
+
+Used by `server/twitchMonitor.ts` for Helix app-access tokens (live stream poll + streamer sync). If unset, the monitor stays in seed/simulate mode and the clip pipeline still works via **Force heat spike**.

@@ -91,6 +91,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `CUTLINE_AI_PRIVACY` | `public` for AI Shorts |
 | `OPENAI_API_KEY` | Optional — better AI scripts |
 | `DATABASE_URL` | Thermal Postgres (user+password in URI; SSL for Neon/Supabase/RDS) |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Optional — Helix live poll ([console](https://dev.twitch.tv/console/apps), [register](https://dev.twitch.tv/docs/authentication/register-app)) |
 
 ## Google Cloud
 
@@ -134,6 +135,7 @@ Console links:
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth (Neon / Supabase / RDS; use SSL in production) |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Twitch Helix monitor (`server/twitchMonitor.ts`) |
 
 `npm audit` currently reports an RSC-only React Router advisory. This frontend
 is a Vite SPA and does not use React Server Components or server actions; the
