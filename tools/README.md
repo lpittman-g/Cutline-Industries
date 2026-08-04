@@ -45,3 +45,21 @@ Kept in repo for reference only. Use **phone-approval-lite** instead.
 Forward email to `cursor@cutline-industries.studio` → triggers a Cursor Cloud Agent run.
 
 Setup: [`email-to-cursor/docs/SETUP.md`](email-to-cursor/docs/SETUP.md)
+
+## Cursor remote shell
+
+Run Ramp CLI commands directly in Cursor remote shell for clean JSON output:
+
+```bash
+ramp transactions list --agent
+```
+
+Count active cards with `jq`:
+
+```bash
+ramp cards list --agent | jq '[.data[0].cards[] | select(.card_state == "ACTIVE")] | length'
+```
+
+Requirements:
+- `ramp` installed and authenticated in the remote shell
+- `jq` installed
