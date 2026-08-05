@@ -38,3 +38,12 @@ Cloud env config lives in `.cursor/environment.json`. The **install** script ref
 ### Lint / test / build
 
 Use the root `package.json` scripts: `npm run lint` (oxlint), `npm run typecheck` (tsc), `npm test` (node test runner), `npm run verify` (all three), `npm run build` (production build; not needed for dev). None of these require Postgres.
+
+### View cloud env from the terminal
+
+```bash
+npm run env:view          # .cursor/environment.json + local probes
+npm run env:view -- open  # dashboard Environments URL
+```
+
+Does **not** rebuild. Builds history lives in the [Cloud Agents dashboard](https://cursor.com/dashboard/cloud-agents#environments) (no public Builds API yet).
