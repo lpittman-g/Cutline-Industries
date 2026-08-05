@@ -70,3 +70,18 @@ Live OpenAI docs via HTTP MCP `openaiDeveloperDocs`, plus portable skills under 
 Forward email to `cursor@cutline-industries.studio` → triggers a Cursor Cloud Agent run.
 
 Setup: [`email-to-cursor/docs/SETUP.md`](email-to-cursor/docs/SETUP.md)
+
+---
+
+## cursor-env (environment view CLI)
+
+View `.cursor/environment.json` + local Postgres/API/Vite status from the terminal — no rebuild needed.
+
+```bash
+npm run env:view
+npm run env:view -- --json
+npm run env:view -- open      # dashboard URL
+npm run env:view -- agents    # needs CURSOR_API_KEY
+```
+
+Docs: [`cursor-env/README.md`](cursor-env/README.md)
