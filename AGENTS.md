@@ -6,7 +6,7 @@ Start with `README.md` and `docs/PLATFORM.md` for architecture. Standard command
 
 ## Cursor Cloud specific instructions
 
-The update script (run automatically on VM startup) installs npm dependencies only. Everything below is service startup / run-time context that is NOT in the update script.
+Cloud env config lives in `.cursor/environment.json`. The **install** script refreshes npm deps (and creates `.env` from `.env.example` when missing). The **start** script brings up Postgres; the **thermal** terminal runs `npm run start` (API + Vite). Everything below is agent run-time context.
 
 ### Services (Thermal core)
 
@@ -14,12 +14,12 @@ The update script (run automatically on VM startup) installs npm dependencies on
 |---------|---------|------|-------|
 | Frontend (Vite SPA) | `npm run dev` | 5173 | Proxies `/api` + `/thermal-media` to the API on 8787 |
 | Backend API (Express) | `npm run api` | 8787 | `tsx server/api.ts` |
-| Both together | `npm run start` | 5173 + 8787 | `concurrently` runs API + Vite |
-| PostgreSQL | `sudo pg_ctlcluster 16 main start` | 5432 | System Postgres 16; not auto-started on boot |
+| Both together | `npm run start` | 5173 + 8787 | `concurrently` runs API + Vite (cloud terminal) |
+| PostgreSQL | `sudo pg_ctlcluster 16 main start` | 5432 | System Postgres 16; started by env `start` script |
 
-### Postgres (must be started each session)
+### Postgres
 
-- Postgres 16 is installed system-wide but is NOT started automatically. Start it with `sudo pg_ctlcluster 16 main start` before running the API for full functionality.
+- Postgres 16 is on the cloud snapshot but is NOT left running across boots — `start` runs `sudo pg_ctlcluster 16 main start`.
 - Local role/DB used for dev: user `postgres` / password `postgres`, database `thermal`. The default `DATABASE_URL` in `.env.example` (`postgres://postgres:postgres@127.0.0.1:5432/thermal`) already matches this, so a copied `.env` works out of the box.
 - If the `thermal` database is missing, create it: `sudo -u postgres psql -c "CREATE DATABASE thermal;"` (and `ALTER USER postgres PASSWORD 'postgres';` if the password was reset).
 - Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). Run this after starting Postgres and whenever new files land in `db/migrations/`.
@@ -27,7 +27,7 @@ The update script (run automatically on VM startup) installs npm dependencies on
 
 ### `.env`
 
-- `scripts/setup-cursor.sh` / the update flow copies `.env.example` → `.env`. All external integrations (Stripe, YouTube/Google, AWS S3, Twitch, OpenAI) are gated behind env vars and default to dry-run (`CUTLINE_DRY_RUN=1`), so the app runs fully without any of those credentials — with reduced/no-op integration behavior.
+- Install / `scripts/setup-cursor.sh` copies `.env.example` → `.env` when missing. All external integrations (Stripe, YouTube/Google, AWS S3, Twitch, OpenAI) are gated behind env vars and default to dry-run (`CUTLINE_DRY_RUN=1`), so the app runs fully without any of those credentials — with reduced/no-op integration behavior.
 
 ### Non-obvious gotchas
 
