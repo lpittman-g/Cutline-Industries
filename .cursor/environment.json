@@ -1,0 +1,18 @@
+{
+  "name": "Cutline Industries",
+  "snapshot": "snapshot-20260805-42cd5dcb-177e-411f-bd1f-2deada36cc58",
+  "agentCanUpdateSnapshot": true,
+  "install": "npm install\ntest -f .env || cp .env.example .env",
+  "start": "sudo pg_ctlcluster 16 main start",
+  "terminals": [
+    {
+      "name": "thermal",
+      "command": "npm run start",
+      "description": "Thermal API (:8787) + Vite (:5173)"
+    }
+  ],
+  "ports": [
+    { "name": "vite", "port": 5173 },
+    { "name": "api", "port": 8787 }
+  ]
+}
