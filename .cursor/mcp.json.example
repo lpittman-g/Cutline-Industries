@@ -18,6 +18,9 @@
     "openaiDeveloperDocs": {
       "type": "http",
       "url": "https://developers.openai.com/mcp?source=cursor"
+    },
+    "Ramp": {
+      "url": "https://demo-mcp.ramp.com/mcp"
     }
   }
 }

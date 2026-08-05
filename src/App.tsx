@@ -19,7 +19,9 @@ import { ClipsPage } from './pages/app/ClipsPage'
 import { BountyBoardPage } from './pages/app/BountyBoardPage'
 import { DevCrmPage } from './pages/app/DevCrmPage'
 import { RevenuePage } from './pages/app/RevenuePage'
+import { RampSpendPage } from './pages/app/RampSpendPage'
 import { MissionControlPage } from './pages/app/MissionControlPage'
+import { RampCallbackPage } from './pages/RampCallbackPage'
 import { StudioPage } from './pages/StudioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { PacksPage } from './pages/PacksPage'
@@ -58,6 +60,7 @@ export default function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/signin" element={<SigninPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/callback" element={<RampCallbackPage />} />
         </Route>
 
         {/* Thermal Mission Control (operator+) */}
@@ -77,6 +80,7 @@ export default function App() {
           <Route path="bounty" element={<BountyBoardPage />} />
           <Route path="developers" element={<DevCrmPage />} />
           <Route path="revenue" element={<RevenuePage />} />
+          <Route path="ramp" element={<RampSpendPage />} />
         </Route>
 
         {/* Cutline processing / legacy Creator OS (engine tools) */}

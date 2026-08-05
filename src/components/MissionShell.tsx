@@ -8,6 +8,7 @@ const NAV = [
   { to: '/app/bounty', label: 'Bounty Board' },
   { to: '/app/developers', label: 'Developers' },
   { to: '/app/revenue', label: 'Revenue' },
+  { to: '/app/ramp', label: 'Ramp' },
 ]
 
 export function MissionShell() {
