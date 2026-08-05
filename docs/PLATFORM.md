@@ -139,6 +139,7 @@ Local bucket helpers (`scripts/aws/media_bootstrap.sh`) need **AWS CLI v2**. Fol
 |--------|---------|
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional) | S3 media uploads when no IAM role |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
+| `RAMP_CLIENT_ID`, `RAMP_CLIENT_SECRET` | Demo Ramp spend API ([docs/RAMP.md](./RAMP.md)) |
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth (Neon / Supabase / RDS; use SSL in production) |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |

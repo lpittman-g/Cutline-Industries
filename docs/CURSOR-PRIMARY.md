@@ -76,6 +76,7 @@ Surfaces (Cursor desktop · Cloud · Phone Ops)
 | `phone-approval-lite` | `.cursor/mcp.json.example` | Device approval via ntfy |
 | `voice-print` | same | **`print`** in chat → HP OfficeJet |
 | `openaiDeveloperDocs` | same | Live OpenAI platform docs |
+| `Ramp` | same (`demo-mcp.ramp.com`) | Demo Ramp MCP — auth in Cursor desktop ([docs/RAMP.md](./RAMP.md)) |
 | `discordDeveloperDocs` | `.cursor/mcp.automation.example.json` | Discord docs for cloud Automation |
 
 Remote HTTP MCP works with Cloud Agents and Automations. Local stdio tools run

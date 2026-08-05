@@ -15,6 +15,7 @@ dist-ssr
 # YouTube / Google secrets — never commit
 client_secret.json
 token.json
+ramp_token.json
 .env
 .env.*
 !.env.example
