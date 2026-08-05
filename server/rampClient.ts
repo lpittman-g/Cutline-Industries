@@ -247,6 +247,6 @@ export function rampStatusPayload() {
     scopes: rampScopes(),
     clientIdSet: Boolean(process.env.RAMP_CLIENT_ID?.trim()),
     hint:
-      'Demo app: enable Client credentials (and Authorization code for /callback). MCP: connect demo-mcp.ramp.com in Cursor desktop.',
+      'Two Ramp apps: (A) Developer API for /api/ramp + Mission Control; (B) Cursor Agent Permissions (Client ID cutline) for MCP. See docs/RAMP.md. Re-enable Client credentials if DEVELOPER_7012.',
   }
 }
