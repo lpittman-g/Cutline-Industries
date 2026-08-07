@@ -13,7 +13,7 @@
 
 ## Quick setup
 
-1. `.env` → `CUTLINE_APPROVAL_PAIR_SECRET=long-random-string`
+1. `.env` → optionally set `CUTLINE_NTFY_TOPIC=cutline-thermal-your-topic` (or let the API generate one)
 2. iPhone → install **ntfy** → subscribe to topic from `curl localhost:8787/api/approval/status`
 3. Safari → `https://cutline-industries.studio/approve` → Add to Home Screen
 4. Cursor → enable MCP from `.cursor/mcp.json.example`
