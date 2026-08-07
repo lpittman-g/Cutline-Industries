@@ -1,10 +1,12 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { ROOT } from './youtubeAuth.ts'
 
 const PENDING_DIR = path.join(ROOT, 'secrets', 'approval-pending')
 const DEVICES_PATH = path.join(ROOT, 'secrets', 'approval-devices.json')
+const TOPIC_PATH = path.join(ROOT, 'secrets', 'approval-topic.txt')
 
 export type ApprovalRecord = {
   id: string
@@ -89,13 +91,21 @@ export async function registerDevice(input: {
 }
 
 export function defaultNtfyTopic(): string {
-  const secret =
-    process.env.CUTLINE_APPROVAL_PAIR_SECRET ||
-    process.env.CUTLINE_NTFY_TOPIC ||
-    'cutline-set-pair-secret-in-env'
-  if (secret.startsWith('cutline-')) return secret
-  const hash = createHash('sha256').update(secret).digest('hex').slice(0, 12)
-  return `cutline-thermal-${hash}`
+  const configuredTopic = process.env.CUTLINE_NTFY_TOPIC?.trim()
+  if (configuredTopic) return configuredTopic
+
+  const legacyTopic = process.env.CUTLINE_APPROVAL_PAIR_SECRET?.trim()
+  if (legacyTopic?.startsWith('cutline-')) return legacyTopic
+
+  if (existsSync(TOPIC_PATH)) {
+    const savedTopic = readFileSync(TOPIC_PATH, 'utf8').trim()
+    if (savedTopic) return savedTopic
+  }
+
+  const topic = `cutline-thermal-${randomUUID().replace(/-/g, '').slice(0, 12)}`
+  mkdirSync(path.dirname(TOPIC_PATH), { recursive: true, mode: 0o700 })
+  writeFileSync(TOPIC_PATH, `${topic}\n`, { mode: 0o600 })
+  return topic
 }
 
 export function approvalPageUrl(approvalId: string): string {
@@ -168,6 +178,7 @@ export async function waitForApproval(id: string, waitSeconds: number) {
 export function approvalStatus() {
   const topic = process.env.CUTLINE_NTFY_TOPIC || defaultNtfyTopic()
   const hasPairSecret = Boolean(process.env.CUTLINE_APPROVAL_PAIR_SECRET)
+  const hasTopicOverride = Boolean(process.env.CUTLINE_NTFY_TOPIC?.trim())
   return {
     mode: 'cutline-device-approval-lite',
     usesAppleDeveloper: false,
@@ -176,6 +187,7 @@ export function approvalStatus() {
     ntfyTopic: topic,
     ntfyServer: process.env.CUTLINE_NTFY_SERVER || 'https://ntfy.sh',
     hasPairSecret,
+    hasTopicOverride,
     approvePage: approvalPageUrl('{approvalId}'),
     setupDoc: 'tools/phone-approval-lite/docs/SETUP-NO-APPLE-DEV.md',
     iosApp: 'Install ntfy from App Store → subscribe to topic above',
