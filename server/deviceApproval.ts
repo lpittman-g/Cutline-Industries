@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { promises as fs } from 'node:fs'
+import { existsSync, mkdirSync, promises as fs, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { ROOT } from './youtubeAuth.ts'
 
@@ -176,7 +175,7 @@ export async function waitForApproval(id: string, waitSeconds: number) {
 }
 
 export function approvalStatus() {
-  const topic = process.env.CUTLINE_NTFY_TOPIC || defaultNtfyTopic()
+  const topic = defaultNtfyTopic()
   const hasPairSecret = Boolean(process.env.CUTLINE_APPROVAL_PAIR_SECRET)
   const hasTopicOverride = Boolean(process.env.CUTLINE_NTFY_TOPIC?.trim())
   return {
