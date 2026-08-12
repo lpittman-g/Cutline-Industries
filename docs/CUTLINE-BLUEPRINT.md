@@ -50,7 +50,7 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 - [x] YouTube Data API + OAuth refresh token
 - [x] Channel created on Workspace account
 - [ ] Rename channel → **Cutline Industries**
-- [ ] Restore `cutline-industries.studio` → Amplify (Route 53 NS)
+- [ ] Restore `cutline-industries.studio` → Amplify (Route 53 NS) — domain currently on Squarespace DNS + private template store; Commerce API wired (`docs/SQUARESPACE.md`)
 - [ ] Recreate GitHub `main` + open PRs
 
 ### Phase 1 — Ship content daily (now)

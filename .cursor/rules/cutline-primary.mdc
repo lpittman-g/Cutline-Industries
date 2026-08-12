@@ -12,6 +12,7 @@ This repo is built for **Cursor**, not GitHub Copilot. Do repo work here. Do **n
 | Doc | When |
 |-----|------|
 | [docs/PLATFORM.md](../docs/PLATFORM.md) | Architecture, routes, env |
+| [docs/SQUARESPACE.md](../docs/SQUARESPACE.md) | Domain + Commerce API (cutline-industries.studio) |
 | [docs/AWS-CLI.md](../docs/AWS-CLI.md) | AWS CLI v2 install + configure (bucket bootstrap) |
 | [docs/GOOGLE-OAUTH.md](../docs/GOOGLE-OAUTH.md) | YouTube + Gmail OAuth → token.json |
 | [docs/THERMAL-MISSION-CONTROL.md](../docs/THERMAL-MISSION-CONTROL.md) | Heat → clip → Stripe → bounty |

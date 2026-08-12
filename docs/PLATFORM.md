@@ -102,6 +102,14 @@ Copy `.env.example` → `.env`. Key variables:
 - Secrets: `client_secret.json`, `token.json` (gitignored)
 - Setup: [`docs/GOOGLE-OAUTH.md`](./GOOGLE-OAUTH.md)
 
+## Squarespace
+
+- Domain registrar + current DNS: `cutline-industries.studio` (Squarespace nameservers)
+- Live site: password-protected template store until cutover / publish
+- Commerce API key: `SQUARESPACE_API_KEY` → `GET /api/squarespace/status` + `/api/squarespace/products`
+- Setup: [`docs/SQUARESPACE.md`](./SQUARESPACE.md)
+- SPA hosting still targets Amplify + Route 53 (DNS cutover pending)
+
 ## AWS
 
 - Account: `583968735276`
@@ -140,6 +148,7 @@ Local bucket helpers (`scripts/aws/media_bootstrap.sh`) need **AWS CLI v2**. Fol
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (optional) | S3 media uploads when no IAM role |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Checkout + fulfillment |
 | `RAMP_CLIENT_ID`, `RAMP_CLIENT_SECRET` | Demo Ramp spend API ([docs/RAMP.md](./RAMP.md)) |
+| `SQUARESPACE_API_KEY` | Squarespace Commerce for cutline-industries.studio ([docs/SQUARESPACE.md](./SQUARESPACE.md)) |
 | `OPENAI_API_KEY` | AI video pipeline |
 | `DATABASE_URL` | Thermal state + auth (Neon / Supabase / RDS; use SSL in production) |
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
