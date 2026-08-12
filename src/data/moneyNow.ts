@@ -3,7 +3,7 @@ export type MoneyActionStatus = 'todo' | 'doing' | 'done' | 'blocked'
 export interface MoneyAction {
   id: string
   title: string
-  platform: 'AdSense' | 'YouTube' | 'AWS' | 'Replit' | 'Stripe' | 'AI' | 'Cutline'
+  platform: 'AdSense' | 'YouTube' | 'AWS' | 'Replit' | 'Stripe' | 'AI' | 'Cutline' | 'Squarespace'
   impact: 'high' | 'medium'
   eta: string
   steps: string[]
@@ -38,6 +38,20 @@ export const MONEY_NOW_ACTIONS: MoneyAction[] = [
       'Post Shorts daily from inbox VODs (private first, then public schedule)',
       'Push toward YPP thresholds (subs + watch hours / Shorts views)',
       'When eligible: enable ads, Shorts ads, memberships, Super Thanks, Shopping',
+    ],
+  },
+  {
+    id: 'squarespace-domain',
+    title: 'Point cutline-industries.studio at Cutline (via Squarespace)',
+    platform: 'Squarespace',
+    impact: 'high',
+    eta: 'Today',
+    status: 'doing',
+    steps: [
+      'Commerce API key saved as SQUARESPACE_API_KEY — verify GET /api/squarespace/status',
+      'Turn off Squarespace Private site / password wall when ready for public traffic',
+      'Replace template merch title/products with Cutline branding',
+      'When Amplify is green: Domains → custom nameservers (Route 53) so the SPA owns the domain',
     ],
   },
   {

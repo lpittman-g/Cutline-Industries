@@ -29,6 +29,7 @@ import { registerThermalRoutes } from './thermalApi.ts'
 import { registerStripeWebhookRoute } from './stripeCheckout.ts'
 import { registerAuthRoutes } from './auth/authRoutes.ts'
 import { registerRampRoutes } from './rampApi.ts'
+import { registerSquarespaceRoutes } from './squarespaceApi.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -591,6 +592,7 @@ app.get('/api/thermal/schema', async (_req, res) => {
 registerAuthRoutes(app)
 registerThermalRoutes(app)
 registerRampRoutes(app)
+registerSquarespaceRoutes(app)
 
 app.listen(PORT, () => {
   console.log(`Cutline Industries API on http://127.0.0.1:${PORT}`)
