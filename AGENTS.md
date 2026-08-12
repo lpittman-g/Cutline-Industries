@@ -6,7 +6,7 @@ Start with `README.md` and `docs/PLATFORM.md` for architecture. Standard command
 
 ## Cursor Cloud specific instructions
 
-Cloud env config lives in `.cursor/environment.json`. The **install** script refreshes npm deps (and creates `.env` from `.env.example` when missing). The **start** script brings up Postgres; the **thermal** terminal runs `npm run start` (API + Vite). Everything below is agent run-time context.
+Cloud env config lives in `.cursor/environment.json`. The **install** script refreshes npm deps, creates `.env` from `.env.example` when missing, and ensures Postgres packages via `scripts/cloud-postgres.sh ensure`. The **start** script runs `scripts/cloud-postgres.sh start` (cluster + `thermal` DB); the **thermal** terminal runs `npm run db:migrate && npm run start` (API + Vite). Everything below is agent run-time context.
 
 ### Services (Thermal core)
 
@@ -15,14 +15,14 @@ Cloud env config lives in `.cursor/environment.json`. The **install** script ref
 | Frontend (Vite SPA) | `npm run dev` | 5173 | Proxies `/api` + `/thermal-media` to the API on 8787 |
 | Backend API (Express) | `npm run api` | 8787 | `tsx server/api.ts` |
 | Both together | `npm run start` | 5173 + 8787 | `concurrently` runs API + Vite (cloud terminal) |
-| PostgreSQL | `sudo pg_ctlcluster 16 main start` | 5432 | System Postgres 16; started by env `start` script |
+| PostgreSQL | `bash scripts/cloud-postgres.sh start` | 5432 | System Postgres 16; started by env `start` script |
 
 ### Postgres
 
-- Postgres 16 is on the cloud snapshot but is NOT left running across boots — `start` runs `sudo pg_ctlcluster 16 main start`.
+- Prefer `bash scripts/cloud-postgres.sh start` (installs packages if missing, starts `16/main`, sets `postgres`/`postgres`, creates `thermal`). Raw equivalent: `sudo pg_ctlcluster 16 main start`.
+- Postgres is NOT left running across boots — `start` brings it back up.
 - Local role/DB used for dev: user `postgres` / password `postgres`, database `thermal`. The default `DATABASE_URL` in `.env.example` (`postgres://postgres:postgres@127.0.0.1:5432/thermal`) already matches this, so a copied `.env` works out of the box.
-- If the `thermal` database is missing, create it: `sudo -u postgres psql -c "CREATE DATABASE thermal;"` (and `ALTER USER postgres PASSWORD 'postgres';` if the password was reset).
-- Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). Run this after starting Postgres and whenever new files land in `db/migrations/`.
+- Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). The thermal cloud terminal runs this before the API; also run it whenever new files land in `db/migrations/`.
 - `DATABASE_SSL` auto-enables for non-localhost hosts; keep it off (default) for the local `127.0.0.1` DB.
 
 ### `.env`

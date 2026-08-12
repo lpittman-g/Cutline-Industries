@@ -22,12 +22,13 @@ describe('cursor-env view', () => {
         name: 'Cutline Industries',
         snapshot: 'snapshot-test',
         agentCanUpdateSnapshot: true,
-        install: 'npm install\ntest -f .env || cp .env.example .env',
-        start: 'sudo pg_ctlcluster 16 main start',
+        install:
+          'npm install\ntest -f .env || cp .env.example .env\nbash scripts/cloud-postgres.sh ensure',
+        start: 'bash scripts/cloud-postgres.sh start',
         terminals: [
           {
             name: 'thermal',
-            command: 'npm run start',
+            command: 'npm run db:migrate && npm run start',
             description: 'API + Vite',
           },
         ],
