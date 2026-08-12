@@ -119,7 +119,7 @@ export async function collectLocalProbes(repoRoot: string): Promise<ProbeResult[
       ok: false,
       detail:
         which.status === 0
-          ? 'not accepting connections (try: sudo pg_ctlcluster 16 main start)'
+          ? 'not accepting connections (try: bash scripts/cloud-postgres.sh start)'
           : 'pg_isready not found (Postgres not installed?)',
     })
   }
