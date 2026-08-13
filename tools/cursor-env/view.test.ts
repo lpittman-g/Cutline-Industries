@@ -28,7 +28,8 @@ describe('cursor-env view', () => {
         terminals: [
           {
             name: 'thermal',
-            command: 'npm run db:migrate && npm run start',
+            command:
+              'bash scripts/cloud-postgres.sh start && npm run db:migrate && npm run start',
             description: 'API + Vite',
           },
         ],

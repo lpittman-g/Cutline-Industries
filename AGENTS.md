@@ -6,7 +6,7 @@ Start with `README.md` and `docs/PLATFORM.md` for architecture. Standard command
 
 ## Cursor Cloud specific instructions
 
-Cloud env config lives in `.cursor/environment.json`. The **install** script refreshes npm deps, creates `.env` from `.env.example` when missing, and ensures Postgres packages via `scripts/cloud-postgres.sh ensure`. The **start** script runs `scripts/cloud-postgres.sh start` (cluster + `thermal` DB); the **thermal** terminal runs `npm run db:migrate && npm run start` (API + Vite). Everything below is agent run-time context.
+Cloud env config lives in `.cursor/environment.json`. The **install** script refreshes npm deps, creates `.env` from `.env.example` when missing, and ensures Postgres 16 packages via `scripts/cloud-postgres.sh ensure`. The **start** script runs `scripts/cloud-postgres.sh start` (cluster + `thermal` DB). The **thermal** terminal also runs `cloud-postgres.sh start` first (idempotent — avoids racing the non-blocking start hook), then `npm run db:migrate && npm run start`. Everything below is agent run-time context.
 
 ### Services (Thermal core)
 
@@ -22,7 +22,7 @@ Cloud env config lives in `.cursor/environment.json`. The **install** script ref
 - Prefer `bash scripts/cloud-postgres.sh start` (installs packages if missing, starts `16/main`, sets `postgres`/`postgres`, creates `thermal`). Raw equivalent: `sudo pg_ctlcluster 16 main start`.
 - Postgres is NOT left running across boots — `start` brings it back up.
 - Local role/DB used for dev: user `postgres` / password `postgres`, database `thermal`. The default `DATABASE_URL` in `.env.example` (`postgres://postgres:postgres@127.0.0.1:5432/thermal`) already matches this, so a copied `.env` works out of the box.
-- Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). The thermal cloud terminal runs this before the API; also run it whenever new files land in `db/migrations/`.
+- Apply schema with `npm run db:migrate` (idempotent — already-applied migrations are skipped). The thermal cloud terminal runs `cloud-postgres.sh start` then migrate before the API (so migrate does not race the non-blocking env `start` hook); also run migrate whenever new files land in `db/migrations/`.
 - `DATABASE_SSL` auto-enables for non-localhost hosts; keep it off (default) for the local `127.0.0.1` DB.
 
 ### `.env`

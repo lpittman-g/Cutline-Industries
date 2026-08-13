@@ -3,25 +3,47 @@
 # Usage:
 #   scripts/cloud-postgres.sh ensure   # install package if missing (install hook)
 #   scripts/cloud-postgres.sh start    # start cluster + ensure thermal DB (start hook)
+#                                     # also safe to call from the thermal terminal before migrate
 set -euo pipefail
 
+PG_MAJOR=16
+PG_CLUSTER="${PG_MAJOR}/main"
+
+have_pg16() {
+  [[ -d "/etc/postgresql/${PG_MAJOR}/main" ]] \
+    || [[ -x "/usr/lib/postgresql/${PG_MAJOR}/bin/postgres" ]]
+}
+
 ensure_packages() {
-  if command -v pg_ctlcluster >/dev/null 2>&1; then
+  if have_pg16 && command -v pg_ctlcluster >/dev/null 2>&1; then
     return 0
   fi
-  echo "[cloud-postgres] pg_ctlcluster missing — installing postgresql..."
+  echo "[cloud-postgres] Postgres ${PG_MAJOR} missing — installing versioned packages..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql postgresql-contrib
+  # Pin major version: unversioned `postgresql` can resolve to != ${PG_MAJOR}.
+  # On Ubuntu, contrib lives inside postgresql-${PG_MAJOR} (no separate -contrib-N deb).
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    "postgresql-${PG_MAJOR}" \
+    "postgresql-client-${PG_MAJOR}"
 }
 
 start_cluster() {
   ensure_packages
-  if sudo pg_ctlcluster 16 main status >/dev/null 2>&1; then
-    echo "[cloud-postgres] cluster 16/main already running"
+  if sudo pg_ctlcluster "${PG_MAJOR}" main status >/dev/null 2>&1; then
+    echo "[cloud-postgres] cluster ${PG_CLUSTER} already running"
   else
-    echo "[cloud-postgres] starting cluster 16/main"
-    sudo pg_ctlcluster 16 main start
+    echo "[cloud-postgres] starting cluster ${PG_CLUSTER}"
+    sudo pg_ctlcluster "${PG_MAJOR}" main start
   fi
+
+  # Wait until the server accepts connections (start hook may still be racing).
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if sudo -u postgres psql -Atc 'SELECT 1' >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.5
+  done
+  sudo -u postgres psql -Atc 'SELECT 1' >/dev/null
 
   # Match .env.example: postgres://postgres:postgres@127.0.0.1:5432/thermal
   sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER USER postgres PASSWORD 'postgres';" >/dev/null
