@@ -7,7 +7,7 @@
   "terminals": [
     {
       "name": "thermal",
-      "command": "npm run db:migrate && npm run start",
+      "command": "bash scripts/cloud-postgres.sh start && npm run db:migrate && npm run start",
       "description": "Thermal API (:8787) + Vite (:5173)"
     }
   ],
