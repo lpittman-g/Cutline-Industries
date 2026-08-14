@@ -94,6 +94,7 @@ Copy `.env.example` → `.env`. Key variables:
 | `DATABASE_URL` | Thermal Postgres (user+password in URI; SSL for Neon/Supabase/RDS) |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Optional — Helix live poll ([console](https://dev.twitch.tv/console/apps), [register](https://dev.twitch.tv/docs/authentication/register-app)) |
 | `DISCORD_HEAT_WEBHOOK_URL` | Optional — heat + clip-drop webhooks (Server Settings → Integrations → Webhooks → Create Webhook → Copy Webhook URL) |
+| `SENTRY_DSN` | Optional — `@sentry/node` for the Express API (`server/instrument.ts`); omit locally to skip sending events |
 ## Google Cloud
 
 - Account: `lpittman@cutline-industries.studio`
@@ -154,6 +155,7 @@ Local bucket helpers (`scripts/aws/media_bootstrap.sh`) need **AWS CLI v2**. Fol
 | `AUTH_BOOTSTRAP_ADMIN_EMAIL` | Initial Mission Control admin |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Twitch Helix monitor (`server/twitchMonitor.ts`) |
 | `DISCORD_HEAT_WEBHOOK_URL` | Heat alerts + $15 live clip drops (`server/discordNotify.ts`) |
+| `SENTRY_DSN` | Optional Sentry error reporting for `npm run api` |
 `npm audit` currently reports an RSC-only React Router advisory. This frontend
 is a Vite SPA and does not use React Server Components or server actions; the
 repo stays on the latest router release to retain fixes for older XSS advisories.
