@@ -1,3 +1,6 @@
+// IMPORTANT: Import instrument before any other modules so Sentry can hook HTTP.
+// ESM equivalent of `require("./instrument.js")` from the Sentry Node getting-started guide.
+import { sentryEnabled, setupSentryExpressErrorHandler } from './instrument.ts'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import cors from 'cors'
@@ -54,7 +57,12 @@ async function readJsonSafe<T>(file: string, fallback: T): Promise<T> {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, brand: 'Cutline Industries', service: 'cutline-autopilot' })
+  res.json({
+    ok: true,
+    brand: 'Cutline Industries',
+    service: 'cutline-autopilot',
+    sentry: sentryEnabled(),
+  })
 })
 
 app.get('/api/autopilot/status', async (_req, res) => {
@@ -593,6 +601,8 @@ registerAuthRoutes(app)
 registerThermalRoutes(app)
 registerRampRoutes(app)
 registerSquarespaceRoutes(app)
+
+setupSentryExpressErrorHandler(app)
 
 app.listen(PORT, () => {
   console.log(`Cutline Industries API on http://127.0.0.1:${PORT}`)

@@ -11,7 +11,7 @@
     "test": "node --import tsx --test src/**/*.test.ts server/*.test.ts server/**/*.test.ts tools/**/*.test.ts",
     "verify": "npm run lint && npm run typecheck && npm test",
     "preview": "vite preview",
-    "api": "tsx server/api.ts",
+    "api": "tsx --import ./server/instrument.ts server/api.ts",
     "autopilot": "tsx server/autopilot.ts",
     "autopilot:once": "tsx server/autopilot.ts --once",
     "ai:pipeline": "tsx server/aiAutopilot.ts",
