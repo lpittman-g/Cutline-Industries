@@ -14,16 +14,16 @@ We identify your phone with a **random device ID** stored in the browser — sam
 
 ## Setup (5 minutes)
 
-### 1. Set a pair secret on the agent
+### 1. Choose an ntfy topic
 
 In spawn-channel `.env`:
 
 ```bash
-CUTLINE_APPROVAL_PAIR_SECRET=your-long-random-secret-here
+CUTLINE_NTFY_TOPIC=cutline-thermal-your-topic
 CUTLINE_PUBLIC_URL=https://cutline-industries.studio
 ```
 
-This derives your private **ntfy topic** (not guessable).
+If you leave `CUTLINE_NTFY_TOPIC` unset, the API will generate and persist one for you. You can always copy the current topic from `/api/approval/status`.
 
 ### 2. Install ntfy on your iPhone
 
