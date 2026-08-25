@@ -15,7 +15,7 @@ Create or rename the private automation in the Cursor dashboard only.
 |---------|--------|----------|
 | Name | **Cutline Industries — Thermal Autopilot** | still `cutline industries` |
 | Id | keep existing | [`26c7e362-8eff-11f1-a7d1-d6b4613131ce`](https://cursor.com/automations/26c7e362-8eff-11f1-a7d1-d6b4613131ce) |
-| Trigger | PR label `thermal-autopilot` **added only** | still fires on PR lifecycle (e.g. closed) |
+| Trigger | PR label `thermal-autopilot` **added only** | still fires on PR lifecycle (opened/closed), not label-added-only |
 | Model | Grok 4.5 · High · Fast | matches |
 | Visibility | private | matches |
 | Memory | **disabled** | still enabled (automation memory available at runtime) |
@@ -48,6 +48,11 @@ Use the existing S3, heat pipeline, Stripe, Discord, PostgreSQL, OpenAI, and
 Google Workspace services. Never print, commit, or expose credentials. Run the
 repository verification suite and create a draft PR. Never merge automatically.
 ```
+
+Draft PRs from `cursor/cutline-thermal-autopilot-*` (or labeled
+`thermal-autopilot`) are excluded from
+[`.github/workflows/auto-approve-cursor-prs.yml`](../.github/workflows/auto-approve-cursor-prs.yml)
+so this automation cannot undraft/squash-merge its own changes.
 
 ## Safe MCP connection pack
 
