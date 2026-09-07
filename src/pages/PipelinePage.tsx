@@ -3,6 +3,7 @@ import {
   CONTENT_PIPELINE,
   DEMO_TRENDS,
   EXECUTION_LOOP,
+  STACK_PILLARS,
   type TrendTopic,
 } from '../data/pipeline'
 
@@ -67,6 +68,24 @@ export function PipelinePage() {
         </div>
       </div>
 
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Stack pillars</h2>
+      <div className="grid-2" style={{ marginBottom: '1rem' }}>
+        {STACK_PILLARS.map((pillar) => (
+          <article key={pillar.id} className="panel pack-card">
+            <div className="chip ready">{pillar.name}</div>
+            <h3 style={{ marginTop: '0.55rem' }}>{pillar.role}</h3>
+            <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.1rem', color: 'var(--muted)' }}>
+              {pillar.bullets.map((b) => (
+                <li key={b} style={{ marginBottom: '0.35rem' }}>
+                  {b}
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Execution workflow</h2>
       <div className="grid-3" style={{ marginBottom: '1rem' }}>
         {EXECUTION_LOOP.map((item) => (
           <article key={item.step} className="panel pack-card">
@@ -77,7 +96,7 @@ export function PipelinePage() {
         ))}
       </div>
 
-      <h2 style={{ fontFamily: 'var(--font-display)' }}>Stack stages</h2>
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Pipeline stages</h2>
       <div className="project-grid" style={{ marginBottom: '1rem' }}>
         {CONTENT_PIPELINE.map((step) => (
           <article key={step.id} className="panel pack-card">
