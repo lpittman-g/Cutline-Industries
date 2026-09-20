@@ -8,7 +8,7 @@
 
 | Step | Action |
 |------|--------|
-| 1 | Set `CUTLINE_APPROVAL_PAIR_SECRET` in `.env` |
+| 1 | Optionally set `CUTLINE_NTFY_TOPIC` in `.env` (or let the API generate one) |
 | 2 | Install **ntfy** on iPhone → subscribe to your topic |
 | 3 | Bookmark **/approve** → Add to Home Screen |
 | 4 | Enable MCP below |

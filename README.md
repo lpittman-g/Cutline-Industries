@@ -142,7 +142,7 @@ AI Application Card (Cursor primary): [`docs/AI-APPLICATION-CARD-BLUEPRINT.md`](
 | `.env` | Runtime config |
 | `client_secret.json` | Google OAuth client ID + secret |
 | `token.json` | YouTube + Gmail refresh/access tokens |
-| `tools/*/secrets/` | ntfy pair secret, device tokens |
+| `tools/*/secrets/` | ntfy topic state, device tokens |
 
 ## Brand
 
