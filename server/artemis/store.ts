@@ -125,6 +125,12 @@ export async function ensureArtemisData() {
   } catch {
     await fs.writeFile(activity, '', 'utf8')
   }
+  const index = path.join(ARTEMIS_DATA, 'knowledge-index.json')
+  try {
+    await fs.access(index)
+  } catch {
+    await fs.writeFile(index, `${JSON.stringify({ files: {} }, null, 2)}\n`, 'utf8')
+  }
 }
 
 export async function appendActivity(event: string, detail: string) {
@@ -478,6 +484,8 @@ export async function forgetMemoryItem(kind: MemoryRecordKind, id: string) {
     try {
       await fs.unlink(path.join(ARTEMIS_DATA, current.path))
       await setPin('files', id, false)
+      const { removeKnowledgeEntry } = await import('./knowledgeIndex.ts')
+      await removeKnowledgeEntry(id)
       await appendActivity('memory.forget', `${kind}/${id}`)
       return true
     } catch {
@@ -579,14 +587,22 @@ export function scoreText(haystack: string, tokens: string[]): number {
   return tokens.reduce((sum, t) => sum + (lower.includes(t) ? 1 : 0), 0)
 }
 
-export async function loadRelevantMemory(userMessage: string): Promise<MemoryContext> {
+export async function loadRelevantMemory(userMessage: string, knowledgeId?: string): Promise<MemoryContext> {
   const tokens = tokenize(userMessage)
   const board = await loadMemoryBoard()
   const voice = await getActiveVoice()
   const pool: { score: number; text: string }[] = []
 
+  if (knowledgeId) {
+    const scoped = board.files.find((item) => item.id === knowledgeId)
+    if (scoped) {
+      pool.push({ score: 99, text: `[files] ${scoped.title}: ${scoped.body}` })
+    }
+  }
+
   for (const kind of MEMORY_KINDS) {
     for (const item of board[kind]) {
+      if (knowledgeId && kind === 'files' && item.id === knowledgeId) continue
       const blob = `${item.title}\n${item.body}`
       const score = scoreText(blob, tokens) + (item.pinned ? 0.5 : 0)
       if (score > 0) pool.push({ score, text: `[${kind}] ${item.title}: ${item.body}` })

@@ -1,21 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchChronicle, speakArtemis, streamArtemisChat, uploadArtemisFile } from '../../lib/artemisApi'
+import { fetchChronicle, fetchKnowledgeFile, speakArtemis, streamArtemisChat, touchKnowledgeFile, uploadArtemisFile } from '../../lib/artemisApi'
 import {
   DEFAULT_VOICE,
   PROCESS_STEPS,
   UPLOAD_ACCEPT,
   UPLOAD_LABELS,
   VOICES,
+  askAboutFilePrompt,
   isAllowedUpload,
   isVoiceId,
   type ChatMessage,
   type ChronicleCheck,
+  type KnowledgeCard,
   type MemoryKind,
   type ProcessStepId,
   type StepStatus,
   type VoiceId,
 } from '../../lib/artemis'
 import { ProcessingStepper } from './ProcessingStepper'
+import { KnowledgeFileCard } from './KnowledgeFileCard'
 import { uid } from '../../lib/utils'
 
 function idleSteps(): Record<ProcessStepId, StepStatus> {
@@ -33,7 +36,13 @@ function uploadSteps(files: 'pending' | 'in_progress' | 'done' = 'in_progress'):
   }
 }
 
-export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: MemoryKind) => void }) {
+export function BowChat({
+  onOpenChronicle,
+  knowledgeId,
+}: {
+  onOpenChronicle: (section?: MemoryKind) => void
+  knowledgeId?: string
+}) {
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE)
   const [message, setMessage] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
@@ -44,7 +53,9 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
   const [checks, setChecks] = useState<ChronicleCheck[]>([])
   const [voiceNote, setVoiceNote] = useState<string | null>(null)
   const [uploads, setUploads] = useState<{ id: string; name: string; percent: number; status: string }[]>([])
+  const [scopedKnowledge, setScopedKnowledge] = useState<string | undefined>(knowledgeId)
   const attachRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -52,6 +63,21 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
       .then((r) => setChecks(r.checks))
       .catch(() => setChecks([]))
   }, [])
+
+  useEffect(() => {
+    if (!knowledgeId) return
+    setScopedKnowledge(knowledgeId)
+    void fetchKnowledgeFile(knowledgeId)
+      .then((r) => {
+        setMessage(askAboutFilePrompt(r.file.filename))
+        setMessages((m) => {
+          if (m.some((msg) => msg.cards?.some((card) => card.id === r.file.id))) return m
+          return [...m, { role: 'artemis', content: `${r.file.filename} is indexed.`, cards: [r.file] }]
+        })
+        composerRef.current?.focus()
+      })
+      .catch(() => undefined)
+  }, [knowledgeId])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
@@ -68,7 +94,7 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
       { role: 'artemis', content: '', steps: idleSteps() },
     ])
     try {
-      await streamArtemisChat({ message: text, conversationId, voice }, (event) => {
+      await streamArtemisChat({ message: text, conversationId, voice, knowledgeId: scopedKnowledge }, (event) => {
         if (event.type === 'meta') setConversationId(event.conversationId)
         if (event.type === 'step') {
           setMessages((m) => {
@@ -152,6 +178,7 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
       { role: 'artemis', content: '', steps: uploadSteps('in_progress') },
     ])
     const summaries: string[] = []
+    const cards: KnowledgeCard[] = []
     try {
       for (let i = 0; i < list.length; i++) {
         const file = list[i]
@@ -168,6 +195,10 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
               row.id === rowId ? { ...row, percent: 100, status: result.stub ? 'Stored (parser stub)' : 'Processed' } : row,
             ),
           )
+          if (result.index) {
+            cards.push(result.index)
+            setScopedKnowledge(result.index.id)
+          }
           summaries.push(`${file.name} → ${result.stored.extract}${result.stub ? ' (stub parser)' : ''}`)
         } catch (err) {
           const fail = err instanceof Error ? err.message : 'Upload failed'
@@ -183,6 +214,7 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
             ...last,
             content: `Processing files complete.\n${summaries.join('\n')}`,
             steps: uploadSteps('done'),
+            cards,
           }
         }
         return next
@@ -194,6 +226,13 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
       setBusy(false)
       window.setTimeout(() => setUploads([]), 2400)
     }
+  }
+
+  const askAbout = (card: KnowledgeCard) => {
+    setScopedKnowledge(card.id)
+    setMessage(askAboutFilePrompt(card.filename))
+    composerRef.current?.focus()
+    void touchKnowledgeFile(card.id).catch(() => undefined)
   }
 
   return (
@@ -251,6 +290,9 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
             <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
               <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
               {msg.content ? <p>{msg.content}</p> : null}
+              {msg.cards?.map((card) => (
+                <KnowledgeFileCard key={card.id} card={card} onAsk={askAbout} />
+              ))}
               {msg.steps && <ProcessingStepper statuses={msg.steps} />}
             </article>
           ))}
@@ -301,6 +343,7 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
             +
           </button>
           <input
+            ref={composerRef}
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}

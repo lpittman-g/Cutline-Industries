@@ -3,6 +3,7 @@ import {
   MEMORY_SECTIONS,
   type ChronicleCheck,
   type ConsoleView,
+  type KnowledgeCard,
   type MemoryItem,
   type MemoryKind,
   type VoiceId,
@@ -61,6 +62,7 @@ export type ArtemisUploadResult = {
   family: string
   stub: boolean
   stored: { original: string; extract: string }
+  index: KnowledgeCard
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -180,8 +182,23 @@ export type ChatStreamEvent =
   | { type: 'done'; conversationId: string; voice: VoiceId }
   | { type: 'error'; error: string }
 
+export async function fetchKnowledgeFile(id: string) {
+  const res = await fetch(`${API}/api/artemis/knowledge/${encodeURIComponent(id)}`, { credentials: 'include' })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{ ok: boolean; file: KnowledgeCard }>
+}
+
+export async function touchKnowledgeFile(id: string) {
+  const res = await fetch(`${API}/api/artemis/knowledge/${encodeURIComponent(id)}/touch`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{ ok: boolean; file: KnowledgeCard }>
+}
+
 export async function streamArtemisChat(
-  input: { message: string; conversationId?: string; voice: VoiceId },
+  input: { message: string; conversationId?: string; voice: VoiceId; knowledgeId?: string },
   onEvent: (event: ChatStreamEvent) => void,
 ) {
   const res = await fetch(`${API}/api/artemis/chat`, {
@@ -192,6 +209,7 @@ export async function streamArtemisChat(
       message: input.message,
       conversationId: input.conversationId,
       voice: input.voice,
+      knowledgeId: input.knowledgeId,
     }),
   })
   if (!res.ok || !res.body) {

@@ -10,14 +10,16 @@ import {
   parseConsoleView,
   parseQuiverEngine,
   type ConsoleView,
+  type KnowledgeCard,
   type QuiverEngine,
 } from '../lib/artemis'
 import { uid } from '../lib/utils'
 import { BowChat } from '../components/artemis/BowChat'
 import { MemoryBoard } from '../components/artemis/MemoryBoard'
+import { KnowledgeFileCard } from '../components/artemis/KnowledgeFileCard'
 import { uploadArtemisFile } from '../lib/artemisApi'
 
-type QueueItem = { id: string; name: string; status: string; percent: number }
+type QueueItem = { id: string; name: string; status: string; percent: number; card?: KnowledgeCard }
 
 const API = import.meta.env.VITE_API_URL || ''
 
@@ -26,6 +28,7 @@ export function ArtemisConsolePage() {
   const view = parseConsoleView(params.get('view'))
   const engine = parseQuiverEngine(params.get('engine'))
   const showLunar = params.get('panel') === 'lunar'
+  const knowledgeId = params.get('knowledge') || undefined
 
   const setView = (next: ConsoleView, extras?: Record<string, string>) => {
     const nextParams = new URLSearchParams(params)
@@ -33,6 +36,7 @@ export function ArtemisConsolePage() {
     if (next !== 'files') nextParams.delete('engine')
     if (next !== 'logs') nextParams.delete('panel')
     if (next !== 'memory') nextParams.delete('section')
+    if (next !== 'chat') nextParams.delete('knowledge')
     if (extras) {
       for (const [k, v] of Object.entries(extras)) nextParams.set(k, v)
     }
@@ -63,13 +67,17 @@ export function ArtemisConsolePage() {
 
       <div className="artemis-console-panel">
         {view === 'chat' && (
-          <BowChat onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })} />
+          <BowChat
+            knowledgeId={knowledgeId}
+            onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })}
+          />
         )}
         {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (
           <QuiverPanel
             engine={engine}
             onEngine={(next) => setView('files', { engine: next })}
+            onAskFile={(card) => setView('chat', { knowledge: card.id })}
           />
         )}
         {view === 'logs' && <LogsPanel focusLunar={showLunar} />}
@@ -81,9 +89,11 @@ export function ArtemisConsolePage() {
 function QuiverPanel({
   engine,
   onEngine,
+  onAskFile,
 }: {
   engine: QuiverEngine
   onEngine: (next: QuiverEngine) => void
+  onAskFile: (card: KnowledgeCard) => void
 }) {
   const orionInput = useRef<HTMLInputElement>(null)
   const ironInput = useRef<HTMLInputElement>(null)
@@ -117,7 +127,9 @@ function QuiverPanel({
       })
         .then((result) => {
           const stored = result.stub ? `Stored (stub) · ${result.stored.extract}` : `Stored · ${result.stored.extract}`
-          setQueue((q) => q.map((item) => (item.id === id ? { ...item, percent: 100, status: stored } : item)))
+          setQueue((q) =>
+            q.map((item) => (item.id === id ? { ...item, percent: 100, status: stored, card: result.index } : item)),
+          )
           if (kind === 'iron') setIronBanner(stored)
         })
         .catch((err) => {
@@ -209,6 +221,7 @@ function QuiverPanel({
                     >
                       <span style={{ width: `${item.percent}%` }} />
                     </div>
+                    {item.card && <KnowledgeFileCard card={item.card} onAsk={onAskFile} />}
                   </li>
                 ))}
               </ul>
@@ -265,6 +278,7 @@ function QuiverPanel({
                     >
                       <span style={{ width: `${item.percent}%` }} />
                     </div>
+                    {item.card && <KnowledgeFileCard card={item.card} onAsk={onAskFile} />}
                   </li>
                 ))}
               </ul>

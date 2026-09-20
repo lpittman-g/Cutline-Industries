@@ -937,7 +937,7 @@ html.artemis-canvas ::selection {
   text-transform: uppercase;
 }
 
-.artemis-bubble p {
+.artemis-bubble > p {
   margin: 0.25rem 0 0;
   padding: 0.7rem 0.85rem;
   border-radius: 14px;
@@ -948,7 +948,7 @@ html.artemis-canvas ::selection {
   white-space: pre-wrap;
 }
 
-.artemis-bubble.is-operator p {
+.artemis-bubble.is-operator > p {
   background: rgba(50, 121, 249, 0.1);
 }
 
@@ -1000,6 +1000,49 @@ html.artemis-canvas ::selection {
   height: 100%;
   background: var(--ag-blue);
   border-radius: inherit;
+}
+
+.artemis-file-card {
+  margin-top: 0.7rem;
+  padding: 0.95rem 1.05rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--ag-shadow);
+  display: grid;
+  gap: 0.22rem;
+  text-align: left;
+}
+
+.artemis-file-card h3 {
+  margin: 0;
+  color: var(--ag-ink);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.artemis-file-card p {
+  margin: 0;
+  color: var(--ag-muted);
+  font-size: 0.78rem;
+}
+
+.artemis-file-card-indexed {
+  color: var(--ag-blue) !important;
+  font-weight: 650;
+}
+
+.artemis-file-card button {
+  margin-top: 0.55rem;
+  justify-self: start;
+}
+
+.artemis-bubble .artemis-file-card {
+  margin-top: 0.65rem;
+}
+
+.artemis-queue .artemis-file-card {
+  margin-top: 0.55rem;
 }
 
 .artemis-composer input[type='text'] {

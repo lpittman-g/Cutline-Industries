@@ -11,6 +11,8 @@ import {
   STEP_MARKS,
   UPLOAD_LABELS,
   VOICES,
+  askAboutFilePrompt,
+  formatRelativeTime,
   isAllowedUpload,
   parseConsoleView,
   parseMemorySection,
@@ -93,5 +95,12 @@ describe('voices and memory', () => {
     assert.equal(isAllowedUpload('shot.png'), true)
     assert.equal(isAllowedUpload('handler.ts'), true)
     assert.equal(isAllowedUpload('virus.exe'), false)
+  })
+
+  it('formats file-card relative time and ask prompt', () => {
+    const now = Date.parse('2026-09-20T15:00:00.000Z')
+    assert.equal(formatRelativeTime('2026-09-20T14:57:00.000Z', now), '3m ago')
+    assert.equal(formatRelativeTime('2026-09-20T14:59:40.000Z', now), 'just now')
+    assert.equal(askAboutFilePrompt('Artemis Architecture.pdf'), 'What should I know about Artemis Architecture.pdf?')
   })
 })

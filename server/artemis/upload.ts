@@ -9,6 +9,7 @@ import {
   safeKnowledgeName,
   type MemoryItem,
 } from './store.ts'
+import { stubChunkDocument, toKnowledgeCard, upsertKnowledgeEntry } from './knowledgeIndex.ts'
 
 export const UPLOAD_MAX_BYTES = 25 * 1024 * 1024
 
@@ -197,6 +198,7 @@ export type UploadResult = {
   family: UploadFamily
   stub: boolean
   stored: { original: string; extract: string }
+  index: ReturnType<typeof toKnowledgeCard>
 }
 
 export async function ingestArtemisUpload(input: {
@@ -231,7 +233,25 @@ export async function ingestArtemisUpload(input: {
     .filter(Boolean)
     .join('\n')
   await fs.writeFile(path.join(ARTEMIS_DATA, 'knowledge', extractName), body, 'utf8')
-  await appendActivity('upload', `${extracted.family} ${originalName} → knowledge/${extractName}`)
+  const chunked = stubChunkDocument({
+    text: extracted.text,
+    bytes: input.buffer.length,
+    stubParser: extracted.stub,
+  })
+  const indexed = await upsertKnowledgeEntry({
+    id: knowledgeFileId(extractName),
+    filename: input.name,
+    extract: `knowledge/${extractName}`,
+    original: `uploaded/${originalName}`,
+    family: extracted.family,
+    chunkCount: chunked.chunkCount,
+    stub: extracted.stub || chunked.stub,
+    chunks: chunked.chunks,
+  })
+  await appendActivity(
+    'upload',
+    `${extracted.family} ${originalName} → knowledge/${extractName} (${indexed.chunkCount} chunks)`,
+  )
 
   const item: MemoryItem = {
     id: knowledgeFileId(extractName),
@@ -248,5 +268,6 @@ export async function ingestArtemisUpload(input: {
     family: extracted.family,
     stub: extracted.stub,
     stored: { original: `uploaded/${originalName}`, extract: `knowledge/${extractName}` },
+    index: toKnowledgeCard(indexed),
   }
 }

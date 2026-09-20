@@ -100,6 +100,34 @@ export function isAllowedUpload(name: string): boolean {
   return UPLOAD_ACCEPT.split(',').some((ext) => ext.length > 0 && lower.endsWith(ext))
 }
 
+export const ASK_ABOUT_FILE = 'Ask Artemis about this file'
+
+export type KnowledgeCard = {
+  id: string
+  filename: string
+  extract: string
+  original: string
+  status: 'indexed'
+  chunkCount: number
+  stub: boolean
+  indexedAt: string
+  lastUsedAt: string
+}
+
+export function formatRelativeTime(iso: string, now = Date.now()): string {
+  const then = Date.parse(iso)
+  if (!Number.isFinite(then)) return 'just now'
+  const seconds = Math.max(0, Math.round((now - then) / 1000))
+  if (seconds < 45) return 'just now'
+  if (seconds < 3600) return `${Math.max(1, Math.round(seconds / 60))}m ago`
+  if (seconds < 86400) return `${Math.max(1, Math.round(seconds / 3600))}h ago`
+  return `${Math.max(1, Math.round(seconds / 86400))}d ago`
+}
+
+export function askAboutFilePrompt(filename: string): string {
+  return `What should I know about ${filename}?`
+}
+
 export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
 export type QuiverEngine = 'orion' | 'iron'
 
@@ -152,4 +180,5 @@ export type ChatMessage = {
   role: 'operator' | 'artemis'
   content: string
   steps?: Record<ProcessStepId, StepStatus>
+  cards?: KnowledgeCard[]
 }

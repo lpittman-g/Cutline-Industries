@@ -28,6 +28,12 @@ import {
   type VoiceId,
 } from './store.ts'
 import { ingestArtemisUpload, UPLOAD_MAX_BYTES, classifyUpload } from './upload.ts'
+import {
+  getKnowledgeEntry,
+  listKnowledgeIndex,
+  toKnowledgeCard,
+  touchKnowledgeEntry,
+} from './knowledgeIndex.ts'
 
 function sendError(res: Response, err: unknown, status = 500) {
   const message = err instanceof Error ? err.message : String(err)
@@ -124,6 +130,7 @@ export function registerArtemisRoutes(app: Express) {
           : uid('conv')
       const requested = typeof req.body?.voice === 'string' ? req.body.voice : ''
       const voice: VoiceId = isVoiceId(requested) ? requested : await getActiveVoice()
+      const knowledgeId = typeof req.body?.knowledgeId === 'string' ? req.body.knowledgeId.trim() : ''
       if (!message) {
         res.status(400).json({ ok: false, error: 'message is required' })
         return
@@ -142,7 +149,8 @@ export function registerArtemisRoutes(app: Express) {
         await mark('understand', 'done')
 
         await mark('chronicle', 'in_progress')
-        const context = await loadRelevantMemory(message)
+        const context = await loadRelevantMemory(message, knowledgeId || undefined)
+        if (knowledgeId) await touchKnowledgeEntry(knowledgeId)
         await mark('chronicle', 'done')
 
         await mark('project', 'in_progress')
@@ -332,6 +340,41 @@ export function registerArtemisRoutes(app: Express) {
         return
       }
       res.json({ ok: true, kind, item })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.get('/api/artemis/knowledge', async (_req, res) => {
+    try {
+      const files = (await listKnowledgeIndex()).map(toKnowledgeCard)
+      res.json({ ok: true, files })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.get('/api/artemis/knowledge/:id', async (req, res) => {
+    try {
+      const entry = await getKnowledgeEntry(String(req.params.id || ''))
+      if (!entry) {
+        res.status(404).json({ ok: false, error: 'Knowledge file not found' })
+        return
+      }
+      res.json({ ok: true, file: toKnowledgeCard(entry) })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.post('/api/artemis/knowledge/:id/touch', async (req, res) => {
+    try {
+      const entry = await touchKnowledgeEntry(String(req.params.id || ''))
+      if (!entry) {
+        res.status(404).json({ ok: false, error: 'Knowledge file not found' })
+        return
+      }
+      res.json({ ok: true, file: toKnowledgeCard(entry) })
     } catch (err) {
       sendError(res, err)
     }
