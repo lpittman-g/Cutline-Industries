@@ -4,7 +4,7 @@ import { fetchAuthUser, logout, type AuthUser } from '../lib/authApi'
 import { THERMAL } from '../data/thermal'
 
 const NAV = [
-  { to: '/', label: 'Home', end: true },
+  { to: '/thermal', label: 'Home', end: true },
   { to: '/bounty', label: 'Bounty Board' },
   { to: '/developers', label: 'Developers' },
   { to: '/feedback', label: 'Content input' },
@@ -32,7 +32,7 @@ export function PublicShell() {
   return (
     <div className="public-shell">
       <header className="public-nav">
-        <Link to="/" className="brand public-brand">
+        <Link to="/thermal" className="brand public-brand">
           <div className="brand-mark thermal-mark">C</div>
           <div className="brand-text">
             <strong>CUTLINE INDUSTRIES</strong>
@@ -70,6 +70,9 @@ export function PublicShell() {
           <a className="btn" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
             {THERMAL.discordBotCta}
           </a>
+          <Link className="btn" to="/">
+            Artemis
+          </Link>
           <Link className="btn" to="/app/dashboard">
             Mission Control
           </Link>
