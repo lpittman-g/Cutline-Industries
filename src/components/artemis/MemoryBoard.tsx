@@ -14,7 +14,80 @@ import {
   parseMemorySection,
   type MemoryItem,
   type MemoryKind,
+  type MemorySection,
 } from '../../lib/artemis'
+import { MemoryActions } from './MemoryActions'
+
+function downloadExport(kind: MemoryKind, id: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${kind}-${id}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function MemoryItemBlock({
+  kind,
+  item,
+  editing,
+  setEditing,
+  onAction,
+}: {
+  kind: MemoryKind
+  item: MemoryItem
+  editing: { kind: MemoryKind; id: string; title: string; body: string } | null
+  setEditing: (next: { kind: MemoryKind; id: string; title: string; body: string } | null) => void
+  onAction: (fn: () => Promise<unknown>, ok: string) => Promise<void>
+}) {
+  if (editing?.id === item.id && editing.kind === kind) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void onAction(
+            () => editMemory(kind, item.id, { title: editing.title, body: editing.body }),
+            'Saved.',
+          ).then(() => setEditing(null))
+        }}
+      >
+        <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
+        <textarea value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} rows={6} />
+        <div className="artemis-memory-actions">
+          <button type="submit" className="artemis-chip-btn">
+            Save
+          </button>
+          <button type="button" className="artemis-chip-btn" onClick={() => setEditing(null)}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    )
+  }
+
+  return (
+    <>
+      <strong>
+        {item.pinned ? '📌 ' : ''}
+        {item.title}
+      </strong>
+      {item.path && <small className="artemis-memory-path">{item.path}</small>}
+      <p>{item.body}</p>
+      <MemoryActions
+        item={item}
+        onEdit={() => setEditing({ kind, id: item.id, title: item.title, body: item.body })}
+        onPin={() => void onAction(() => pinMemory(kind, item.id, !item.pinned), item.pinned ? 'Unpinned.' : 'Pinned.')}
+        onForget={() => void onAction(() => forgetMemory(kind, item.id), 'Forgotten.')}
+        onExport={() =>
+          void exportMemory(kind, item.id).then((data) => {
+            downloadExport(kind, item.id, data)
+          })
+        }
+      />
+    </>
+  )
+}
 
 export function MemoryBoard() {
   const [params, setParams] = useSearchParams()
@@ -24,7 +97,7 @@ export function MemoryBoard() {
   const [editing, setEditing] = useState<{ kind: MemoryKind; id: string; title: string; body: string } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const setSection = (kind: MemoryKind) => {
+  const setSection = (kind: MemorySection) => {
     const next = new URLSearchParams(params)
     next.set('view', 'memory')
     next.set('section', kind)
@@ -36,7 +109,7 @@ export function MemoryBoard() {
   const reload = () =>
     fetchMemoryBoard()
       .then((r) => {
-        setBoard(r.board)
+        setBoard({ ...r.board, notes: r.board.notes ?? [] })
         setError(null)
       })
       .catch((e) => setError(e instanceof Error ? e.message : 'Memory unavailable'))
@@ -60,15 +133,37 @@ export function MemoryBoard() {
   }
 
   const items = board[section]
+  const notes = board.notes ?? []
 
   return (
     <div className="artemis-memory">
       <div>
         <h2>Chronicle</h2>
-        <p>Everything Artemis knows — edit, pin, forget, or export any item. Nothing is opaque.</p>
+        <p>Everything Artemis knows — Edit · Pin · Forget · Export. Nothing is opaque.</p>
       </div>
       {error && <p className="artemis-error">{error}</p>}
       {notice && <p className="artemis-banner">{notice}</p>}
+      {notes.length > 0 && (
+        <section className="artemis-memory-notes" aria-label="Notes from memory.json">
+          <div className="artemis-memory-detail-head">
+            <h3>Notes</h3>
+            <p className="artemis-empty">Stored in artemis-data/{MEMORY_SOURCES.notes}</p>
+          </div>
+          <ul>
+            {notes.map((item) => (
+              <li key={item.id} className={item.pinned ? 'is-pinned' : undefined}>
+                <MemoryItemBlock
+                  kind="notes"
+                  item={item}
+                  editing={editing}
+                  setEditing={setEditing}
+                  onAction={run}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="artemis-memory-layout">
         <nav className="artemis-memory-nav" aria-label="Memory sections">
           {MEMORY_SECTIONS.map((kind) => (
@@ -95,78 +190,13 @@ export function MemoryBoard() {
             <ul>
               {items.map((item) => (
                 <li key={item.id} className={item.pinned ? 'is-pinned' : undefined}>
-                  {editing?.id === item.id && editing.kind === section ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        void run(
-                          () => editMemory(section, item.id, { title: editing.title, body: editing.body }),
-                          'Saved.',
-                        ).then(() => setEditing(null))
-                      }}
-                    >
-                      <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-                      <textarea value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} rows={6} />
-                      <div className="artemis-memory-actions">
-                        <button type="submit" className="artemis-chip-btn">
-                          Save
-                        </button>
-                        <button type="button" className="artemis-chip-btn" onClick={() => setEditing(null)}>
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <strong>
-                        {item.pinned ? '📌 ' : ''}
-                        {item.title}
-                      </strong>
-                      {item.path && <small className="artemis-memory-path">{item.path}</small>}
-                      <p>{item.body}</p>
-                      <div className="artemis-memory-actions">
-                        <button
-                          type="button"
-                          className="artemis-chip-btn"
-                          onClick={() => setEditing({ kind: section, id: item.id, title: item.title, body: item.body })}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="artemis-chip-btn"
-                          onClick={() => void run(() => pinMemory(section, item.id), 'Pinned.')}
-                        >
-                          Pin
-                        </button>
-                        <button
-                          type="button"
-                          className="artemis-chip-btn"
-                          onClick={() => void run(() => forgetMemory(section, item.id), 'Forgotten.')}
-                        >
-                          Forget
-                        </button>
-                        <button
-                          type="button"
-                          className="artemis-chip-btn"
-                          onClick={() =>
-                            void exportMemory(section, item.id).then((data) => {
-                              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-                              const url = URL.createObjectURL(blob)
-                              const a = document.createElement('a')
-                              a.href = url
-                              a.download = `${section}-${item.id}.json`
-                              a.click()
-                              URL.revokeObjectURL(url)
-                              setNotice('Exported.')
-                            })
-                          }
-                        >
-                          Export
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <MemoryItemBlock
+                    kind={section}
+                    item={item}
+                    editing={editing}
+                    setEditing={setEditing}
+                    onAction={run}
+                  />
                 </li>
               ))}
             </ul>

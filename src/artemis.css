@@ -998,6 +998,10 @@ html.artemis-canvas ::selection {
   font-weight: 600;
 }
 
+.artemis-stepper li.is-in_progress span {
+  color: var(--ag-blue);
+}
+
 .artemis-stepper li.is-done {
   color: #0f766e;
 }
@@ -1110,6 +1114,16 @@ html.artemis-canvas ::selection {
   font-size: 1.05rem;
 }
 
+.artemis-memory-notes {
+  padding: 1rem 1.1rem 1.15rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--ag-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.artemis-memory-notes ul,
 .artemis-memory-detail ul {
   list-style: none;
   margin: 0;
@@ -1118,11 +1132,18 @@ html.artemis-canvas ::selection {
   gap: 0.9rem;
 }
 
+.artemis-memory-notes li p,
 .artemis-memory-detail li p {
   margin: 0.3rem 0 0.5rem;
   color: var(--ag-body);
   font-size: 0.82rem;
   white-space: pre-wrap;
+}
+
+.artemis-memory-notes li.is-pinned,
+.artemis-memory-detail li.is-pinned {
+  border-left: 3px solid var(--ag-blue);
+  padding-left: 0.65rem;
 }
 
 .artemis-memory-path {
@@ -1132,17 +1153,14 @@ html.artemis-canvas ::selection {
   font-size: 0.68rem;
 }
 
-.artemis-memory-detail li.is-pinned {
-  border-left: 3px solid var(--ag-blue);
-  padding-left: 0.65rem;
-}
-
 .artemis-memory-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
 }
 
+.artemis-memory-notes input,
+.artemis-memory-notes textarea,
 .artemis-memory-detail input,
 .artemis-memory-detail textarea {
   width: 100%;

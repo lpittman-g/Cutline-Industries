@@ -70,6 +70,8 @@ describe('memory kinds', () => {
     assert.ok(titles.includes('integrations.md'))
     assert.ok(board.files.every((item) => item.path?.startsWith('knowledge/')))
     assert.ok(board.projects.some((item) => item.title === 'Artemis'))
+    assert.ok(board.notes.some((item) => item.title.includes('Bow')))
+    assert.equal(MEMORY_SOURCES.notes, 'memory.json')
   })
 
   it('adds, pins, and forgets a knowledge file', async () => {

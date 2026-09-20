@@ -26,8 +26,6 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
     { role: 'artemis', content: 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.' },
   ])
   const [busy, setBusy] = useState(false)
-  const [steps, setSteps] = useState(idleSteps)
-  const [showSteps, setShowSteps] = useState(false)
   const [checks, setChecks] = useState<ChronicleCheck[]>([])
   const [voiceNote, setVoiceNote] = useState<string | null>(null)
   const attachRef = useRef<HTMLInputElement>(null)
@@ -41,24 +39,36 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
-  }, [messages, showSteps])
+  }, [messages])
 
   const send = async () => {
     const text = message.trim()
     if (!text || busy) return
     setMessage('')
     setBusy(true)
-    setShowSteps(true)
-    setSteps(idleSteps())
-    setMessages((m) => [...m, { role: 'operator', content: text }, { role: 'artemis', content: '' }])
+    setMessages((m) => [
+      ...m,
+      { role: 'operator', content: text },
+      { role: 'artemis', content: '', steps: idleSteps() },
+    ])
     try {
       await streamArtemisChat({ message: text, conversationId, voice }, (event) => {
         if (event.type === 'meta') setConversationId(event.conversationId)
         if (event.type === 'step') {
-          setSteps((prev) => ({
-            ...prev,
-            [event.id]: event.status === 'done' ? 'done' : 'in_progress',
-          }))
+          setMessages((m) => {
+            const next = [...m]
+            const last = next[next.length - 1]
+            if (last?.role === 'artemis') {
+              next[next.length - 1] = {
+                ...last,
+                steps: {
+                  ...(last.steps ?? idleSteps()),
+                  [event.id]: event.status === 'done' ? 'done' : 'in_progress',
+                },
+              }
+            }
+            return next
+          })
         }
         if (event.type === 'chunk') {
           setMessages((m) => {
@@ -175,10 +185,10 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: Memor
           {messages.map((msg, i) => (
             <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
               <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
-              <p>{msg.content || (busy ? '…' : '')}</p>
+              {msg.content ? <p>{msg.content}</p> : null}
+              {msg.steps && <ProcessingStepper statuses={msg.steps} />}
             </article>
           ))}
-          {showSteps && <ProcessingStepper statuses={steps} />}
         </div>
 
         {voiceNote && <p className="artemis-banner">{voiceNote}</p>}

@@ -40,8 +40,10 @@ export const MEMORY_KINDS = [
 ] as const
 
 export type MemoryKind = (typeof MEMORY_KINDS)[number]
+export type MemoryRecordKind = MemoryKind | 'notes'
+export const MEMORY_RECORD_KINDS = [...MEMORY_KINDS, 'notes'] as const
 
-export const MEMORY_SOURCES: Record<MemoryKind, string> = {
+export const MEMORY_SOURCES: Record<MemoryRecordKind, string> = {
   projects: 'projects.json',
   decisions: 'decisions.json',
   preferences: 'user-preferences.json',
@@ -49,6 +51,7 @@ export const MEMORY_SOURCES: Record<MemoryKind, string> = {
   files: 'knowledge/',
   research: 'research/',
   conversations: 'conversations/',
+  notes: 'memory.json',
 }
 
 export type MemoryItem = {
@@ -59,7 +62,7 @@ export type MemoryItem = {
   createdAt: string
   updatedAt: string
   path?: string
-  kind?: MemoryKind
+  kind?: MemoryRecordKind
 }
 
 type ItemFile = { items: MemoryItem[]; activeVoice?: VoiceId; voiceEnabled?: boolean; memoryEnabled?: boolean }
@@ -85,7 +88,7 @@ export function safeKnowledgeName(name: string): string {
   return cleaned || 'note.md'
 }
 
-function pinKey(kind: MemoryKind, id: string) {
+function pinKey(kind: MemoryRecordKind, id: string) {
   return `${kind}:${id}`
 }
 
@@ -358,7 +361,7 @@ async function writeKindItems(kind: MemoryKind, items: MemoryItem[]) {
 }
 
 export async function loadMemoryBoard() {
-  const board: Record<MemoryKind, MemoryItem[]> = {
+  const board: Record<MemoryRecordKind, MemoryItem[]> = {
     projects: [],
     decisions: [],
     preferences: [],
@@ -366,18 +369,34 @@ export async function loadMemoryBoard() {
     files: [],
     research: [],
     conversations: [],
+    notes: [],
   }
   for (const kind of MEMORY_KINDS) {
     board[kind] = await readKindItems(kind)
   }
+  board.notes = (await readNotes()).map((item) => ({
+    ...item,
+    kind: 'notes',
+    path: item.path || 'memory.json',
+  }))
   return board
 }
 
 export async function updateMemoryItem(
-  kind: MemoryKind,
+  kind: MemoryRecordKind,
   id: string,
   patch: Partial<Pick<MemoryItem, 'title' | 'body' | 'pinned'>>,
 ) {
+  if (kind === 'notes') {
+    const items = await readNotes()
+    const idx = items.findIndex((i) => i.id === id)
+    if (idx < 0) return null
+    const next = { ...items[idx], ...patch, updatedAt: nowIso(), kind: 'notes' as const, path: 'memory.json' }
+    items[idx] = next
+    await writeNotes(items)
+    await appendActivity('memory.update', `${kind}/${id}`)
+    return next
+  }
   if (kind === 'conversations') {
     const conv = await readConversation(id)
     if (!conv) return null
@@ -430,7 +449,15 @@ export async function updateMemoryItem(
   return next
 }
 
-export async function forgetMemoryItem(kind: MemoryKind, id: string) {
+export async function forgetMemoryItem(kind: MemoryRecordKind, id: string) {
+  if (kind === 'notes') {
+    const items = await readNotes()
+    const next = items.filter((i) => i.id !== id)
+    if (next.length === items.length) return false
+    await writeNotes(next)
+    await appendActivity('memory.forget', `${kind}/${id}`)
+    return true
+  }
   if (kind === 'conversations') {
     const safe = id.replace(/[^a-zA-Z0-9_-]/g, '')
     const file = path.join(ARTEMIS_DATA, 'conversations', `${safe}.json`)
@@ -474,7 +501,7 @@ async function writeNotes(items: MemoryItem[]) {
   await writeNotesFile(notes)
 }
 
-export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, body: string) {
+export async function addMemoryItem(kind: MemoryRecordKind, title: string, body: string) {
   const item: MemoryItem = {
     id: uid(kind.slice(0, 4)),
     title,
@@ -482,7 +509,8 @@ export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, b
     pinned: false,
     createdAt: nowIso(),
     updatedAt: nowIso(),
-    kind: kind === 'notes' ? undefined : kind,
+    kind,
+    path: kind === 'notes' ? 'memory.json' : undefined,
   }
   if (kind === 'conversations') return item
   if (kind === 'notes') {
@@ -520,10 +548,11 @@ export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, b
 export async function loadChronicleChecklist() {
   const board = await loadMemoryBoard()
   const checks = [
-    ...board.projects.filter((i) => i.pinned).map((i) => ({ id: i.id, label: `Project · ${i.title}`, done: true, kind: 'projects' as const })),
-    ...board.decisions.slice(0, 3).map((i) => ({ id: i.id, label: `Decision · ${i.title}`, done: true, kind: 'decisions' as const })),
-    ...board.files.slice(0, 4).map((i) => ({ id: i.id, label: `File · ${i.title}`, done: true, kind: 'files' as const })),
-    ...board.research.slice(0, 2).map((i) => ({ id: i.id, label: `Research · ${i.title}`, done: true, kind: 'research' as const })),
+    ...board.notes.filter((i) => i.pinned).map((i) => ({ id: i.id, label: `Note · ${i.title}`, done: true, kind: 'notes' as const, title: i.title, body: i.body, pinned: i.pinned })),
+    ...board.projects.filter((i) => i.pinned).map((i) => ({ id: i.id, label: `Project · ${i.title}`, done: true, kind: 'projects' as const, title: i.title, body: i.body, pinned: i.pinned })),
+    ...board.decisions.slice(0, 3).map((i) => ({ id: i.id, label: `Decision · ${i.title}`, done: true, kind: 'decisions' as const, title: i.title, body: i.body, pinned: i.pinned })),
+    ...board.files.slice(0, 4).map((i) => ({ id: i.id, label: `File · ${i.title}`, done: true, kind: 'files' as const, title: i.title, body: i.body, pinned: i.pinned })),
+    ...board.research.slice(0, 2).map((i) => ({ id: i.id, label: `Research · ${i.title}`, done: true, kind: 'research' as const, title: i.title, body: i.body, pinned: i.pinned })),
   ]
   return checks.slice(0, 8)
 }

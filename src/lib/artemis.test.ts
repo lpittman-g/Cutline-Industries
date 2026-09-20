@@ -6,7 +6,9 @@ import {
   DEFAULT_VOICE,
   MEMORY_SECTIONS,
   MEMORY_SOURCES,
+  MEMORY_ACTIONS,
   PROCESS_STEPS,
+  STEP_MARKS,
   VOICES,
   parseConsoleView,
   parseMemorySection,
@@ -71,5 +73,12 @@ describe('voices and memory', () => {
     assert.equal(parseMemorySection(null), 'projects')
     assert.equal(parseMemorySection('people'), 'people')
     assert.equal(parseMemorySection('unknown'), 'projects')
+  })
+
+  it('uses transparent memory actions and live process marks', () => {
+    assert.deepEqual(MEMORY_ACTIONS, ['Edit', 'Pin', 'Forget', 'Export'])
+    assert.equal(STEP_MARKS.in_progress, '◉')
+    assert.equal(STEP_MARKS.done, '✓')
+    assert.equal(STEP_MARKS.pending, '○')
   })
 })

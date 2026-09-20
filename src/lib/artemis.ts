@@ -66,7 +66,16 @@ export const MEMORY_SECTIONS = [
   'conversations',
 ] as const
 
-export type MemoryKind = (typeof MEMORY_SECTIONS)[number]
+export type MemorySection = (typeof MEMORY_SECTIONS)[number]
+export type MemoryKind = MemorySection | 'notes'
+
+export const MEMORY_ACTIONS = ['Edit', 'Pin', 'Forget', 'Export'] as const
+
+export const STEP_MARKS: Record<StepStatus, string> = {
+  in_progress: '◉',
+  done: '✓',
+  pending: '○',
+}
 
 export const MEMORY_SOURCES: Record<MemoryKind, string> = {
   projects: 'projects.json',
@@ -76,6 +85,7 @@ export const MEMORY_SOURCES: Record<MemoryKind, string> = {
   files: 'knowledge/',
   research: 'research/',
   conversations: 'conversations/',
+  notes: 'memory.json',
 }
 
 export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
@@ -93,8 +103,8 @@ export function parseConsoleView(value: string | null): ConsoleView {
   return 'chat'
 }
 
-export function parseMemorySection(value: string | null): MemoryKind {
-  if (value && (MEMORY_SECTIONS as readonly string[]).includes(value)) return value as MemoryKind
+export function parseMemorySection(value: string | null): MemorySection {
+  if (value && (MEMORY_SECTIONS as readonly string[]).includes(value)) return value as MemorySection
   return 'projects'
 }
 
@@ -116,9 +126,18 @@ export type MemoryItem = {
   path?: string
 }
 
-export type ChronicleCheck = { id: string; label: string; done: boolean; kind?: MemoryKind }
+export type ChronicleCheck = {
+  id: string
+  label: string
+  done: boolean
+  kind?: MemoryKind
+  title?: string
+  body?: string
+  pinned?: boolean
+}
 
 export type ChatMessage = {
   role: 'operator' | 'artemis'
   content: string
+  steps?: Record<ProcessStepId, StepStatus>
 }

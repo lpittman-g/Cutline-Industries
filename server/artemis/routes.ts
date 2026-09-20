@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express'
 import {
   MEMORY_KINDS,
+  MEMORY_RECORD_KINDS,
   MEMORY_SOURCES,
   PROCESS_STEPS,
   VOICES,
@@ -22,7 +23,7 @@ import {
   uid,
   updateMemoryItem,
   writeConversation,
-  type MemoryKind,
+  type MemoryRecordKind,
   type ProcessStepId,
   type VoiceId,
 } from './store.ts'
@@ -32,12 +33,18 @@ function sendError(res: Response, err: unknown, status = 500) {
   res.status(status).json({ ok: false, error: message })
 }
 
-function parseKind(value: string): MemoryKind | null {
-  return (MEMORY_KINDS as readonly string[]).includes(value) ? (value as MemoryKind) : null
+function parseKind(value: string): MemoryRecordKind | null {
+  return (MEMORY_RECORD_KINDS as readonly string[]).includes(value) ? (value as MemoryRecordKind) : null
 }
 
 function writeNdjson(res: Response, payload: unknown) {
   res.write(`${JSON.stringify(payload)}\n`)
+  const flushable = res as Response & { flush?: () => void }
+  flushable.flush?.()
+}
+
+function pause(ms = 280) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function streamSteps(
@@ -46,6 +53,7 @@ async function streamSteps(
 ) {
   const mark = async (id: ProcessStepId, status: 'in_progress' | 'done') => {
     writeNdjson(res, { type: 'step', id, status })
+    if (status === 'in_progress') await pause()
   }
   await run(mark)
 }
@@ -263,7 +271,15 @@ export function registerArtemisRoutes(app: Express) {
         res.status(400).json({ ok: false, error: 'Unknown memory section' })
         return
       }
-      const item = await updateMemoryItem(kind, String(req.params.id), { pinned: true })
+      const requested = req.body?.pinned
+      const board = await loadMemoryBoard()
+      const current = board[kind].find((i) => i.id === String(req.params.id))
+      if (!current) {
+        res.status(404).json({ ok: false, error: 'Item not found' })
+        return
+      }
+      const pinned = typeof requested === 'boolean' ? requested : !current.pinned
+      const item = await updateMemoryItem(kind, String(req.params.id), { pinned })
       if (!item) {
         res.status(404).json({ ok: false, error: 'Item not found' })
         return

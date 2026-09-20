@@ -73,10 +73,12 @@ export async function fetchChronicle() {
   return res.json() as Promise<{ ok: boolean; checks: ChronicleCheck[] }>
 }
 
-export async function pinMemory(kind: MemoryKind, id: string) {
+export async function pinMemory(kind: MemoryKind, id: string, pinned?: boolean) {
   const res = await fetch(`${API}/api/artemis/memory/${kind}/${id}/pin`, {
     method: 'POST',
     credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pinned === undefined ? {} : { pinned }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json() as Promise<{ ok: boolean; item: MemoryItem }>
