@@ -9,170 +9,15 @@ import {
   safeKnowledgeName,
   type MemoryItem,
 } from './store.ts'
-import { stubChunkDocument, toKnowledgeCard, upsertKnowledgeEntry } from './knowledgeIndex.ts'
+import { classifyUpload, extractText, uploadAcceptAttr, UPLOAD_FAMILIES, type UploadFamily } from './rag/extractText.ts'
+import { chunkText } from './rag/chunkText.ts'
+import { indexChunks, toKnowledgeCard } from './rag/indexChunks.ts'
 
 export const UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+export { classifyUpload, extractText, uploadAcceptAttr, UPLOAD_FAMILIES, type UploadFamily }
 
-export const UPLOAD_FAMILIES = ['pdf', 'docx', 'txt', 'json', 'csv', 'xlsx', 'image', 'code'] as const
-export type UploadFamily = (typeof UPLOAD_FAMILIES)[number]
-
-const FAMILY_EXTS: Record<UploadFamily, string[]> = {
-  pdf: ['.pdf'],
-  docx: ['.docx', '.doc'],
-  txt: ['.txt', '.md', '.log'],
-  json: ['.json'],
-  csv: ['.csv', '.tsv'],
-  xlsx: ['.xlsx', '.xls'],
-  image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'],
-  code: [
-    '.js',
-    '.ts',
-    '.tsx',
-    '.jsx',
-    '.mjs',
-    '.cjs',
-    '.py',
-    '.go',
-    '.rs',
-    '.java',
-    '.rb',
-    '.php',
-    '.c',
-    '.cpp',
-    '.h',
-    '.cs',
-    '.sh',
-    '.sql',
-    '.yml',
-    '.yaml',
-    '.toml',
-    '.html',
-    '.css',
-    '.vue',
-    '.svelte',
-    '.kt',
-    '.swift',
-  ],
-}
-
-const FAMILY_MIMES: Record<UploadFamily, string[]> = {
-  pdf: ['application/pdf'],
-  docx: [
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword',
-  ],
-  txt: ['text/plain', 'text/markdown'],
-  json: ['application/json', 'text/json'],
-  csv: ['text/csv', 'text/tab-separated-values'],
-  xlsx: [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
-  ],
-  image: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'],
-  code: ['text/javascript', 'application/javascript', 'text/x-python', 'text/html', 'text/css'],
-}
-
-export function extensionOf(name: string): string {
-  const base = path.basename(name)
-  const dot = base.lastIndexOf('.')
-  return dot >= 0 ? base.slice(dot).toLowerCase() : ''
-}
-
-export function classifyUpload(name: string, mimeType = ''): UploadFamily | null {
-  const ext = extensionOf(name)
-  const mime = mimeType.toLowerCase().split(';')[0].trim()
-  for (const family of UPLOAD_FAMILIES) {
-    if (ext && FAMILY_EXTS[family].includes(ext)) return family
-  }
-  for (const family of UPLOAD_FAMILIES) {
-    if (mime && FAMILY_MIMES[family].includes(mime)) return family
-  }
-  if (mime.startsWith('image/')) return 'image'
-  if (mime.startsWith('text/')) return 'txt'
-  return null
-}
-
-export function uploadAcceptAttr(): string {
-  return [...new Set(Object.values(FAMILY_EXTS).flat())].join(',')
-}
-
-function decodeText(buffer: Buffer): string {
-  return buffer.toString('utf8').replaceAll('\0', '')
-}
-
-function clip(text: string, max = 16_000): string {
-  const trimmed = text.trim()
-  if (trimmed.length <= max) return trimmed
-  return `${trimmed.slice(0, max)}\n\n…truncated…`
-}
-
-function extractPdfStrings(buffer: Buffer): string {
-  const raw = buffer.toString('latin1')
-  const chunks: string[] = []
-  const re = /\((?:\\.|[^\\)]){5,}/g
-  let match: RegExpExecArray | null
-  while ((match = re.exec(raw))) {
-    const value = match[0]
-      .slice(1)
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '')
-      .replace(/\\\(/g, '(')
-      .replace(/\\\)/g, ')')
-      .replace(/\\[0-9]{1,3}/g, ' ')
-    if (/[a-zA-Z]{3,}/.test(value)) chunks.push(value)
-    if (chunks.length > 80) break
-  }
-  return clip(chunks.join('\n'))
-}
-
-export function extractUploadText(input: {
-  name: string
-  mimeType?: string
-  buffer: Buffer
-}): { family: UploadFamily; text: string; stub: boolean } {
-  const family = classifyUpload(input.name, input.mimeType)
-  if (!family) {
-    throw new Error(`Unsupported file type: ${input.name}`)
-  }
-  if (family === 'txt' || family === 'code' || family === 'csv') {
-    return { family, text: clip(decodeText(input.buffer)), stub: false }
-  }
-  if (family === 'json') {
-    const raw = decodeText(input.buffer)
-    try {
-      return { family, text: clip(JSON.stringify(JSON.parse(raw), null, 2)), stub: false }
-    } catch {
-      return { family, text: clip(raw), stub: false }
-    }
-  }
-  if (family === 'pdf') {
-    const scraped = extractPdfStrings(input.buffer)
-    if (scraped.length > 40) return { family, text: scraped, stub: false }
-    return {
-      family,
-      text: `PDF stored as uploaded/${safeKnowledgeName(input.name)}. Text extraction stub — add a PDF parser for full contents.`,
-      stub: true,
-    }
-  }
-  if (family === 'docx') {
-    return {
-      family,
-      text: `DOCX stored as uploaded/${safeKnowledgeName(input.name)}. Parser stub — install a DOCX extractor for full text.`,
-      stub: true,
-    }
-  }
-  if (family === 'xlsx') {
-    return {
-      family,
-      text: `Spreadsheet stored as uploaded/${safeKnowledgeName(input.name)}. XLSX parser stub — cells are not expanded yet.`,
-      stub: true,
-    }
-  }
-  return {
-    family,
-    text: `Image ${input.name} (${input.mimeType || 'image'}, ${input.buffer.length} bytes). Vision extraction stub.`,
-    stub: true,
-  }
+export function extractUploadText(input: { name: string; mimeType?: string; buffer: Buffer }) {
+  return extractText(input)
 }
 
 async function uniqueInDir(dir: string, desired: string): Promise<string> {
@@ -199,6 +44,7 @@ export type UploadResult = {
   stub: boolean
   stored: { original: string; extract: string }
   index: ReturnType<typeof toKnowledgeCard>
+  pipeline: { extract: boolean; chunk: number; index: boolean }
 }
 
 export async function ingestArtemisUpload(input: {
@@ -218,7 +64,7 @@ export async function ingestArtemisUpload(input: {
   const originalName = await uniqueInDir(path.join(ARTEMIS_DATA, 'uploaded'), input.name)
   await fs.writeFile(path.join(ARTEMIS_DATA, 'uploaded', originalName), input.buffer)
 
-  const extracted = extractUploadText({ name: input.name, mimeType: input.mimeType, buffer: input.buffer })
+  const extracted = extractText({ name: input.name, mimeType: input.mimeType, buffer: input.buffer })
   const extractName = await uniqueInDir(path.join(ARTEMIS_DATA, 'knowledge'), `${originalName}.md`)
   const body = [
     `# ${input.name}`,
@@ -233,20 +79,15 @@ export async function ingestArtemisUpload(input: {
     .filter(Boolean)
     .join('\n')
   await fs.writeFile(path.join(ARTEMIS_DATA, 'knowledge', extractName), body, 'utf8')
-  const chunked = stubChunkDocument({
-    text: extracted.text,
-    bytes: input.buffer.length,
-    stubParser: extracted.stub,
-  })
-  const indexed = await upsertKnowledgeEntry({
-    id: knowledgeFileId(extractName),
-    filename: input.name,
+
+  const fileId = knowledgeFileId(extractName)
+  const chunks = chunkText(extracted.text, fileId)
+  const indexed = await indexChunks(fileId, chunks, {
+    name: input.name,
     extract: `knowledge/${extractName}`,
     original: `uploaded/${originalName}`,
     family: extracted.family,
-    chunkCount: chunked.chunkCount,
-    stub: extracted.stub || chunked.stub,
-    chunks: chunked.chunks,
+    stub: extracted.stub,
   })
   await appendActivity(
     'upload',
@@ -254,7 +95,7 @@ export async function ingestArtemisUpload(input: {
   )
 
   const item: MemoryItem = {
-    id: knowledgeFileId(extractName),
+    id: fileId,
     title: extractName,
     body,
     pinned: false,
@@ -269,5 +110,6 @@ export async function ingestArtemisUpload(input: {
     stub: extracted.stub,
     stored: { original: `uploaded/${originalName}`, extract: `knowledge/${extractName}` },
     index: toKnowledgeCard(indexed),
+    pipeline: { extract: true, chunk: chunks.length, index: indexed.indexed },
   }
 }

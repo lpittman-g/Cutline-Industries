@@ -48,7 +48,9 @@ export const PROCESS_STEPS = [
   { id: 'understand', label: 'Understanding request' },
   { id: 'chronicle', label: 'Searching Chronicle' },
   { id: 'project', label: 'Reading project context' },
-  { id: 'files', label: 'Processing files' },
+  { id: 'extract', label: 'Extracting text' },
+  { id: 'chunk', label: 'Chunking document' },
+  { id: 'index', label: 'Indexing chunks' },
   { id: 'generate', label: 'Generating response' },
   { id: 'learn', label: 'Updating knowledge' },
 ] as const
@@ -104,9 +106,11 @@ export const ASK_ABOUT_FILE = 'Ask Artemis about this file'
 
 export type KnowledgeCard = {
   id: string
+  name: string
   filename: string
   extract: string
   original: string
+  indexed: boolean
   status: 'indexed'
   chunkCount: number
   stub: boolean

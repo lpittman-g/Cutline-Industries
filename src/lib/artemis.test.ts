@@ -68,6 +68,9 @@ describe('voices and memory', () => {
       'conversations',
     ])
     assert.equal(PROCESS_STEPS[0].label, 'Understanding request')
+    assert.equal(PROCESS_STEPS.find((s) => s.id === 'extract')?.label, 'Extracting text')
+    assert.equal(PROCESS_STEPS.find((s) => s.id === 'chunk')?.label, 'Chunking document')
+    assert.equal(PROCESS_STEPS.find((s) => s.id === 'index')?.label, 'Indexing chunks')
     assert.equal(PROCESS_STEPS.at(-1)?.label, 'Updating knowledge')
   })
 

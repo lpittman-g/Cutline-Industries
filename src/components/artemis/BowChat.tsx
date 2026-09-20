@@ -25,15 +25,29 @@ function idleSteps(): Record<ProcessStepId, StepStatus> {
   return Object.fromEntries(PROCESS_STEPS.map((s) => [s.id, 'pending'])) as Record<ProcessStepId, StepStatus>
 }
 
-function uploadSteps(files: 'pending' | 'in_progress' | 'done' = 'in_progress'): Record<ProcessStepId, StepStatus> {
-  return {
-    understand: 'done',
-    chronicle: 'done',
-    project: 'done',
-    files,
-    generate: files === 'done' ? 'done' : 'pending',
-    learn: files === 'done' ? 'done' : 'pending',
+const RAG_STAGE = ['extract', 'chunk', 'index'] as const
+type RagStage = (typeof RAG_STAGE)[number] | 'done'
+
+function ragSteps(active: RagStage): Record<ProcessStepId, StepStatus> {
+  const steps = idleSteps()
+  steps.understand = 'done'
+  steps.chronicle = 'done'
+  steps.project = 'done'
+  for (const id of RAG_STAGE) {
+    if (active === 'done') steps[id] = 'done'
+    else if (id === active) steps[id] = 'in_progress'
+    else if (RAG_STAGE.indexOf(id) < RAG_STAGE.indexOf(active as (typeof RAG_STAGE)[number])) steps[id] = 'done'
+    else steps[id] = 'pending'
   }
+  if (active === 'done') {
+    steps.generate = 'done'
+    steps.learn = 'done'
+  }
+  return steps
+}
+
+function pause(ms = 280) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export function BowChat({
@@ -175,7 +189,7 @@ export function BowChat({
     setMessages((m) => [
       ...m,
       { role: 'operator', content: `Upload ${list.map((f) => f.name).join(', ')}` },
-      { role: 'artemis', content: '', steps: uploadSteps('in_progress') },
+      { role: 'artemis', content: '', steps: ragSteps('extract') },
     ])
     const summaries: string[] = []
     const cards: KnowledgeCard[] = []
@@ -206,6 +220,18 @@ export function BowChat({
           summaries.push(`${file.name}: ${fail}`)
         }
       }
+      const patchSteps = (stage: RagStage) => {
+        setMessages((m) => {
+          const next = [...m]
+          const last = next[next.length - 1]
+          if (last?.role === 'artemis') next[next.length - 1] = { ...last, steps: ragSteps(stage) }
+          return next
+        })
+      }
+      patchSteps('chunk')
+      await pause()
+      patchSteps('index')
+      await pause()
       setMessages((m) => {
         const next = [...m]
         const last = next[next.length - 1]
@@ -213,7 +239,7 @@ export function BowChat({
           next[next.length - 1] = {
             ...last,
             content: `Processing files complete.\n${summaries.join('\n')}`,
-            steps: uploadSteps('done'),
+            steps: ragSteps('done'),
             cards,
           }
         }
@@ -230,7 +256,7 @@ export function BowChat({
 
   const askAbout = (card: KnowledgeCard) => {
     setScopedKnowledge(card.id)
-    setMessage(askAboutFilePrompt(card.filename))
+    setMessage(askAboutFilePrompt(card.name || card.filename))
     composerRef.current?.focus()
     void touchKnowledgeFile(card.id).catch(() => undefined)
   }

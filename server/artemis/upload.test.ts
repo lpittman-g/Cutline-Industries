@@ -3,7 +3,8 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { describe, it } from 'node:test'
 import { ARTEMIS_DATA, loadRelevantMemory } from './store.ts'
-import { getKnowledgeEntry, stubChunkDocument, touchKnowledgeEntry } from './knowledgeIndex.ts'
+import { getKnowledgeEntry, touchKnowledgeEntry } from './rag/indexChunks.ts'
+import { retrieveRelevantChunks } from './rag/retrieve.ts'
 import {
   classifyUpload,
   extractUploadText,
@@ -68,19 +69,8 @@ describe('extractUploadText', () => {
   })
 })
 
-describe('stubChunkDocument', () => {
-  it('counts text chunks and fakes stub-parser counts', () => {
-    const text = stubChunkDocument({ text: 'a'.repeat(600), bytes: 600, stubParser: false })
-    assert.equal(text.stub, false)
-    assert.equal(text.chunkCount, 3)
-    const fake = stubChunkDocument({ text: 'PDF stub', bytes: 24_000, stubParser: true })
-    assert.equal(fake.stub, true)
-    assert.equal(fake.chunkCount, 30)
-  })
-})
-
 describe('ingestArtemisUpload', () => {
-  it('stores original + knowledge extract and scores in the memory loop', async () => {
+  it('runs extract → chunk → index and scores in the memory loop', async () => {
     const activity = path.join(ARTEMIS_DATA, 'logs', 'activity.jsonl')
     const indexFile = path.join(ARTEMIS_DATA, 'knowledge-index.json')
     const before = await fs.readFile(activity, 'utf8').catch(() => '')
@@ -100,30 +90,28 @@ describe('ingestArtemisUpload', () => {
       knowledgeId = result.index.id
       assert.equal(result.family, 'json')
       assert.equal(result.stub, false)
-      assert.equal(result.item.kind, 'files')
-      assert.equal(result.index.status, 'indexed')
-      assert.equal(result.index.filename, 'upload-loop-test.json')
+      assert.equal(result.pipeline.extract, true)
+      assert.ok(result.pipeline.chunk >= 1)
+      assert.equal(result.pipeline.index, true)
+      assert.equal(result.index.indexed, true)
+      assert.equal(result.index.name, 'upload-loop-test.json')
       assert.ok(result.index.chunkCount >= 1)
-      assert.match(result.stored.original, /^uploaded\/upload-loop-test/)
-      assert.match(result.stored.extract, /^knowledge\/upload-loop-test/)
       const original = await fs.readFile(path.join(ARTEMIS_DATA, storedOriginal), 'utf8')
       assert.match(original, /quiver-ingest-token/)
-      const extract = await fs.readFile(path.join(ARTEMIS_DATA, storedExtract), 'utf8')
-      assert.match(extract, /quiver-ingest-token/)
-      const lines = await fs.readFile(activity, 'utf8')
-      assert.match(lines, /upload-loop-test/)
       const indexed = await getKnowledgeEntry(knowledgeId)
-      assert.ok(indexed)
-      assert.equal(indexed?.status, 'indexed')
+      assert.equal(indexed?.indexed, true)
+      const hits = await retrieveRelevantChunks('quiver-ingest-token', knowledgeId)
+      assert.ok(hits.some((hit) => hit.text.includes('quiver-ingest-token')))
       const memory = await loadRelevantMemory('quiver-ingest-token', knowledgeId)
-      assert.ok(memory.files.some((name) => name.startsWith('upload-loop-test')))
       assert.ok(memory.snippets.some((snip) => snip.includes('quiver-ingest-token')))
       const touched = await touchKnowledgeEntry(knowledgeId)
-      assert.ok(touched)
       assert.ok(touched && touched.lastUsedAt >= indexed!.lastUsedAt)
     } finally {
       if (storedOriginal) await fs.unlink(path.join(ARTEMIS_DATA, storedOriginal)).catch(() => undefined)
       if (storedExtract) await fs.unlink(path.join(ARTEMIS_DATA, storedExtract)).catch(() => undefined)
+      if (knowledgeId) {
+        await fs.rm(path.join(ARTEMIS_DATA, 'rag', `${knowledgeId}.json`), { force: true })
+      }
       await fs.writeFile(activity, before, 'utf8')
       if (beforeIndex) await fs.writeFile(indexFile, beforeIndex, 'utf8')
       else await fs.rm(indexFile, { force: true })

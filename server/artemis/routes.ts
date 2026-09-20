@@ -33,7 +33,8 @@ import {
   listKnowledgeIndex,
   toKnowledgeCard,
   touchKnowledgeEntry,
-} from './knowledgeIndex.ts'
+} from './rag/indexChunks.ts'
+import { retrieveRelevantChunks } from './rag/retrieve.ts'
 
 function sendError(res: Response, err: unknown, status = 500) {
   const message = err instanceof Error ? err.message : String(err)
@@ -150,14 +151,22 @@ export function registerArtemisRoutes(app: Express) {
 
         await mark('chronicle', 'in_progress')
         const context = await loadRelevantMemory(message, knowledgeId || undefined)
-        if (knowledgeId) await touchKnowledgeEntry(knowledgeId)
         await mark('chronicle', 'done')
 
         await mark('project', 'in_progress')
         await mark('project', 'done')
 
-        await mark('files', 'in_progress')
-        await mark('files', 'done')
+        await mark('extract', 'in_progress')
+        await mark('extract', 'done')
+        await mark('chunk', 'in_progress')
+        await mark('chunk', 'done')
+        await mark('index', 'in_progress')
+        const hits = await retrieveRelevantChunks(message, knowledgeId || undefined)
+        if (knowledgeId) await touchKnowledgeEntry(knowledgeId)
+        for (const hit of [...hits].reverse()) {
+          context.snippets.unshift(`[rag ${hit.name} #${hit.index + 1}] ${hit.text}`)
+        }
+        await mark('index', 'done')
 
         await mark('generate', 'in_progress')
         reply = await runArtemis({ message, context, voice })

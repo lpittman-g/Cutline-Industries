@@ -22,7 +22,9 @@ export const PROCESS_STEPS = [
   { id: 'understand', label: 'Understanding request' },
   { id: 'chronicle', label: 'Searching Chronicle' },
   { id: 'project', label: 'Reading project context' },
-  { id: 'files', label: 'Processing files' },
+  { id: 'extract', label: 'Extracting text' },
+  { id: 'chunk', label: 'Chunking document' },
+  { id: 'index', label: 'Indexing chunks' },
   { id: 'generate', label: 'Generating response' },
   { id: 'learn', label: 'Updating knowledge' },
 ] as const
@@ -118,6 +120,7 @@ export async function ensureArtemisData() {
   await fs.mkdir(path.join(ARTEMIS_DATA, 'knowledge'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'research'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'uploaded'), { recursive: true })
+  await fs.mkdir(path.join(ARTEMIS_DATA, 'rag'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'logs'), { recursive: true })
   const activity = path.join(ARTEMIS_DATA, 'logs', 'activity.jsonl')
   try {
@@ -484,7 +487,7 @@ export async function forgetMemoryItem(kind: MemoryRecordKind, id: string) {
     try {
       await fs.unlink(path.join(ARTEMIS_DATA, current.path))
       await setPin('files', id, false)
-      const { removeKnowledgeEntry } = await import('./knowledgeIndex.ts')
+      const { removeKnowledgeEntry } = await import('./rag/indexChunks.ts')
       await removeKnowledgeEntry(id)
       await appendActivity('memory.forget', `${kind}/${id}`)
       return true

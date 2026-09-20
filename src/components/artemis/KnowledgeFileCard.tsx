@@ -9,7 +9,7 @@ export function KnowledgeFileCard({
 }) {
   return (
     <article className="artemis-file-card">
-      <h3>{card.filename}</h3>
+      <h3>{card.name || card.filename}</h3>
       <p className="artemis-file-card-indexed">
         <span aria-hidden="true">✓</span> Indexed
       </p>
