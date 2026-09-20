@@ -3,6 +3,8 @@ export const ARTEMIS_COPY = {
   kicker: 'AI by Cutline Industries',
   description:
     'Intelligence built for action. Artemis connects your tools, data, and AI workflows through one secure operational interface.',
+  ecosystem: 'Works across your ecosystem',
+  footer: 'Higher intelligence for a brighter tomorrow',
 } as const
 
 export const CAPABILITIES = [
@@ -10,44 +12,73 @@ export const CAPABILITIES = [
     id: 'bow',
     name: 'The Bow',
     hint: 'Execution console',
-    blurb: 'Premium multi-model generation. Draw the string, pick an engine, and fire operational output.',
-    view: 'chat',
+    blurb: 'Premium multi-model execution and generation console.',
+    view: 'chat' as const,
+    icon: 'bow',
   },
   {
     id: 'orion',
     name: 'Orion',
-    hint: 'Vector store',
-    blurb: 'Local vector pool for PDFs, docs, and tables — the ingestion layer behind The Quiver.',
-    view: 'files',
+    hint: 'Research',
+    blurb: 'Deep research, analysis, and strategic intelligence.',
+    view: 'files' as const,
+    icon: 'orion',
   },
   {
     id: 'chronicler',
     name: 'Chronicler',
-    hint: 'Hunt memory',
-    blurb: 'Thread every hunt so prompts, engines, and results stay together across sessions.',
-    view: 'chat',
+    hint: 'Memory',
+    blurb: 'Capture, organize, and turn your knowledge into lasting insights.',
+    view: 'memory' as const,
+    icon: 'chronicler',
   },
 ] as const
 
-export type ConsoleView = 'chat' | 'files' | 'logs'
-export type QuiverEngine = 'orion' | 'iron'
-export type BowModel = 'Artemis Core' | 'OpenAI GPT-4o' | 'Anthropic Claude' | 'Grok'
+export const VOICES = {
+  astra: { id: 'astra', label: 'Astra' },
+  orion: { id: 'orion', label: 'Orion' },
+  nova: { id: 'nova', label: 'Nova' },
+  sage: { id: 'sage', label: 'Sage' },
+} as const
 
-export const BOW_MODELS: BowModel[] = [
-  'Artemis Core',
-  'OpenAI GPT-4o',
-  'Anthropic Claude',
-  'Grok',
-]
+export type VoiceId = keyof typeof VOICES
+export const DEFAULT_VOICE: VoiceId = 'astra'
+
+export const PROCESS_STEPS = [
+  { id: 'understand', label: 'Understanding request' },
+  { id: 'chronicle', label: 'Searching Chronicle' },
+  { id: 'project', label: 'Reading project context' },
+  { id: 'files', label: 'Processing files' },
+  { id: 'generate', label: 'Generating response' },
+  { id: 'learn', label: 'Updating knowledge' },
+] as const
+
+export type ProcessStepId = (typeof PROCESS_STEPS)[number]['id']
+export type StepStatus = 'pending' | 'in_progress' | 'done'
+
+export const MEMORY_SECTIONS = [
+  'projects',
+  'decisions',
+  'preferences',
+  'people',
+  'files',
+  'research',
+  'conversations',
+] as const
+
+export type MemoryKind = (typeof MEMORY_SECTIONS)[number]
+export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
+export type QuiverEngine = 'orion' | 'iron'
 
 export const CONSOLE_VIEWS: { id: ConsoleView; label: string; suffix: string }[] = [
   { id: 'chat', label: 'Chat', suffix: 'View' },
+  { id: 'memory', label: 'Memory', suffix: 'View' },
   { id: 'files', label: 'Files', suffix: 'View' },
   { id: 'logs', label: 'Logs', suffix: 'View' },
 ]
 
 export function parseConsoleView(value: string | null): ConsoleView {
-  if (value === 'files' || value === 'logs' || value === 'chat') return value
+  if (value === 'files' || value === 'logs' || value === 'chat' || value === 'memory') return value
   return 'chat'
 }
 
@@ -55,38 +86,23 @@ export function parseQuiverEngine(value: string | null): QuiverEngine {
   return value === 'iron' ? 'iron' : 'orion'
 }
 
-export type HuntMessage = {
-  role: 'operator' | 'artemis'
-  content: string
+export function isVoiceId(value: string | null | undefined): value is VoiceId {
+  return Boolean(value && value in VOICES)
 }
 
-export type HuntThread = {
+export type MemoryItem = {
   id: string
   title: string
-  engine: BowModel
-  messages: HuntMessage[]
+  body: string
+  pinned: boolean
+  createdAt: string
+  updatedAt: string
+  path?: string
 }
 
-const HUNT_STORE_KEY = 'artemis.chronicler.threads'
+export type ChronicleCheck = { id: string; label: string; done: boolean }
 
-export function loadHunts(): HuntThread[] {
-  try {
-    const raw = localStorage.getItem(HUNT_STORE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as HuntThread[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-export function saveHunts(threads: HuntThread[]): void {
-  localStorage.setItem(HUNT_STORE_KEY, JSON.stringify(threads))
-}
-
-export function formatHuntHistory(messages: HuntMessage[]): string {
-  if (!messages.length) return '(empty thread)'
-  return messages
-    .map((m) => `[${m.role === 'operator' ? 'OPERATOR' : 'ARTEMIS'}]\n${m.content}`)
-    .join('\n\n')
+export type ChatMessage = {
+  role: 'operator' | 'artemis'
+  content: string
 }

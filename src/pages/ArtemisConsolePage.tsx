@@ -1,35 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { fetchAuthUser, logout, signin, type AuthUser } from '../lib/authApi'
-import {
-  BOW_MODELS,
-  CONSOLE_VIEWS,
-  formatHuntHistory,
-  loadHunts,
-  parseConsoleView,
-  parseQuiverEngine,
-  saveHunts,
-  type BowModel,
-  type ConsoleView,
-  type HuntThread,
-  type QuiverEngine,
-} from '../lib/artemis'
+import { CONSOLE_VIEWS, parseConsoleView, parseQuiverEngine, type ConsoleView, type QuiverEngine } from '../lib/artemis'
 import { uid } from '../lib/utils'
+import { BowChat } from '../components/artemis/BowChat'
+import { MemoryBoard } from '../components/artemis/MemoryBoard'
 
 type QueueItem = { id: string; name: string; status: string }
 
 const API = import.meta.env.VITE_API_URL || ''
-
-function dryRunBow(prompt: string, model: BowModel): string {
-  return [
-    `[${model}]`,
-    'Bow dry-run — execution API is not connected in this environment.',
-    '',
-    prompt,
-    '',
-    'Artemis received the prompt and is ready to route it through The Bow when the engine is online.',
-  ].join('\n')
-}
 
 export function ArtemisConsolePage() {
   const [params, setParams] = useSearchParams()
@@ -71,7 +50,8 @@ export function ArtemisConsolePage() {
       </div>
 
       <div className="artemis-console-panel">
-        {view === 'chat' && <BowPanel />}
+        {view === 'chat' && <BowChat onOpenChronicle={() => setView('memory')} />}
+        {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (
           <QuiverPanel
             engine={engine}
@@ -79,146 +59,6 @@ export function ArtemisConsolePage() {
           />
         )}
         {view === 'logs' && <LogsPanel focusLunar={showLunar} />}
-      </div>
-    </div>
-  )
-}
-
-function BowPanel() {
-  const [hunts, setHunts] = useState<HuntThread[]>(() => (typeof localStorage === 'undefined' ? [] : loadHunts()))
-  const [activeId, setActiveId] = useState<string | null>(hunts[0]?.id ?? null)
-  const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState<BowModel>('Artemis Core')
-  const [output, setOutput] = useState(() =>
-    hunts[0] ? formatHuntHistory(hunts[0].messages) : '',
-  )
-  const [busy, setBusy] = useState(false)
-
-  const persist = (next: HuntThread[]) => {
-    setHunts(next)
-    saveHunts(next)
-  }
-
-  const openHunt = (id: string) => {
-    setActiveId(id)
-    const hunt = hunts.find((h) => h.id === id)
-    setOutput(hunt ? formatHuntHistory(hunt.messages) : '')
-  }
-
-  const newHunt = () => {
-    const thread: HuntThread = {
-      id: uid('hunt'),
-      title: 'Untitled Hunt',
-      engine: model,
-      messages: [],
-    }
-    persist([thread, ...hunts])
-    setActiveId(thread.id)
-    setPrompt('')
-    setOutput('')
-  }
-
-  const fire = async () => {
-    const text = prompt.trim()
-    if (!text) {
-      setOutput('Enter a prompt before firing The Bow.')
-      return
-    }
-    setBusy(true)
-    setOutput('')
-    try {
-      const res = await fetch(`${API}/api/bow/execute`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, text/plain, application/json' },
-        body: JSON.stringify({ prompt: text, model_selection: model, thread_id: activeId }),
-      })
-      let reply = ''
-      if (res.ok) {
-        reply = await res.text()
-      } else {
-        reply = dryRunBow(text, model)
-      }
-      const threadId = res.headers.get('X-Chronicler-Thread-Id') || activeId || uid('hunt')
-      const title = text.slice(0, 48) || 'Untitled Hunt'
-      const existing = hunts.find((h) => h.id === threadId)
-      const messages = [
-        ...(existing?.messages ?? []),
-        { role: 'operator' as const, content: text },
-        { role: 'artemis' as const, content: reply },
-      ]
-      const nextThread: HuntThread = {
-        id: threadId,
-        title: existing?.title && existing.title !== 'Untitled Hunt' ? existing.title : title,
-        engine: model,
-        messages,
-      }
-      persist([nextThread, ...hunts.filter((h) => h.id !== threadId)])
-      setActiveId(threadId)
-      setOutput(formatHuntHistory(messages))
-      setPrompt('')
-    } catch {
-      const reply = dryRunBow(text, model)
-      setOutput(reply)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="artemis-bow">
-      <aside className="artemis-chronicler">
-        <div className="artemis-chronicler-head">
-          <span>Chronicler</span>
-          <button type="button" className="artemis-chip-btn" onClick={newHunt}>
-            New Hunt
-          </button>
-        </div>
-        {hunts.length === 0 ? (
-          <p className="artemis-empty">No hunts yet. Fire The Bow to begin.</p>
-        ) : (
-          <ul>
-            {hunts.map((hunt) => (
-              <li key={hunt.id}>
-                <button
-                  type="button"
-                  className={hunt.id === activeId ? 'is-active' : undefined}
-                  onClick={() => openHunt(hunt.id)}
-                >
-                  {hunt.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </aside>
-
-      <div className="artemis-bow-main">
-        <div>
-          <h2>The Bow</h2>
-          <p>Premium multi-model execution and generation console.</p>
-        </div>
-        <label htmlFor="bow-prompt">Prompt</label>
-        <textarea
-          id="bow-prompt"
-          rows={4}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Draw the string — describe what Artemis should generate..."
-        />
-        <div className="artemis-bow-actions">
-          <select value={model} onChange={(e) => setModel(e.target.value as BowModel)} aria-label="Model">
-            {BOW_MODELS.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="artemis-cta-primary artemis-cta-compact" disabled={busy} onClick={() => void fire()}>
-            {busy ? 'Firing…' : 'Fire'}
-          </button>
-        </div>
-        <pre className="artemis-terminal">{output}</pre>
       </div>
     </div>
   )

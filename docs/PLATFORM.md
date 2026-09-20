@@ -9,7 +9,7 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 | Route | Purpose |
 |-------|---------|
 | `/` | Marketing landing — Enter Artemis → console |
-| `/console` | Artemis console (The Bow, Quiver, Lunar Gate, Logs) |
+| `/console` | Artemis console (The Bow, Chronicle, Quiver, Lunar Gate, Logs) |
 
 ### Thermal (public)
 

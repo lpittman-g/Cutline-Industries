@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "id": "file_artemis_md",
+      "title": "artemis.md",
+      "body": "knowledge/artemis.md — product definition for The Bow, Orion, and Chronicler.",
+      "path": "knowledge/artemis.md",
+      "pinned": false,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "file_cutline_md",
+      "title": "cutline.md",
+      "body": "knowledge/cutline.md — company routes and product split.",
+      "path": "knowledge/cutline.md",
+      "pinned": false,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "file_integrations_md",
+      "title": "integrations.md",
+      "body": "knowledge/integrations.md — Google, Microsoft, Slack, Notion, cloud.",
+      "path": "knowledge/integrations.md",
+      "pinned": false,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    }
+  ]
+}

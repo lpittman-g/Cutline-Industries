@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "mem_bow_console",
+      "kind": "note",
+      "title": "The Bow is the execution console",
+      "body": "Visitors enter Artemis from the landing page. The Bow, Chronicler, and streaming chat live behind Enter Artemis — never on the first screen.",
+      "pinned": true,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    }
+  ]
+}

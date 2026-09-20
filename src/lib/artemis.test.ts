@@ -3,7 +3,10 @@ import { describe, it } from 'node:test'
 import {
   ARTEMIS_COPY,
   CAPABILITIES,
-  formatHuntHistory,
+  DEFAULT_VOICE,
+  MEMORY_SECTIONS,
+  PROCESS_STEPS,
+  VOICES,
   parseConsoleView,
   parseQuiverEngine,
 } from './artemis'
@@ -30,6 +33,7 @@ describe('console query parsing', () => {
     assert.equal(parseConsoleView('bow'), 'chat')
     assert.equal(parseConsoleView('logs'), 'logs')
     assert.equal(parseConsoleView('files'), 'files')
+    assert.equal(parseConsoleView('memory'), 'memory')
   })
 
   it('maps engine query to orion or iron', () => {
@@ -39,14 +43,23 @@ describe('console query parsing', () => {
   })
 })
 
-describe('formatHuntHistory', () => {
-  it('renders operator and artemis turns', () => {
-    const text = formatHuntHistory([
-      { role: 'operator', content: 'Draw the string' },
-      { role: 'artemis', content: 'Ready.' },
+describe('voices and memory', () => {
+  it('defaults to Astra among four voices', () => {
+    assert.equal(DEFAULT_VOICE, 'astra')
+    assert.deepEqual(Object.keys(VOICES), ['astra', 'orion', 'nova', 'sage'])
+  })
+
+  it('lists memory sections and processing steps', () => {
+    assert.deepEqual(MEMORY_SECTIONS, [
+      'projects',
+      'decisions',
+      'preferences',
+      'people',
+      'files',
+      'research',
+      'conversations',
     ])
-    assert.match(text, /\[OPERATOR\]/)
-    assert.match(text, /\[ARTEMIS\]/)
-    assert.match(text, /Draw the string/)
+    assert.equal(PROCESS_STEPS[0].label, 'Understanding request')
+    assert.equal(PROCESS_STEPS.at(-1)?.label, 'Updating knowledge')
   })
 })

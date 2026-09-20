@@ -33,6 +33,7 @@ import { registerStripeWebhookRoute } from './stripeCheckout.ts'
 import { registerAuthRoutes } from './auth/authRoutes.ts'
 import { registerRampRoutes } from './rampApi.ts'
 import { registerSquarespaceRoutes } from './squarespaceApi.ts'
+import { registerArtemisRoutes } from './artemis/routes.ts'
 
 dotenv.config({ path: path.join(ROOT, '.env') })
 
@@ -601,6 +602,7 @@ registerAuthRoutes(app)
 registerThermalRoutes(app)
 registerRampRoutes(app)
 registerSquarespaceRoutes(app)
+registerArtemisRoutes(app)
 
 setupSentryExpressErrorHandler(app)
 
