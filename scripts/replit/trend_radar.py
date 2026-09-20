@@ -1,106 +1,119 @@
 #!/usr/bin/env python3
-"""Cutline trend radar (Replit-friendly).
+"""Cutline trend radar stub — run on Replit or locally.
 
-Scans public Reddit JSON for gaming trend seeds and writes a topic queue
-the AI script stage can consume.
+Scans public Reddit JSON + optional YouTube Data API for gaming topics,
+then prints a ranked queue the AI script step can consume.
 
-Usage:
-  python scripts/replit/trend_radar.py
-  python scripts/replit/trend_radar.py --subreddit competitiveaimlabs --limit 15
+Env:
+  YOUTUBE_API_KEY   optional
+  REDDIT_SUBS       comma list (default: competitive,gaming,OutOfTheLoop)
 """
 
 from __future__ import annotations
 
-import argparse
 import json
+import os
+import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-from pathlib import Path
+from dataclasses import asdict, dataclass
 
 
-UA = "CutlineTrendRadar/1.0 (creator-os)"
+@dataclass
+class Topic:
+    title: str
+    source: str
+    score: int
+    keywords: list[str]
+    angle: str
 
 
-def demo_posts(subreddit: str, limit: int = 20) -> list[dict]:
-    seeds = [
-        "Rank reset survival guide for climbing fast",
-        "Patch notes that quietly broke the meta",
-        "One habit separating diamond from immortal",
-        "Best beginner loadouts this week",
-        "Clutch drills you can practice in 10 minutes",
-        "Why your crosshair placement is leaking elo",
-        "Utility lineups that still work after nerfs",
-        "VOD review mistakes that keep you hardstuck",
-    ]
-    posts = []
-    for i, title in enumerate(seeds[:limit]):
-        posts.append(
-            {
-                "id": f"demo{i}",
-                "title": title,
-                "score": 900 - i * 70,
-                "comments": 120 - i * 8,
-                "url": f"https://cutline-industries.studio/pipeline?demo={i}",
-                "subreddit": subreddit,
-                "demo": True,
-            }
-        )
-    return posts
-
-
-def fetch_subreddit(subreddit: str, limit: int = 20) -> list[dict]:
-    url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            payload = json.load(resp)
-    except Exception as exc:  # noqa: BLE001 - keep Replit pipeline unblocked
-        print(f"Live fetch blocked ({exc}); using demo trend seeds")
-        return demo_posts(subreddit, limit)
-    posts = []
+def fetch_reddit(sub: str, limit: int = 8) -> list[Topic]:
+    url = f"https://www.reddit.com/r/{sub}/hot.json?limit={limit}"
+    req = urllib.request.Request(url, headers={"User-Agent": "cutline-trend-radar/1.0"})
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    out: list[Topic] = []
     for child in payload.get("data", {}).get("children", []):
         data = child.get("data", {})
-        posts.append(
-            {
-                "id": data.get("id"),
-                "title": data.get("title"),
-                "score": data.get("score", 0),
-                "comments": data.get("num_comments", 0),
-                "url": f"https://reddit.com{data.get('permalink', '')}",
-                "subreddit": subreddit,
-            }
+        title = (data.get("title") or "").strip()
+        if not title:
+            continue
+        score = int(data.get("score") or 0)
+        words = [w.strip(".,!?:;\"'").lower() for w in title.split() if len(w) > 3][:5]
+        out.append(
+            Topic(
+                title=title[:120],
+                source=f"reddit r/{sub}",
+                score=min(99, 50 + score // 50),
+                keywords=words or ["gaming"],
+                angle="News explainer + Shorts cutdowns",
+            )
         )
-    return posts
+    return out
 
 
-def rank(posts: list[dict]) -> list[dict]:
-    ranked = sorted(posts, key=lambda p: (p["score"] + p["comments"] * 2), reverse=True)
-    for i, post in enumerate(ranked):
-        post["trend_score"] = min(99, int((post["score"] + post["comments"] * 2) ** 0.5 * 3))
-        post["angle"] = f"Turn into 8-10 min guide + Shorts cutdowns: {post['title'][:80]}"
-    return ranked
+def fetch_youtube_trending(api_key: str) -> list[Topic]:
+    # Gaming category id = 20
+    qs = urllib.parse.urlencode(
+        {
+            "part": "snippet,statistics",
+            "chart": "mostPopular",
+            "regionCode": "US",
+            "videoCategoryId": "20",
+            "maxResults": "8",
+            "key": api_key,
+        }
+    )
+    url = f"https://www.googleapis.com/youtube/v3/videos?{qs}"
+    with urllib.request.urlopen(url, timeout=20) as resp:
+        payload = json.loads(resp.read().decode("utf-8"))
+    out: list[Topic] = []
+    for item in payload.get("items", []):
+        sn = item.get("snippet", {})
+        stats = item.get("statistics", {})
+        title = (sn.get("title") or "").strip()
+        views = int(stats.get("viewCount") or 0)
+        tags = (sn.get("tags") or [])[:5]
+        out.append(
+            Topic(
+                title=title[:120],
+                source="YouTube API trending/gaming",
+                score=min(99, 60 + views // 500_000),
+                keywords=tags or ["gaming", "trending"],
+                angle="8–10 min tutorial + 10 Shorts",
+            )
+        )
+    return out
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--subreddit", default="gaming")
-    parser.add_argument("--limit", type=int, default=20)
-    parser.add_argument(
-        "--out",
-        default=str(Path(__file__).resolve().parents[2] / "inbox" / "trend_queue.json"),
-    )
-    args = parser.parse_args()
+    subs = [s.strip() for s in os.getenv("REDDIT_SUBS", "competitive,gaming").split(",") if s.strip()]
+    topics: list[Topic] = []
+    for sub in subs:
+        try:
+            topics.extend(fetch_reddit(sub))
+        except Exception as exc:  # noqa: BLE001 — stub should keep running
+            print(json.dumps({"warn": f"reddit/{sub}", "error": str(exc)}))
 
-    posts = rank(fetch_subreddit(args.subreddit, args.limit))
-    out = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source": f"reddit:r/{args.subreddit}",
-        "topics": posts[: args.limit],
-    }
-    out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(out, indent=2))
-    print(f"Wrote {len(out['topics'])} topics → {out_path}")
+    yt_key = os.getenv("YOUTUBE_API_KEY", "").strip()
+    if yt_key:
+        try:
+            topics.extend(fetch_youtube_trending(yt_key))
+        except Exception as exc:  # noqa: BLE001
+            print(json.dumps({"warn": "youtube", "error": str(exc)}))
+
+    topics.sort(key=lambda t: t.score, reverse=True)
+    # de-dupe by title
+    seen: set[str] = set()
+    unique: list[Topic] = []
+    for t in topics:
+        key = t.title.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(t)
+
+    print(json.dumps({"brand": "Cutline Industries", "count": len(unique), "topics": [asdict(t) for t in unique[:20]]}, indent=2))
 
 
 if __name__ == "__main__":
