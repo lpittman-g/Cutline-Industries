@@ -36,7 +36,7 @@ Canonical docs: [docs/THERMAL-MISSION-CONTROL.md](../docs/THERMAL-MISSION-CONTRO
 | 2 | Bounty board 3-clip pack | $50 |
 | 3 | Indie Dev Wishlist Engine (retainers CRM) | $750–$2,500/mo |
 
-Key routes: `/`, `/bounty`, `/developers`, `/checkout/:clipId`, `/app/*`.
+Key routes: `/` (Artemis), `/console`, `/thermal`, `/bounty`, `/developers`, `/checkout/:clipId`, `/app/*`.
 
 ```bash
 npm install && cp .env.example .env

@@ -1,8 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { ArtemisShell } from './components/artemis/ArtemisShell'
 import { MissionShell } from './components/MissionShell'
 import { PublicShell } from './components/PublicShell'
 import { CutlineProvider } from './context/CutlineContext'
+import { ArtemisLandingPage } from './pages/ArtemisLandingPage'
+import { ArtemisConsolePage } from './pages/ArtemisConsolePage'
 import { LandingPage } from './pages/LandingPage'
 import { BountyPage } from './pages/thermal/BountyPage'
 import { DevelopersPage } from './pages/thermal/DevelopersPage'
@@ -49,9 +52,15 @@ export default function App() {
   return (
     <CutlineProvider>
       <Routes>
+        {/* Artemis public product */}
+        <Route element={<ArtemisShell />}>
+          <Route path="/" element={<ArtemisLandingPage />} />
+          <Route path="/console" element={<ArtemisConsolePage />} />
+        </Route>
+
         {/* Thermal public product */}
         <Route element={<PublicShell />}>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/thermal" element={<LandingPage />} />
           <Route path="/bounty" element={<BountyPage />} />
           <Route path="/developers" element={<DevelopersPage />} />
           <Route path="/checkout/:clipId" element={<CheckoutPage />} />

@@ -4,11 +4,18 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 
 ## Products
 
+### Artemis (public root)
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Marketing landing — Enter Artemis → console |
+| `/console` | Artemis console (The Bow, Quiver, Lunar Gate, Logs) |
+
 ### Thermal (public)
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Landing — heat → Shorts → revenue |
+| `/thermal` | Thermal landing — heat → Shorts → revenue |
 | `/bounty` | Public Bounty Board |
 | `/developers` | Indie dev retainer engine |
 | `/feedback` | Audience input for AI Shorts |
