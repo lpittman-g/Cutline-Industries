@@ -158,7 +158,7 @@ export function AutopilotPage() {
             Refresh
           </button>
           <button className="btn btn-primary" type="button" onClick={() => void runOnce()} disabled={busy}>
-            Run once
+            Run auto
           </button>
         </div>
       </div>
