@@ -13,6 +13,7 @@ const LANDING_ITEMS: CommandItem[] = [
 
 const CONSOLE_ITEMS: CommandItem[] = [
   { id: 'bow', label: 'The Bow', hint: 'Console engine' },
+  { id: 'chronicle', label: 'Chronicle', hint: 'Memory' },
   { id: 'quiver', label: 'The Quiver', hint: 'Data storage' },
   { id: 'iron', label: 'The Iron Forge', hint: 'Enterprise stack' },
   { id: 'lunar', label: 'Lunar Gate', hint: 'Core settings' },
@@ -43,8 +44,12 @@ export function ArtemisShell() {
   const onSelect = (id: string) => {
     closeMenu()
     if (!isConsole) {
-      if (id === 'enter' || id === 'bow' || id === 'chronicler') {
+      if (id === 'enter' || id === 'bow') {
         navigate('/console?view=chat')
+        return
+      }
+      if (id === 'chronicler') {
+        navigate('/console?view=memory&section=projects')
         return
       }
       if (id === 'orion') {
@@ -57,6 +62,7 @@ export function ArtemisShell() {
       return
     }
     if (id === 'bow') navigate('/console?view=chat')
+    else if (id === 'chronicle') navigate('/console?view=memory&section=projects')
     else if (id === 'quiver') navigate('/console?view=files&engine=orion')
     else if (id === 'iron') navigate('/console?view=files&engine=iron')
     else if (id === 'lunar') navigate('/console?view=logs&panel=lunar')

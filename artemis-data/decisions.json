@@ -1,0 +1,12 @@
+{
+  "items": [
+    {
+      "id": "dec_gate_console",
+      "title": "Gate the console behind Enter Artemis",
+      "body": "The public first screen is marketing only. The Bow, Quiver, Lunar Gate, Logs, chat, and memory open after Enter Artemis.",
+      "pinned": true,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    }
+  ]
+}

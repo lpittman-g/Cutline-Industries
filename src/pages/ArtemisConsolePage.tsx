@@ -2,46 +2,41 @@ import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'rea
 import { Link, useSearchParams } from 'react-router-dom'
 import { fetchAuthUser, logout, signin, type AuthUser } from '../lib/authApi'
 import {
-  BOW_MODELS,
   CONSOLE_VIEWS,
-  formatHuntHistory,
-  loadHunts,
+  UPLOAD_ACCEPT,
+  UPLOAD_LABELS,
+  UPLOAD_MAX_BYTES,
+  isAllowedUpload,
   parseConsoleView,
   parseQuiverEngine,
-  saveHunts,
-  type BowModel,
   type ConsoleView,
-  type HuntThread,
+  type KnowledgeCard,
   type QuiverEngine,
 } from '../lib/artemis'
 import { uid } from '../lib/utils'
+import { BowChat } from '../components/artemis/BowChat'
+import { MemoryBoard } from '../components/artemis/MemoryBoard'
+import { KnowledgeFileCard } from '../components/artemis/KnowledgeFileCard'
+import { uploadArtemisFile } from '../lib/artemisApi'
 
-type QueueItem = { id: string; name: string; status: string }
+type QueueItem = { id: string; name: string; status: string; percent: number; card?: KnowledgeCard }
 
 const API = import.meta.env.VITE_API_URL || ''
-
-function dryRunBow(prompt: string, model: BowModel): string {
-  return [
-    `[${model}]`,
-    'Bow dry-run — execution API is not connected in this environment.',
-    '',
-    prompt,
-    '',
-    'Artemis received the prompt and is ready to route it through The Bow when the engine is online.',
-  ].join('\n')
-}
 
 export function ArtemisConsolePage() {
   const [params, setParams] = useSearchParams()
   const view = parseConsoleView(params.get('view'))
   const engine = parseQuiverEngine(params.get('engine'))
   const showLunar = params.get('panel') === 'lunar'
+  const knowledgeId = params.get('knowledge') || undefined
 
   const setView = (next: ConsoleView, extras?: Record<string, string>) => {
     const nextParams = new URLSearchParams(params)
     nextParams.set('view', next)
     if (next !== 'files') nextParams.delete('engine')
     if (next !== 'logs') nextParams.delete('panel')
+    if (next !== 'memory') nextParams.delete('section')
+    if (next !== 'chat') nextParams.delete('knowledge')
     if (extras) {
       for (const [k, v] of Object.entries(extras)) nextParams.set(k, v)
     }
@@ -61,7 +56,7 @@ export function ArtemisConsolePage() {
             onClick={() => setView(tab.id, tab.id === 'files' ? { engine } : undefined)}
           >
             {tab.label}
-            <span>{tab.suffix}</span>
+            <span className="artemis-tab-suffix">{tab.suffix}</span>
           </button>
         ))}
         <div className="artemis-online">
@@ -71,11 +66,18 @@ export function ArtemisConsolePage() {
       </div>
 
       <div className="artemis-console-panel">
-        {view === 'chat' && <BowPanel />}
+        {view === 'chat' && (
+          <BowChat
+            knowledgeId={knowledgeId}
+            onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })}
+          />
+        )}
+        {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (
           <QuiverPanel
             engine={engine}
             onEngine={(next) => setView('files', { engine: next })}
+            onAskFile={(card) => setView('chat', { knowledge: card.id })}
           />
         )}
         {view === 'logs' && <LogsPanel focusLunar={showLunar} />}
@@ -84,152 +86,14 @@ export function ArtemisConsolePage() {
   )
 }
 
-function BowPanel() {
-  const [hunts, setHunts] = useState<HuntThread[]>(() => (typeof localStorage === 'undefined' ? [] : loadHunts()))
-  const [activeId, setActiveId] = useState<string | null>(hunts[0]?.id ?? null)
-  const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState<BowModel>('Artemis Core')
-  const [output, setOutput] = useState(() =>
-    hunts[0] ? formatHuntHistory(hunts[0].messages) : '',
-  )
-  const [busy, setBusy] = useState(false)
-
-  const persist = (next: HuntThread[]) => {
-    setHunts(next)
-    saveHunts(next)
-  }
-
-  const openHunt = (id: string) => {
-    setActiveId(id)
-    const hunt = hunts.find((h) => h.id === id)
-    setOutput(hunt ? formatHuntHistory(hunt.messages) : '')
-  }
-
-  const newHunt = () => {
-    const thread: HuntThread = {
-      id: uid('hunt'),
-      title: 'Untitled Hunt',
-      engine: model,
-      messages: [],
-    }
-    persist([thread, ...hunts])
-    setActiveId(thread.id)
-    setPrompt('')
-    setOutput('')
-  }
-
-  const fire = async () => {
-    const text = prompt.trim()
-    if (!text) {
-      setOutput('Enter a prompt before firing The Bow.')
-      return
-    }
-    setBusy(true)
-    setOutput('')
-    try {
-      const res = await fetch(`${API}/api/bow/execute`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, text/plain, application/json' },
-        body: JSON.stringify({ prompt: text, model_selection: model, thread_id: activeId }),
-      })
-      let reply = ''
-      if (res.ok) {
-        reply = await res.text()
-      } else {
-        reply = dryRunBow(text, model)
-      }
-      const threadId = res.headers.get('X-Chronicler-Thread-Id') || activeId || uid('hunt')
-      const title = text.slice(0, 48) || 'Untitled Hunt'
-      const existing = hunts.find((h) => h.id === threadId)
-      const messages = [
-        ...(existing?.messages ?? []),
-        { role: 'operator' as const, content: text },
-        { role: 'artemis' as const, content: reply },
-      ]
-      const nextThread: HuntThread = {
-        id: threadId,
-        title: existing?.title && existing.title !== 'Untitled Hunt' ? existing.title : title,
-        engine: model,
-        messages,
-      }
-      persist([nextThread, ...hunts.filter((h) => h.id !== threadId)])
-      setActiveId(threadId)
-      setOutput(formatHuntHistory(messages))
-      setPrompt('')
-    } catch {
-      const reply = dryRunBow(text, model)
-      setOutput(reply)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="artemis-bow">
-      <aside className="artemis-chronicler">
-        <div className="artemis-chronicler-head">
-          <span>Chronicler</span>
-          <button type="button" className="artemis-chip-btn" onClick={newHunt}>
-            New Hunt
-          </button>
-        </div>
-        {hunts.length === 0 ? (
-          <p className="artemis-empty">No hunts yet. Fire The Bow to begin.</p>
-        ) : (
-          <ul>
-            {hunts.map((hunt) => (
-              <li key={hunt.id}>
-                <button
-                  type="button"
-                  className={hunt.id === activeId ? 'is-active' : undefined}
-                  onClick={() => openHunt(hunt.id)}
-                >
-                  {hunt.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </aside>
-
-      <div className="artemis-bow-main">
-        <div>
-          <h2>The Bow</h2>
-          <p>Premium multi-model execution and generation console.</p>
-        </div>
-        <label htmlFor="bow-prompt">Prompt</label>
-        <textarea
-          id="bow-prompt"
-          rows={4}
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Draw the string — describe what Artemis should generate..."
-        />
-        <div className="artemis-bow-actions">
-          <select value={model} onChange={(e) => setModel(e.target.value as BowModel)} aria-label="Model">
-            {BOW_MODELS.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="artemis-cta-primary artemis-cta-compact" disabled={busy} onClick={() => void fire()}>
-            {busy ? 'Firing…' : 'Fire'}
-          </button>
-        </div>
-        <pre className="artemis-terminal">{output}</pre>
-      </div>
-    </div>
-  )
-}
-
 function QuiverPanel({
   engine,
   onEngine,
+  onAskFile,
 }: {
   engine: QuiverEngine
   onEngine: (next: QuiverEngine) => void
+  onAskFile: (card: KnowledgeCard) => void
 }) {
   const orionInput = useRef<HTMLInputElement>(null)
   const ironInput = useRef<HTMLInputElement>(null)
@@ -241,30 +105,37 @@ function QuiverPanel({
 
   const ingest = (files: FileList | null, kind: QuiverEngine) => {
     if (!files?.length) return
-    const accepted = Array.from(files).filter((f) => f.size <= 25 * 1024 * 1024)
-    for (const file of accepted) {
+    for (const file of Array.from(files)) {
       const id = uid(kind)
-      if (kind === 'orion') {
-        setOrionQueue((q) => [...q, { id, name: file.name, status: 'Parsing…' }])
-        window.setTimeout(() => {
-          setOrionQueue((q) => q.map((item) => (item.id === id ? { ...item, status: 'Stored in Orion' } : item)))
-        }, 1600)
-      } else {
-        setIronQueue((q) => [...q, { id, name: file.name, status: 'Passing parameters to The Fletcher Suite…' }])
-        setIronBanner('Passing parameters to The Fletcher Suite…')
-        window.setTimeout(() => {
-          setIronQueue((q) =>
-            q.map((item) => (item.id === id ? { ...item, status: 'Indexing coordinates inside The Cyclops Vault…' } : item)),
-          )
-          setIronBanner('Indexing coordinates inside The Cyclops Vault…')
-        }, 1600)
-        window.setTimeout(() => {
-          setIronQueue((q) =>
-            q.map((item) => (item.id === id ? { ...item, status: 'The Bloodhound Protocol is now active.' } : item)),
-          )
-          setIronBanner('The Bloodhound Protocol is now active.')
-        }, 3200)
+      const setQueue = kind === 'orion' ? setOrionQueue : setIronQueue
+      if (file.size > UPLOAD_MAX_BYTES) {
+        setQueue((q) => [...q, { id, name: file.name, status: 'File exceeds 25MB', percent: 0 }])
+        continue
       }
+      if (!isAllowedUpload(file.name)) {
+        setQueue((q) => [...q, { id, name: file.name, status: 'Unsupported type', percent: 0 }])
+        continue
+      }
+      setQueue((q) => [...q, { id, name: file.name, status: 'Uploading 0%', percent: 0 }])
+      void uploadArtemisFile(file, {
+        source: 'quiver',
+        onProgress: (percent) => {
+          setQueue((q) =>
+            q.map((item) => (item.id === id ? { ...item, percent, status: `Uploading ${percent}%` } : item)),
+          )
+        },
+      })
+        .then((result) => {
+          const stored = result.stub ? `Stored (stub) · ${result.stored.extract}` : `Stored · ${result.stored.extract}`
+          setQueue((q) =>
+            q.map((item) => (item.id === id ? { ...item, percent: 100, status: stored, card: result.index } : item)),
+          )
+          if (kind === 'iron') setIronBanner(stored)
+        })
+        .catch((err) => {
+          const fail = err instanceof Error ? err.message : 'Upload failed'
+          setQueue((q) => q.map((item) => (item.id === id ? { ...item, status: fail } : item)))
+        })
     }
   }
 
@@ -325,20 +196,32 @@ function QuiverPanel({
                 type="file"
                 multiple
                 hidden
-                accept=".pdf,.docx,.xlsx,.csv,.txt"
+                accept={UPLOAD_ACCEPT}
                 onChange={(e) => ingest(e.target.files, 'orion')}
               />
               <p>
                 Drag &amp; drop your files here, or <span>browse</span>
               </p>
-              <small>Supports PDF, DOCX, XLSX, CSV, and TXT files up to 25MB</small>
+              <small>{UPLOAD_LABELS.join(', ')} · up to 25MB · stored in knowledge/</small>
             </div>
             {orionQueue.length > 0 && (
-              <ul className="artemis-queue">
+              <ul className="artemis-queue" aria-label="Orion upload progress">
                 {orionQueue.map((item) => (
                   <li key={item.id}>
-                    <span>{item.name}</span>
-                    <em>{item.status}</em>
+                    <div>
+                      <span>{item.name}</span>
+                      <em>{item.status}</em>
+                    </div>
+                    <div
+                      className="artemis-upload-progress"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.percent}
+                    >
+                      <span style={{ width: `${item.percent}%` }} />
+                    </div>
+                    {item.card && <KnowledgeFileCard card={item.card} onAsk={onAskFile} />}
                   </li>
                 ))}
               </ul>
@@ -372,18 +255,30 @@ function QuiverPanel({
                 type="file"
                 multiple
                 hidden
-                accept=".pdf,.docx,.xlsx,.csv,.txt,.pptx"
+                accept={UPLOAD_ACCEPT}
                 onChange={(e) => ingest(e.target.files, 'iron')}
               />
               <p>Route enterprise files into The Iron Forge</p>
-              <small>Fletcher Suite parses SharePoint / Blob sources before Cyclops indexing</small>
+              <small>{UPLOAD_LABELS.join(', ')} · Fletcher Suite + knowledge/</small>
             </div>
             {ironQueue.length > 0 && (
-              <ul className="artemis-queue">
+              <ul className="artemis-queue" aria-label="Iron Forge upload progress">
                 {ironQueue.map((item) => (
                   <li key={item.id}>
-                    <span>{item.name}</span>
-                    <em>{item.status}</em>
+                    <div>
+                      <span>{item.name}</span>
+                      <em>{item.status}</em>
+                    </div>
+                    <div
+                      className="artemis-upload-progress"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.percent}
+                    >
+                      <span style={{ width: `${item.percent}%` }} />
+                    </div>
+                    {item.card && <KnowledgeFileCard card={item.card} onAsk={onAskFile} />}
                   </li>
                 ))}
               </ul>
