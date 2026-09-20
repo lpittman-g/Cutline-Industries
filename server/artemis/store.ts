@@ -604,8 +604,8 @@ export async function loadRelevantMemory(userMessage: string, knowledgeId?: stri
   }
 
   for (const kind of MEMORY_KINDS) {
+    if (knowledgeId && kind === 'files') continue
     for (const item of board[kind]) {
-      if (knowledgeId && kind === 'files' && item.id === knowledgeId) continue
       const blob = `${item.title}\n${item.body}`
       const score = scoreText(blob, tokens) + (item.pinned ? 0.5 : 0)
       if (score > 0) pool.push({ score, text: `[${kind}] ${item.title}: ${item.body}` })
