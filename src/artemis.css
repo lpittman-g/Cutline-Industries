@@ -929,7 +929,7 @@ html.artemis-canvas ::selection {
   padding-right: 0.2rem;
 }
 
-.artemis-bubble span {
+.artemis-bubble > span {
   display: block;
   color: var(--ag-muted);
   font-size: 0.62rem;
@@ -1030,6 +1030,10 @@ html.artemis-canvas ::selection {
 .artemis-file-card-indexed {
   color: var(--ag-blue) !important;
   font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
 .artemis-file-card button {
