@@ -800,14 +800,19 @@ html.artemis-canvas ::selection {
 }
 
 .artemis-queue li {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  gap: 0.35rem;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--ag-border);
   border-radius: 12px;
   background: var(--ag-surface);
   font-size: 0.82rem;
+}
+
+.artemis-queue li > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .artemis-queue em {
@@ -952,6 +957,49 @@ html.artemis-canvas ::selection {
   gap: 0.45rem;
   align-items: center;
   margin-top: 0.9rem;
+}
+
+.artemis-upload-hint {
+  margin: 0.45rem 0 0;
+  color: var(--ag-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.artemis-upload-list {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.artemis-upload-list li div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--ag-body);
+}
+
+.artemis-upload-list em {
+  font-style: normal;
+  color: var(--ag-blue);
+}
+
+.artemis-upload-progress {
+  margin-top: 0.25rem;
+  height: 6px;
+  border-radius: var(--ag-pill);
+  background: var(--ag-line);
+  overflow: hidden;
+}
+
+.artemis-upload-progress span {
+  display: block;
+  height: 100%;
+  background: var(--ag-blue);
+  border-radius: inherit;
 }
 
 .artemis-composer input[type='text'] {

@@ -117,6 +117,7 @@ export async function ensureArtemisData() {
   await fs.mkdir(path.join(ARTEMIS_DATA, 'conversations'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'knowledge'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'research'), { recursive: true })
+  await fs.mkdir(path.join(ARTEMIS_DATA, 'uploaded'), { recursive: true })
   await fs.mkdir(path.join(ARTEMIS_DATA, 'logs'), { recursive: true })
   const activity = path.join(ARTEMIS_DATA, 'logs', 'activity.jsonl')
   try {

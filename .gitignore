@@ -36,6 +36,8 @@ artemis-data/knowledge/*
 !artemis-data/knowledge/artemis.md
 !artemis-data/knowledge/cutline.md
 !artemis-data/knowledge/integrations.md
+artemis-data/uploaded/*
+!artemis-data/uploaded/.gitkeep
 artemis-data/research/*
 !artemis-data/research/.gitkeep
 !artemis-data/research/landing-mockup.json

@@ -88,6 +88,18 @@ export const MEMORY_SOURCES: Record<MemoryKind, string> = {
   notes: 'memory.json',
 }
 
+export const UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+
+export const UPLOAD_ACCEPT =
+  '.pdf,.docx,.doc,.txt,.md,.json,.csv,.tsv,.xlsx,.xls,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.js,.ts,.tsx,.jsx,.py,.go,.rs,.java,.rb,.php,.c,.cpp,.h,.cs,.sh,.sql,.yml,.yaml,.html,.css'
+
+export const UPLOAD_LABELS = ['PDF', 'DOCX', 'TXT', 'JSON', 'CSV', 'XLSX', 'Images', 'Code'] as const
+
+export function isAllowedUpload(name: string): boolean {
+  const lower = name.toLowerCase()
+  return UPLOAD_ACCEPT.split(',').some((ext) => ext.length > 0 && lower.endsWith(ext))
+}
+
 export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
 export type QuiverEngine = 'orion' | 'iron'
 

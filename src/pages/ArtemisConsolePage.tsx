@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { fetchAuthUser, logout, signin, type AuthUser } from '../lib/authApi'
-import { CONSOLE_VIEWS, parseConsoleView, parseQuiverEngine, type ConsoleView, type QuiverEngine } from '../lib/artemis'
+import {
+  CONSOLE_VIEWS,
+  UPLOAD_ACCEPT,
+  UPLOAD_LABELS,
+  UPLOAD_MAX_BYTES,
+  isAllowedUpload,
+  parseConsoleView,
+  parseQuiverEngine,
+  type ConsoleView,
+  type QuiverEngine,
+} from '../lib/artemis'
 import { uid } from '../lib/utils'
 import { BowChat } from '../components/artemis/BowChat'
 import { MemoryBoard } from '../components/artemis/MemoryBoard'
+import { uploadArtemisFile } from '../lib/artemisApi'
 
-type QueueItem = { id: string; name: string; status: string }
+type QueueItem = { id: string; name: string; status: string; percent: number }
 
 const API = import.meta.env.VITE_API_URL || ''
 
@@ -84,30 +95,35 @@ function QuiverPanel({
 
   const ingest = (files: FileList | null, kind: QuiverEngine) => {
     if (!files?.length) return
-    const accepted = Array.from(files).filter((f) => f.size <= 25 * 1024 * 1024)
-    for (const file of accepted) {
+    for (const file of Array.from(files)) {
       const id = uid(kind)
-      if (kind === 'orion') {
-        setOrionQueue((q) => [...q, { id, name: file.name, status: 'Parsing…' }])
-        window.setTimeout(() => {
-          setOrionQueue((q) => q.map((item) => (item.id === id ? { ...item, status: 'Stored in Orion' } : item)))
-        }, 1600)
-      } else {
-        setIronQueue((q) => [...q, { id, name: file.name, status: 'Passing parameters to The Fletcher Suite…' }])
-        setIronBanner('Passing parameters to The Fletcher Suite…')
-        window.setTimeout(() => {
-          setIronQueue((q) =>
-            q.map((item) => (item.id === id ? { ...item, status: 'Indexing coordinates inside The Cyclops Vault…' } : item)),
-          )
-          setIronBanner('Indexing coordinates inside The Cyclops Vault…')
-        }, 1600)
-        window.setTimeout(() => {
-          setIronQueue((q) =>
-            q.map((item) => (item.id === id ? { ...item, status: 'The Bloodhound Protocol is now active.' } : item)),
-          )
-          setIronBanner('The Bloodhound Protocol is now active.')
-        }, 3200)
+      const setQueue = kind === 'orion' ? setOrionQueue : setIronQueue
+      if (file.size > UPLOAD_MAX_BYTES) {
+        setQueue((q) => [...q, { id, name: file.name, status: 'File exceeds 25MB', percent: 0 }])
+        continue
       }
+      if (!isAllowedUpload(file.name)) {
+        setQueue((q) => [...q, { id, name: file.name, status: 'Unsupported type', percent: 0 }])
+        continue
+      }
+      setQueue((q) => [...q, { id, name: file.name, status: 'Uploading 0%', percent: 0 }])
+      void uploadArtemisFile(file, {
+        source: 'quiver',
+        onProgress: (percent) => {
+          setQueue((q) =>
+            q.map((item) => (item.id === id ? { ...item, percent, status: `Uploading ${percent}%` } : item)),
+          )
+        },
+      })
+        .then((result) => {
+          const stored = result.stub ? `Stored (stub) · ${result.stored.extract}` : `Stored · ${result.stored.extract}`
+          setQueue((q) => q.map((item) => (item.id === id ? { ...item, percent: 100, status: stored } : item)))
+          if (kind === 'iron') setIronBanner(stored)
+        })
+        .catch((err) => {
+          const fail = err instanceof Error ? err.message : 'Upload failed'
+          setQueue((q) => q.map((item) => (item.id === id ? { ...item, status: fail } : item)))
+        })
     }
   }
 
@@ -168,20 +184,31 @@ function QuiverPanel({
                 type="file"
                 multiple
                 hidden
-                accept=".pdf,.docx,.xlsx,.csv,.txt"
+                accept={UPLOAD_ACCEPT}
                 onChange={(e) => ingest(e.target.files, 'orion')}
               />
               <p>
                 Drag &amp; drop your files here, or <span>browse</span>
               </p>
-              <small>Supports PDF, DOCX, XLSX, CSV, and TXT files up to 25MB</small>
+              <small>{UPLOAD_LABELS.join(', ')} · up to 25MB · stored in knowledge/</small>
             </div>
             {orionQueue.length > 0 && (
-              <ul className="artemis-queue">
+              <ul className="artemis-queue" aria-label="Orion upload progress">
                 {orionQueue.map((item) => (
                   <li key={item.id}>
-                    <span>{item.name}</span>
-                    <em>{item.status}</em>
+                    <div>
+                      <span>{item.name}</span>
+                      <em>{item.status}</em>
+                    </div>
+                    <div
+                      className="artemis-upload-progress"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.percent}
+                    >
+                      <span style={{ width: `${item.percent}%` }} />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -215,18 +242,29 @@ function QuiverPanel({
                 type="file"
                 multiple
                 hidden
-                accept=".pdf,.docx,.xlsx,.csv,.txt,.pptx"
+                accept={UPLOAD_ACCEPT}
                 onChange={(e) => ingest(e.target.files, 'iron')}
               />
               <p>Route enterprise files into The Iron Forge</p>
-              <small>Fletcher Suite parses SharePoint / Blob sources before Cyclops indexing</small>
+              <small>{UPLOAD_LABELS.join(', ')} · Fletcher Suite + knowledge/</small>
             </div>
             {ironQueue.length > 0 && (
-              <ul className="artemis-queue">
+              <ul className="artemis-queue" aria-label="Iron Forge upload progress">
                 {ironQueue.map((item) => (
                   <li key={item.id}>
-                    <span>{item.name}</span>
-                    <em>{item.status}</em>
+                    <div>
+                      <span>{item.name}</span>
+                      <em>{item.status}</em>
+                    </div>
+                    <div
+                      className="artemis-upload-progress"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.percent}
+                    >
+                      <span style={{ width: `${item.percent}%` }} />
+                    </div>
                   </li>
                 ))}
               </ul>

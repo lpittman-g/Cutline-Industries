@@ -9,7 +9,9 @@ import {
   MEMORY_ACTIONS,
   PROCESS_STEPS,
   STEP_MARKS,
+  UPLOAD_LABELS,
   VOICES,
+  isAllowedUpload,
   parseConsoleView,
   parseMemorySection,
   parseQuiverEngine,
@@ -80,5 +82,16 @@ describe('voices and memory', () => {
     assert.equal(STEP_MARKS.in_progress, '◉')
     assert.equal(STEP_MARKS.done, '✓')
     assert.equal(STEP_MARKS.pending, '○')
+  })
+
+  it('accepts console upload families', () => {
+    assert.deepEqual([...UPLOAD_LABELS], ['PDF', 'DOCX', 'TXT', 'JSON', 'CSV', 'XLSX', 'Images', 'Code'])
+    assert.equal(isAllowedUpload('brief.pdf'), true)
+    assert.equal(isAllowedUpload('notes.docx'), true)
+    assert.equal(isAllowedUpload('data.csv'), true)
+    assert.equal(isAllowedUpload('sheet.xlsx'), true)
+    assert.equal(isAllowedUpload('shot.png'), true)
+    assert.equal(isAllowedUpload('handler.ts'), true)
+    assert.equal(isAllowedUpload('virus.exe'), false)
   })
 })

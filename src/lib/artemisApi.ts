@@ -55,6 +55,69 @@ export async function attachArtemisFile(name: string) {
   return res.json() as Promise<{ ok: boolean; item: MemoryItem }>
 }
 
+export type ArtemisUploadResult = {
+  ok: boolean
+  item: MemoryItem
+  family: string
+  stub: boolean
+  stored: { original: string; extract: string }
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '')
+      const comma = dataUrl.indexOf(',')
+      resolve(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl)
+    }
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+export function uploadArtemisFile(
+  file: File,
+  opts?: { source?: 'bow' | 'quiver'; onProgress?: (percent: number) => void },
+): Promise<ArtemisUploadResult> {
+  return new Promise((resolve, reject) => {
+    void fileToBase64(file)
+      .then((contentBase64) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', `${API}/api/artemis/upload`)
+        xhr.withCredentials = true
+        xhr.setRequestHeader('Content-Type', 'application/json')
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return
+          opts?.onProgress?.(Math.round((event.loaded / event.total) * 100))
+        }
+        xhr.onerror = () => reject(new Error('Upload failed'))
+        xhr.onload = () => {
+          try {
+            const parsed = JSON.parse(xhr.responseText) as ArtemisUploadResult & { error?: string }
+            if (xhr.status >= 400 || !parsed.ok) {
+              reject(new Error(parsed.error || xhr.statusText || 'Upload failed'))
+              return
+            }
+            opts?.onProgress?.(100)
+            resolve(parsed)
+          } catch {
+            reject(new Error(xhr.responseText || 'Upload failed'))
+          }
+        }
+        xhr.send(
+          JSON.stringify({
+            name: file.name,
+            mimeType: file.type,
+            contentBase64,
+            source: opts?.source ?? 'bow',
+          }),
+        )
+      })
+      .catch(reject)
+  })
+}
+
 export async function fetchMemoryBoard() {
   const res = await fetch(`${API}/api/artemis/memory`, { credentials: 'include' })
   if (!res.ok) throw new Error(await parseError(res))

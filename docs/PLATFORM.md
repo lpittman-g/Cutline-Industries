@@ -23,9 +23,17 @@ artemis-data/
 ├── people.json
 ├── research/
 ├── conversations/
-├── knowledge/               # Files + domain docs
+├── knowledge/               # Files + extracted upload text
+├── uploaded/                # original PDF/DOCX/TXT/JSON/CSV/XLSX/image/code
 └── logs/activity.jsonl
 ```
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/artemis/chat` | Streaming Bow chat `{ message, conversationId, voice }` |
+| `POST /api/artemis/voice` | TTS stub / OpenAI speech `{ text, voice }` |
+| `POST /api/artemis/upload` | Console ingest `{ name, mimeType, contentBase64, source }` → `uploaded/` + `knowledge/` extract (25MB) |
+| `GET /api/artemis/memory` | Chronicle board mapped onto `artemis-data` |
 
 ### Thermal (public)
 

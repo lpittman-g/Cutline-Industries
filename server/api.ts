@@ -47,7 +47,10 @@ app.use(
   }),
 )
 registerStripeWebhookRoute(app)
-app.use(express.json({ limit: '1mb' }))
+app.use((req, res, next) => {
+  const largeUpload = req.method === 'POST' && req.path === '/api/artemis/upload'
+  return express.json({ limit: largeUpload ? '25mb' : '1mb' })(req, res, next)
+})
 
 async function readJsonSafe<T>(file: string, fallback: T): Promise<T> {
   try {

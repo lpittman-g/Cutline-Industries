@@ -27,6 +27,7 @@ import {
   type ProcessStepId,
   type VoiceId,
 } from './store.ts'
+import { ingestArtemisUpload, UPLOAD_MAX_BYTES, classifyUpload } from './upload.ts'
 
 function sendError(res: Response, err: unknown, status = 500) {
   const message = err instanceof Error ? err.message : String(err)
@@ -345,6 +346,49 @@ export function registerArtemisRoutes(app: Express) {
       }
       const item = await addMemoryItem('files', name, `Attached in The Bow · ${name}`)
       res.status(201).json({ ok: true, item })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.post('/api/artemis/upload', async (req, res) => {
+    try {
+      const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
+      const mimeType = typeof req.body?.mimeType === 'string' ? req.body.mimeType : ''
+      const source = req.body?.source === 'quiver' ? 'quiver' : 'bow'
+      const encoded = typeof req.body?.contentBase64 === 'string' ? req.body.contentBase64.replace(/\s/g, '') : ''
+      if (!name) {
+        res.status(400).json({ ok: false, error: 'name is required' })
+        return
+      }
+      if (!encoded) {
+        res.status(400).json({ ok: false, error: 'contentBase64 is required' })
+        return
+      }
+      if (!classifyUpload(name, mimeType)) {
+        res.status(400).json({
+          ok: false,
+          error: 'Unsupported type. Use PDF, DOCX, TXT, JSON, CSV, XLSX, image, or code.',
+        })
+        return
+      }
+      let buffer: Buffer
+      try {
+        buffer = Buffer.from(encoded, 'base64')
+      } catch {
+        res.status(400).json({ ok: false, error: 'Invalid base64 content' })
+        return
+      }
+      if (!buffer.length) {
+        res.status(400).json({ ok: false, error: 'Empty file' })
+        return
+      }
+      if (buffer.length > UPLOAD_MAX_BYTES) {
+        res.status(413).json({ ok: false, error: `File exceeds ${UPLOAD_MAX_BYTES / (1024 * 1024)}MB` })
+        return
+      }
+      const result = await ingestArtemisUpload({ name, mimeType, buffer, source })
+      res.status(201).json({ ok: true, ...result })
     } catch (err) {
       sendError(res, err)
     }
