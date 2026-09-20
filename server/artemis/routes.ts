@@ -162,9 +162,13 @@ export function registerArtemisRoutes(app: Express) {
         await mark('chunk', 'done')
         await mark('index', 'in_progress')
         const hits = await retrieveRelevantChunks(message, knowledgeId || undefined)
+        const scopedHits = knowledgeId ? hits.filter((hit) => hit.fileId === knowledgeId) : hits
         if (knowledgeId) await touchKnowledgeEntry(knowledgeId)
-        for (const hit of [...hits].reverse()) {
-          context.snippets.unshift(`[rag ${hit.name} #${hit.index + 1}] ${hit.text}`)
+        const ragSnippets = scopedHits.map((hit) => `[rag ${hit.name} #${hit.index + 1}] ${hit.text}`)
+        if (knowledgeId) {
+          context.snippets = [...ragSnippets, ...context.snippets.filter((snip) => snip.startsWith('[files]'))]
+        } else {
+          context.snippets = [...ragSnippets, ...context.snippets]
         }
         await mark('index', 'done')
 

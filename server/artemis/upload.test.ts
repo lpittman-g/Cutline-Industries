@@ -102,8 +102,10 @@ describe('ingestArtemisUpload', () => {
       assert.equal(indexed?.indexed, true)
       const hits = await retrieveRelevantChunks('quiver-ingest-token', knowledgeId)
       assert.ok(hits.some((hit) => hit.text.includes('quiver-ingest-token')))
-      const memory = await loadRelevantMemory('quiver-ingest-token', knowledgeId)
+      const memory = await loadRelevantMemory('Artemis quiver-ingest-token', knowledgeId)
       assert.ok(memory.snippets.some((snip) => snip.includes('quiver-ingest-token')))
+      assert.ok(memory.snippets.every((snip) => snip.startsWith('[files]') && snip.includes('upload-loop-test.json')))
+      assert.equal(memory.files.length, 1)
       const touched = await touchKnowledgeEntry(knowledgeId)
       assert.ok(touched && touched.lastUsedAt >= indexed!.lastUsedAt)
     } finally {

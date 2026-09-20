@@ -591,7 +591,6 @@ export function scoreText(haystack: string, tokens: string[]): number {
 }
 
 export async function loadRelevantMemory(userMessage: string, knowledgeId?: string): Promise<MemoryContext> {
-  const tokens = tokenize(userMessage)
   const board = await loadMemoryBoard()
   const voice = await getActiveVoice()
   const pool: { score: number; text: string }[] = []
@@ -601,10 +600,17 @@ export async function loadRelevantMemory(userMessage: string, knowledgeId?: stri
     if (scoped) {
       pool.push({ score: 99, text: `[files] ${scoped.title}: ${scoped.body}` })
     }
+    return {
+      voice,
+      snippets: pool.map((p) => p.text),
+      projects: board.projects.map((p) => p.title),
+      files: scoped ? [scoped.title] : [],
+    }
   }
 
+  const tokens = tokenize(userMessage)
+
   for (const kind of MEMORY_KINDS) {
-    if (knowledgeId && kind === 'files') continue
     for (const item of board[kind]) {
       const blob = `${item.title}\n${item.body}`
       const score = scoreText(blob, tokens) + (item.pinned ? 0.5 : 0)
