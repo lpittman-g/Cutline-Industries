@@ -316,10 +316,10 @@ export function BowChat({
             <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
               <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
               {msg.content ? <p>{msg.content}</p> : null}
+              {msg.steps && <ProcessingStepper statuses={msg.steps} />}
               {msg.cards?.map((card) => (
                 <KnowledgeFileCard key={card.id} card={card} onAsk={askAbout} />
               ))}
-              {msg.steps && <ProcessingStepper statuses={msg.steps} />}
             </article>
           ))}
         </div>
