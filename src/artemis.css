@@ -505,7 +505,9 @@ html.artemis-canvas ::selection {
   font-weight: 500;
 }
 
-.artemis-tab span {
+.artemis-tab span,
+.artemis-tab-suffix {
+  margin-left: 0.3rem;
   font-weight: 400;
   opacity: 0.7;
 }

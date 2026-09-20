@@ -40,7 +40,7 @@ export function ArtemisConsolePage() {
             onClick={() => setView(tab.id, tab.id === 'files' ? { engine } : undefined)}
           >
             {tab.label}
-            <span>{tab.suffix}</span>
+            <span className="artemis-tab-suffix">{tab.suffix}</span>
           </button>
         ))}
         <div className="artemis-online">

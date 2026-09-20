@@ -15,10 +15,10 @@ function CapabilityIcon({ id }: { id: (typeof CAPABILITIES)[number]['icon'] }) {
   if (id === 'bow') {
     return (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-        <path d="M4 12c4-7 12-7 16 0" />
-        <path d="M4 12c4 7 12 7 16 0" />
-        <path d="M12 5v14" />
-        <path d="M12 12h8" />
+        <path d="M5 19c6-12 14-12 14-12" />
+        <path d="M5 19l14-8" />
+        <path d="M15 7l4 4" />
+        <circle cx="5" cy="19" r="1.2" fill="currentColor" />
       </svg>
     )
   }
