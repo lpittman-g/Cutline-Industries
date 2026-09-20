@@ -27,10 +27,18 @@ ai-pipeline-state.json
 ai-pipeline.log
 leads.json
 
-# Artemis runtime hunts (keep seed conversation)
+# Artemis runtime hunts / knowledge attachments (keep seed files)
 artemis-data/conversations/*
 !artemis-data/conversations/.gitkeep
 !artemis-data/conversations/conv_welcome.json
+artemis-data/knowledge/*
+!artemis-data/knowledge/.gitkeep
+!artemis-data/knowledge/artemis.md
+!artemis-data/knowledge/cutline.md
+!artemis-data/knowledge/integrations.md
+artemis-data/research/*
+!artemis-data/research/.gitkeep
+!artemis-data/research/landing-mockup.json
 inbox/*
 !inbox/.gitkeep
 shorts_out/*

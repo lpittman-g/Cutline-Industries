@@ -21,6 +21,7 @@ export function ArtemisConsolePage() {
     nextParams.set('view', next)
     if (next !== 'files') nextParams.delete('engine')
     if (next !== 'logs') nextParams.delete('panel')
+    if (next !== 'memory') nextParams.delete('section')
     if (extras) {
       for (const [k, v] of Object.entries(extras)) nextParams.set(k, v)
     }
@@ -50,7 +51,9 @@ export function ArtemisConsolePage() {
       </div>
 
       <div className="artemis-console-panel">
-        {view === 'chat' && <BowChat onOpenChronicle={() => setView('memory')} />}
+        {view === 'chat' && (
+          <BowChat onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })} />
+        )}
         {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (
           <QuiverPanel

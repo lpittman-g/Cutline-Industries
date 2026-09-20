@@ -49,7 +49,7 @@ export function ArtemisShell() {
         return
       }
       if (id === 'chronicler') {
-        navigate('/console?view=memory')
+        navigate('/console?view=memory&section=projects')
         return
       }
       if (id === 'orion') {
@@ -62,7 +62,7 @@ export function ArtemisShell() {
       return
     }
     if (id === 'bow') navigate('/console?view=chat')
-    else if (id === 'chronicle') navigate('/console?view=memory')
+    else if (id === 'chronicle') navigate('/console?view=memory&section=projects')
     else if (id === 'quiver') navigate('/console?view=files&engine=orion')
     else if (id === 'iron') navigate('/console?view=files&engine=iron')
     else if (id === 'lunar') navigate('/console?view=logs&panel=lunar')

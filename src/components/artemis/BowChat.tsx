@@ -7,6 +7,7 @@ import {
   isVoiceId,
   type ChatMessage,
   type ChronicleCheck,
+  type MemoryKind,
   type ProcessStepId,
   type StepStatus,
   type VoiceId,
@@ -17,7 +18,7 @@ function idleSteps(): Record<ProcessStepId, StepStatus> {
   return Object.fromEntries(PROCESS_STEPS.map((s) => [s.id, 'pending'])) as Record<ProcessStepId, StepStatus>
 }
 
-export function BowChat({ onOpenChronicle }: { onOpenChronicle: () => void }) {
+export function BowChat({ onOpenChronicle }: { onOpenChronicle: (section?: MemoryKind) => void }) {
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE)
   const [message, setMessage] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
@@ -107,7 +108,7 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: () => void }) {
     for (const file of Array.from(files)) {
       try {
         await attachArtemisFile(file.name)
-        setMessages((m) => [...m, { role: 'artemis', content: `Attached ${file.name} to Chronicle files.` }])
+        setMessages((m) => [...m, { role: 'artemis', content: `Attached ${file.name} to knowledge/.` }])
       } catch (err) {
         setMessages((m) => [
           ...m,
@@ -133,13 +134,15 @@ export function BowChat({ onOpenChronicle }: { onOpenChronicle: () => void }) {
           ) : (
             checks.map((check) => (
               <li key={check.id}>
-                <span aria-hidden="true">{check.done ? '✓' : '○'}</span>
-                {check.label}
+                <button type="button" className="artemis-chronicle-link" onClick={() => onOpenChronicle(check.kind)}>
+                  <span aria-hidden="true">{check.done ? '✓' : '○'}</span>
+                  {check.label}
+                </button>
               </li>
             ))
           )}
         </ul>
-        <button type="button" className="artemis-cta-secondary artemis-cta-compact" onClick={onOpenChronicle}>
+        <button type="button" className="artemis-cta-secondary artemis-cta-compact" onClick={() => onOpenChronicle()}>
           View Chronicle →
         </button>
       </aside>

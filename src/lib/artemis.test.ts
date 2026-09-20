@@ -5,9 +5,11 @@ import {
   CAPABILITIES,
   DEFAULT_VOICE,
   MEMORY_SECTIONS,
+  MEMORY_SOURCES,
   PROCESS_STEPS,
   VOICES,
   parseConsoleView,
+  parseMemorySection,
   parseQuiverEngine,
 } from './artemis'
 
@@ -61,5 +63,13 @@ describe('voices and memory', () => {
     ])
     assert.equal(PROCESS_STEPS[0].label, 'Understanding request')
     assert.equal(PROCESS_STEPS.at(-1)?.label, 'Updating knowledge')
+  })
+
+  it('maps Files onto knowledge/ and parses section query', () => {
+    assert.equal(MEMORY_SOURCES.files, 'knowledge/')
+    assert.equal(MEMORY_SOURCES.projects, 'projects.json')
+    assert.equal(parseMemorySection(null), 'projects')
+    assert.equal(parseMemorySection('people'), 'people')
+    assert.equal(parseMemorySection('unknown'), 'projects')
   })
 })

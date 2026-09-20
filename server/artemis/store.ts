@@ -41,6 +41,16 @@ export const MEMORY_KINDS = [
 
 export type MemoryKind = (typeof MEMORY_KINDS)[number]
 
+export const MEMORY_SOURCES: Record<MemoryKind, string> = {
+  projects: 'projects.json',
+  decisions: 'decisions.json',
+  preferences: 'user-preferences.json',
+  people: 'people.json',
+  files: 'knowledge/',
+  research: 'research/',
+  conversations: 'conversations/',
+}
+
 export type MemoryItem = {
   id: string
   title: string
@@ -49,16 +59,34 @@ export type MemoryItem = {
   createdAt: string
   updatedAt: string
   path?: string
-  kind?: string
+  kind?: MemoryKind
 }
 
 type ItemFile = { items: MemoryItem[]; activeVoice?: VoiceId; voiceEnabled?: boolean; memoryEnabled?: boolean }
+type NotesFile = { items: MemoryItem[]; pins?: Record<string, boolean> }
 
-const KIND_FILE: Record<Exclude<MemoryKind, 'preferences' | 'research' | 'conversations'>, string> = {
+const KIND_FILE: Record<'projects' | 'decisions' | 'people', string> = {
   projects: 'projects.json',
   decisions: 'decisions.json',
   people: 'people.json',
-  files: 'files.json',
+}
+
+export function knowledgeFileId(filename: string): string {
+  const slug = filename
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    .toLowerCase()
+  return `file_${slug || 'note'}`
+}
+
+export function safeKnowledgeName(name: string): string {
+  const base = path.basename(name).trim() || 'note.md'
+  const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^\.+/g, '')
+  return cleaned || 'note.md'
+}
+
+function pinKey(kind: MemoryKind, id: string) {
+  return `${kind}:${id}`
 }
 
 export function nowIso() {
@@ -169,16 +197,100 @@ export async function writeConversation(conv: Conversation) {
   await writeJson(path.join(ARTEMIS_DATA, 'conversations', `${safe}.json`), conv)
 }
 
+async function notesPath() {
+  return path.join(ARTEMIS_DATA, 'memory.json')
+}
+
+async function readNotesFile(): Promise<NotesFile> {
+  return readJson<NotesFile>(await notesPath(), { items: [], pins: {} })
+}
+
+async function writeNotesFile(value: NotesFile) {
+  await writeJson(await notesPath(), { items: value.items ?? [], pins: value.pins ?? {} })
+}
+
+async function readPins(): Promise<Record<string, boolean>> {
+  return (await readNotesFile()).pins ?? {}
+}
+
+async function setPin(kind: MemoryKind, id: string, pinned: boolean) {
+  const notes = await readNotesFile()
+  notes.pins = notes.pins ?? {}
+  if (pinned) notes.pins[pinKey(kind, id)] = true
+  else delete notes.pins[pinKey(kind, id)]
+  await writeNotesFile(notes)
+}
+
 export async function listKnowledgeFiles() {
+  const items = await listFileItems()
+  return items.map((item) => ({ name: item.title, body: item.body, path: item.path }))
+}
+
+async function uniqueKnowledgeName(desired: string): Promise<string> {
   const dir = path.join(ARTEMIS_DATA, 'knowledge')
   await fs.mkdir(dir, { recursive: true })
-  const names = (await fs.readdir(dir)).filter((n) => n.endsWith('.md'))
-  const files: { name: string; body: string }[] = []
-  for (const name of names) {
-    const body = await fs.readFile(path.join(dir, name), 'utf8')
-    files.push({ name, body })
+  const safe = safeKnowledgeName(desired)
+  const ext = path.extname(safe)
+  const stem = ext ? safe.slice(0, -ext.length) : safe
+  let candidate = safe
+  let n = 2
+  while (true) {
+    try {
+      await fs.access(path.join(dir, candidate))
+      candidate = `${stem}-${n}${ext || '.md'}`
+      n += 1
+    } catch {
+      return candidate
+    }
   }
-  return files
+}
+
+async function listFileItems(): Promise<MemoryItem[]> {
+  const dir = path.join(ARTEMIS_DATA, 'knowledge')
+  await fs.mkdir(dir, { recursive: true })
+  const pins = await readPins()
+  const names = await fs.readdir(dir)
+  const items: MemoryItem[] = []
+  for (const name of names) {
+    if (name.startsWith('.')) continue
+    const full = path.join(dir, name)
+    const stat = await fs.stat(full)
+    if (!stat.isFile()) continue
+    const body = await fs.readFile(full, 'utf8')
+    const id = knowledgeFileId(name)
+    items.push({
+      id,
+      title: name,
+      body,
+      path: `knowledge/${name}`,
+      kind: 'files',
+      pinned: Boolean(pins[pinKey('files', id)]),
+      createdAt: stat.birthtime.toISOString(),
+      updatedAt: stat.mtime.toISOString(),
+    })
+  }
+  items.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+  return items
+}
+
+async function writeFileItem(item: MemoryItem, previousPath?: string) {
+  const dir = path.join(ARTEMIS_DATA, 'knowledge')
+  await fs.mkdir(dir, { recursive: true })
+  const filename = safeKnowledgeName(item.path ? path.basename(item.path) : item.title)
+  const dest = path.join(dir, filename)
+  await fs.writeFile(dest, item.body, 'utf8')
+  if (previousPath) {
+    const prev = path.join(ARTEMIS_DATA, previousPath)
+    if (path.resolve(prev) !== path.resolve(dest)) {
+      try {
+        await fs.unlink(prev)
+      } catch {
+        /* already gone */
+      }
+      await setPin('files', knowledgeFileId(path.basename(previousPath)), false)
+    }
+  }
+  await setPin('files', knowledgeFileId(filename), item.pinned)
 }
 
 async function listResearchItems(): Promise<MemoryItem[]> {
@@ -189,7 +301,7 @@ async function listResearchItems(): Promise<MemoryItem[]> {
   for (const name of names) {
     if (!name.endsWith('.json')) continue
     const row = await readJson<MemoryItem | null>(path.join(dir, name), null)
-    if (row?.id) items.push(row)
+    if (row?.id) items.push({ ...row, kind: 'research', path: `research/${name}` })
   }
   return items
 }
@@ -201,20 +313,24 @@ async function writeResearchItem(item: MemoryItem) {
 async function readKindItems(kind: MemoryKind): Promise<MemoryItem[]> {
   if (kind === 'preferences') return (await readPreferences()).items
   if (kind === 'research') return listResearchItems()
+  if (kind === 'files') return listFileItems()
   if (kind === 'conversations') {
     const convos = await listConversations()
+    const pins = await readPins()
     return convos.map((c) => ({
       id: c.id,
       title: c.title,
       body: c.messages.map((m) => `${m.role}: ${m.content}`).join('\n').slice(0, 1200),
-      pinned: false,
+      pinned: Boolean(pins[pinKey('conversations', c.id)]),
       createdAt: c.messages[0]?.at ?? c.updatedAt,
       updatedAt: c.updatedAt,
+      path: `conversations/${c.id}.json`,
+      kind: 'conversations',
     }))
   }
   const file = KIND_FILE[kind]
   const data = await readJson<ItemFile>(path.join(ARTEMIS_DATA, file), { items: [] })
-  return data.items ?? []
+  return (data.items ?? []).map((item) => ({ ...item, kind, path: file }))
 }
 
 async function writeKindItems(kind: MemoryKind, items: MemoryItem[]) {
@@ -234,14 +350,7 @@ async function writeKindItems(kind: MemoryKind, items: MemoryItem[]) {
     for (const item of items) await writeResearchItem(item)
     return
   }
-  if (kind === 'conversations') {
-    for (const item of items) {
-      const conv = await readConversation(item.id)
-      if (!conv) continue
-      conv.title = item.title
-      conv.updatedAt = nowIso()
-      await writeConversation(conv)
-    }
+  if (kind === 'files' || kind === 'conversations') {
     return
   }
   const file = KIND_FILE[kind]
@@ -275,14 +384,41 @@ export async function updateMemoryItem(
     if (patch.title) conv.title = patch.title
     conv.updatedAt = nowIso()
     await writeConversation(conv)
+    if (typeof patch.pinned === 'boolean') await setPin(kind, id, patch.pinned)
+    const pins = await readPins()
     return {
       id: conv.id,
       title: conv.title,
       body: conv.messages.at(-1)?.content ?? '',
-      pinned: Boolean(patch.pinned),
+      pinned: Boolean(pins[pinKey(kind, id)]),
       createdAt: conv.messages[0]?.at ?? conv.updatedAt,
       updatedAt: conv.updatedAt,
+      path: `conversations/${conv.id}.json`,
+      kind,
     } satisfies MemoryItem
+  }
+  if (kind === 'files') {
+    const items = await listFileItems()
+    const current = items.find((i) => i.id === id)
+    if (!current) return null
+    if (typeof patch.pinned === 'boolean' && patch.title === undefined && patch.body === undefined) {
+      await setPin('files', id, patch.pinned)
+      await appendActivity('memory.update', `${kind}/${id}`)
+      return { ...current, pinned: patch.pinned, updatedAt: nowIso() }
+    }
+    const next: MemoryItem = { ...current, ...patch, updatedAt: nowIso(), kind: 'files' }
+    if (patch.title && patch.title !== current.title) {
+      next.path = `knowledge/${safeKnowledgeName(patch.title)}`
+    }
+    await writeFileItem(next, current.path)
+    await appendActivity('memory.update', `${kind}/${id}`)
+    const filename = safeKnowledgeName(next.path ? path.basename(next.path) : next.title)
+    return {
+      ...next,
+      id: knowledgeFileId(filename),
+      title: filename,
+      path: `knowledge/${filename}`,
+    }
   }
   const items = await readKindItems(kind)
   const idx = items.findIndex((i) => i.id === id)
@@ -300,6 +436,20 @@ export async function forgetMemoryItem(kind: MemoryKind, id: string) {
     const file = path.join(ARTEMIS_DATA, 'conversations', `${safe}.json`)
     try {
       await fs.unlink(file)
+      await setPin(kind, id, false)
+      await appendActivity('memory.forget', `${kind}/${id}`)
+      return true
+    } catch {
+      return false
+    }
+  }
+  if (kind === 'files') {
+    const items = await listFileItems()
+    const current = items.find((i) => i.id === id)
+    if (!current?.path) return false
+    try {
+      await fs.unlink(path.join(ARTEMIS_DATA, current.path))
+      await setPin('files', id, false)
       await appendActivity('memory.forget', `${kind}/${id}`)
       return true
     } catch {
@@ -315,12 +465,13 @@ export async function forgetMemoryItem(kind: MemoryKind, id: string) {
 }
 
 async function readNotes(): Promise<MemoryItem[]> {
-  const data = await readJson<{ items: MemoryItem[] }>(path.join(ARTEMIS_DATA, 'memory.json'), { items: [] })
-  return data.items ?? []
+  return (await readNotesFile()).items ?? []
 }
 
 async function writeNotes(items: MemoryItem[]) {
-  await writeJson(path.join(ARTEMIS_DATA, 'memory.json'), { items })
+  const notes = await readNotesFile()
+  notes.items = items
+  await writeNotesFile(notes)
 }
 
 export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, body: string) {
@@ -331,6 +482,7 @@ export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, b
     pinned: false,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    kind: kind === 'notes' ? undefined : kind,
   }
   if (kind === 'conversations') return item
   if (kind === 'notes') {
@@ -339,6 +491,24 @@ export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, b
     await writeNotes(notes)
     await appendActivity('memory.add', `notes/${item.id}`)
     return item
+  }
+  if (kind === 'files') {
+    await ensureArtemisData()
+    const filename = await uniqueKnowledgeName(title.includes('.') ? title : `${title}.md`)
+    const dest = path.join(ARTEMIS_DATA, 'knowledge', filename)
+    await fs.writeFile(dest, body, 'utf8')
+    const created: MemoryItem = {
+      id: knowledgeFileId(filename),
+      title: filename,
+      body,
+      pinned: false,
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      path: `knowledge/${filename}`,
+      kind: 'files',
+    }
+    await appendActivity('memory.add', `files/${created.id}`)
+    return created
   }
   const items = await readKindItems(kind)
   items.unshift(item)
@@ -349,12 +519,11 @@ export async function addMemoryItem(kind: MemoryKind | 'notes', title: string, b
 
 export async function loadChronicleChecklist() {
   const board = await loadMemoryBoard()
-  const knowledge = await listKnowledgeFiles()
   const checks = [
-    ...board.projects.filter((i) => i.pinned).map((i) => ({ id: i.id, label: `Project · ${i.title}`, done: true })),
-    ...board.decisions.slice(0, 3).map((i) => ({ id: i.id, label: `Decision · ${i.title}`, done: true })),
-    ...knowledge.map((k) => ({ id: k.name, label: `Knowledge · ${k.name}`, done: true })),
-    ...board.files.slice(0, 3).map((i) => ({ id: i.id, label: `File · ${i.title}`, done: true })),
+    ...board.projects.filter((i) => i.pinned).map((i) => ({ id: i.id, label: `Project · ${i.title}`, done: true, kind: 'projects' as const })),
+    ...board.decisions.slice(0, 3).map((i) => ({ id: i.id, label: `Decision · ${i.title}`, done: true, kind: 'decisions' as const })),
+    ...board.files.slice(0, 4).map((i) => ({ id: i.id, label: `File · ${i.title}`, done: true, kind: 'files' as const })),
+    ...board.research.slice(0, 2).map((i) => ({ id: i.id, label: `Research · ${i.title}`, done: true, kind: 'research' as const })),
   ]
   return checks.slice(0, 8)
 }
@@ -383,7 +552,6 @@ export function scoreText(haystack: string, tokens: string[]): number {
 export async function loadRelevantMemory(userMessage: string): Promise<MemoryContext> {
   const tokens = tokenize(userMessage)
   const board = await loadMemoryBoard()
-  const knowledge = await listKnowledgeFiles()
   const voice = await getActiveVoice()
   const pool: { score: number; text: string }[] = []
 
@@ -398,11 +566,6 @@ export async function loadRelevantMemory(userMessage: string): Promise<MemoryCon
     const score = scoreText(`${item.title}\n${item.body}`, tokens) + (item.pinned ? 0.5 : 0)
     if (score > 0) pool.push({ score, text: `[notes] ${item.title}: ${item.body}` })
   }
-  for (const file of knowledge) {
-    const score = scoreText(`${file.name}\n${file.body}`, tokens) + 0.25
-    if (score > 0) pool.push({ score, text: `[knowledge/${file.name}] ${file.body.slice(0, 600)}` })
-  }
-
   pool.sort((a, b) => b.score - a.score)
   return {
     voice,

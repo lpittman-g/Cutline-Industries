@@ -10,6 +10,22 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 |-------|---------|
 | `/` | Marketing landing — Enter Artemis → console |
 | `/console` | Artemis console (The Bow, Chronicle, Quiver, Lunar Gate, Logs) |
+| `/console?view=memory&section=projects` | Chronicle sidebar (Projects, Decisions, Preferences, People, Files, Research, Conversations) |
+
+File-backed memory (not Postgres):
+
+```
+artemis-data/
+├── memory.json              # notes + pin overlay
+├── user-preferences.json
+├── projects.json
+├── decisions.json
+├── people.json
+├── research/
+├── conversations/
+├── knowledge/               # Files + domain docs
+└── logs/activity.jsonl
+```
 
 ### Thermal (public)
 

@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express'
 import {
   MEMORY_KINDS,
+  MEMORY_SOURCES,
   PROCESS_STEPS,
   VOICES,
   addMemoryItem,
@@ -194,6 +195,7 @@ export function registerArtemisRoutes(app: Express) {
       res.json({
         ok: true,
         sections: MEMORY_KINDS,
+        sources: MEMORY_SOURCES,
         board,
         chronicle,
         activeVoice: prefs,

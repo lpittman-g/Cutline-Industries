@@ -67,6 +67,17 @@ export const MEMORY_SECTIONS = [
 ] as const
 
 export type MemoryKind = (typeof MEMORY_SECTIONS)[number]
+
+export const MEMORY_SOURCES: Record<MemoryKind, string> = {
+  projects: 'projects.json',
+  decisions: 'decisions.json',
+  preferences: 'user-preferences.json',
+  people: 'people.json',
+  files: 'knowledge/',
+  research: 'research/',
+  conversations: 'conversations/',
+}
+
 export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
 export type QuiverEngine = 'orion' | 'iron'
 
@@ -80,6 +91,11 @@ export const CONSOLE_VIEWS: { id: ConsoleView; label: string; suffix: string }[]
 export function parseConsoleView(value: string | null): ConsoleView {
   if (value === 'files' || value === 'logs' || value === 'chat' || value === 'memory') return value
   return 'chat'
+}
+
+export function parseMemorySection(value: string | null): MemoryKind {
+  if (value && (MEMORY_SECTIONS as readonly string[]).includes(value)) return value as MemoryKind
+  return 'projects'
 }
 
 export function parseQuiverEngine(value: string | null): QuiverEngine {
@@ -100,7 +116,7 @@ export type MemoryItem = {
   path?: string
 }
 
-export type ChronicleCheck = { id: string; label: string; done: boolean }
+export type ChronicleCheck = { id: string; label: string; done: boolean; kind?: MemoryKind }
 
 export type ChatMessage = {
   role: 'operator' | 'artemis'
