@@ -46,7 +46,7 @@ export function CommandMenu({
       onOpen()
     }
     document.addEventListener('keydown', onKey, true)
-    return () => document.removeEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true) // capture: composer cannot swallow ⌘K / Ctrl+K
   }, [open, onOpen])
 
   useEffect(() => {
