@@ -175,6 +175,43 @@ html.artemis-canvas ::selection {
   color: var(--ag-muted);
 }
 
+.artemis-command-kbd {
+  margin-left: 0.15rem;
+  border: 1px solid var(--ag-line);
+  background: #fff;
+  color: var(--ag-muted);
+  border-radius: 6px;
+  padding: 0.08rem 0.35rem;
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.artemis-command-search {
+  margin: 0 0 0.65rem;
+}
+
+.artemis-command-search input {
+  width: 100%;
+  border: 1px solid var(--ag-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ag-ink);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.86rem;
+}
+
+.artemis-command-search input:focus {
+  outline: 2px solid rgba(50, 121, 249, 0.28);
+  border-color: var(--ag-blue);
+}
+
+.artemis-command-empty {
+  padding: 0.75rem;
+  color: var(--ag-muted);
+  font-size: 0.8rem;
+}
+
 .artemis-command-backdrop {
   position: fixed;
   inset: 0;

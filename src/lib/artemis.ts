@@ -156,6 +156,22 @@ export const COMMAND_MENU_ITEMS = [
 
 export type CommandMenuId = (typeof COMMAND_MENU_ITEMS)[number]['id']
 
+export function isCommandMenuHotkey(event: { key: string; metaKey: boolean; ctrlKey: boolean }): boolean {
+  return (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
+}
+
+export function commandMenuShortcutLabel(platform = typeof navigator === 'undefined' ? '' : navigator.platform): string {
+  return /Mac|iPhone|iPad/i.test(platform) ? '⌘K' : 'Ctrl+K'
+}
+
+export function filterCommandItems<T extends { label: string; hint: string }>(items: readonly T[], query: string): T[] {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return [...items]
+  return items.filter(
+    (item) => item.label.toLowerCase().includes(needle) || item.hint.toLowerCase().includes(needle),
+  )
+}
+
 export function commandMenuPath(id: CommandMenuId, nonce = '1'): string | null {
   if (id === 'new-hunt') return `/console?view=chat&fresh=hunt&n=${nonce}`
   if (id === 'new-chat') return `/console?view=chat&fresh=chat&n=${nonce}`

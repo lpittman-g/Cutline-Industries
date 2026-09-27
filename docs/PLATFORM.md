@@ -11,7 +11,7 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 | `/` | Marketing landing — Enter Artemis → console |
 | `/console` | Artemis console (The Bow, Chronicle, Quiver, Lunar Gate, Logs) |
 | `/console?view=memory&section=projects` | Chronicle sidebar (Projects, Decisions, Preferences, People, Files, Research, Conversations) |
-| Top-bar Command Menu | New Hunt · New Chat · Voice Mode · Upload File · Chronicle · Research · Run Action · Logs · Settings |
+| Top-bar Command Menu | New Hunt · New Chat · Voice Mode · Upload File · Chronicle · Research · Run Action · Logs · Settings. `⌘K` / `Ctrl+K` opens the palette and focuses search. |
 
 File-backed memory (not Postgres):
 

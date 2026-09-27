@@ -19,6 +19,9 @@ import {
   parseQuiverEngine,
   COMMAND_MENU_ITEMS,
   commandMenuPath,
+  commandMenuShortcutLabel,
+  filterCommandItems,
+  isCommandMenuHotkey,
 } from './artemis'
 
 describe('Artemis landing copy', () => {
@@ -81,6 +84,23 @@ describe('command menu', () => {
     assert.equal(commandMenuPath('action'), null)
     assert.equal(commandMenuPath('logs'), '/console?view=logs')
     assert.equal(commandMenuPath('settings'), '/console?view=logs&panel=lunar')
+  })
+
+  it('opens on ⌘K and Ctrl+K and filters items', () => {
+    assert.equal(isCommandMenuHotkey({ key: 'k', metaKey: true, ctrlKey: false }), true)
+    assert.equal(isCommandMenuHotkey({ key: 'K', metaKey: false, ctrlKey: true }), true)
+    assert.equal(isCommandMenuHotkey({ key: 'k', metaKey: false, ctrlKey: false }), false)
+    assert.equal(commandMenuShortcutLabel('MacIntel'), '⌘K')
+    assert.equal(commandMenuShortcutLabel('Win32'), 'Ctrl+K')
+    assert.deepEqual(
+      filterCommandItems(COMMAND_MENU_ITEMS, 'voice').map((item) => item.id),
+      ['voice'],
+    )
+    assert.deepEqual(
+      filterCommandItems(COMMAND_MENU_ITEMS, 'memory').map((item) => item.id),
+      ['chronicle'],
+    )
+    assert.equal(filterCommandItems(COMMAND_MENU_ITEMS, 'zzz').length, 0)
   })
 })
 

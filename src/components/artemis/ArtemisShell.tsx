@@ -31,16 +31,9 @@ export function ArtemisShell() {
   }, [location.pathname, location.search])
 
   const closeMenu = useCallback(() => setMenuOpen(false), [])
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setMenuOpen((v) => !v)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+  const openMenu = useCallback(() => {
+    setActionOpen(false)
+    setMenuOpen(true)
   }, [])
 
   const go = (id: CommandMenuId) => {
@@ -77,6 +70,7 @@ export function ArtemisShell() {
         <CommandMenu
           open={menuOpen}
           items={COMMAND_MENU_ITEMS}
+          onOpen={openMenu}
           onToggle={() => setMenuOpen((v) => !v)}
           onClose={closeMenu}
           onSelect={(id) => go(id as CommandMenuId)}
