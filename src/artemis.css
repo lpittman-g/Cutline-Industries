@@ -239,19 +239,78 @@ html.artemis-canvas ::selection {
   background: transparent;
   color: var(--ag-ink);
   border-radius: 14px;
-  padding: 0.8rem 0.75rem;
+  padding: 0.7rem 0.75rem;
   font-size: 0.92rem;
+}
+
+.artemis-command-link strong {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+}
+
+.artemis-command-link em {
+  display: inline-flex;
+  width: 1.4rem;
+  justify-content: center;
+  font-style: normal;
+  color: var(--ag-blue);
 }
 
 .artemis-command-link span {
   display: block;
-  margin-top: 0.2rem;
+  margin: 0.15rem 0 0 1.95rem;
   color: var(--ag-muted);
   font-size: 0.7rem;
 }
 
 .artemis-command-link:hover {
   background: var(--ag-surface-2);
+}
+
+.artemis-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(18, 19, 23, 0.28);
+  backdrop-filter: blur(6px);
+}
+
+.artemis-modal {
+  width: min(26rem, 100%);
+  padding: 1.25rem 1.3rem 1.15rem;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--ag-border);
+  border-radius: 20px;
+  box-shadow: var(--ag-glow);
+}
+
+.artemis-modal h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.artemis-modal > p {
+  margin: 0 0 0.85rem;
+  color: var(--ag-muted);
+  font-size: 0.82rem;
+}
+
+.artemis-action-list {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  border: 1px solid var(--ag-line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.artemis-action-list .artemis-command-link span {
+  margin-left: 0;
 }
 
 .artemis-landing {

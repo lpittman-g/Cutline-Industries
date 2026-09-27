@@ -28,15 +28,22 @@ export function ArtemisConsolePage() {
   const view = parseConsoleView(params.get('view'))
   const engine = parseQuiverEngine(params.get('engine'))
   const showLunar = params.get('panel') === 'lunar'
+  const voiceMode = params.get('panel') === 'voice'
   const knowledgeId = params.get('knowledge') || undefined
+  const sessionKey = params.get('n') || 'live'
+  const hunt = params.get('fresh') === 'hunt'
+  const autoUpload = params.get('upload') === '1'
 
   const setView = (next: ConsoleView, extras?: Record<string, string>) => {
     const nextParams = new URLSearchParams(params)
     nextParams.set('view', next)
     if (next !== 'files') nextParams.delete('engine')
-    if (next !== 'logs') nextParams.delete('panel')
     if (next !== 'memory') nextParams.delete('section')
     if (next !== 'chat') nextParams.delete('knowledge')
+    nextParams.delete('panel')
+    nextParams.delete('fresh')
+    nextParams.delete('n')
+    nextParams.delete('upload')
     if (extras) {
       for (const [k, v] of Object.entries(extras)) nextParams.set(k, v)
     }
@@ -68,7 +75,10 @@ export function ArtemisConsolePage() {
       <div className="artemis-console-panel">
         {view === 'chat' && (
           <BowChat
+            key={sessionKey}
             knowledgeId={knowledgeId}
+            hunt={hunt}
+            voiceMode={voiceMode}
             onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })}
           />
         )}
@@ -76,6 +86,7 @@ export function ArtemisConsolePage() {
         {view === 'files' && (
           <QuiverPanel
             engine={engine}
+            autoUpload={autoUpload}
             onEngine={(next) => setView('files', { engine: next })}
             onAskFile={(card) => setView('chat', { knowledge: card.id })}
           />
@@ -88,10 +99,12 @@ export function ArtemisConsolePage() {
 
 function QuiverPanel({
   engine,
+  autoUpload,
   onEngine,
   onAskFile,
 }: {
   engine: QuiverEngine
+  autoUpload?: boolean
   onEngine: (next: QuiverEngine) => void
   onAskFile: (card: KnowledgeCard) => void
 }) {
@@ -150,6 +163,9 @@ function QuiverPanel({
         </div>
         <span className="artemis-badge">{engine === 'orion' ? 'Orion Vector Active' : 'Iron Forge Active'}</span>
       </div>
+      {autoUpload && (
+        <p className="artemis-banner">Upload File — drop or browse to extract, chunk, and index.</p>
+      )}
 
       <div className="artemis-quiver-layout">
         <div className="artemis-engine-rail" role="tablist" aria-label="Quiver data engines">
@@ -178,7 +194,7 @@ function QuiverPanel({
         {engine === 'orion' ? (
           <div>
             <div
-              className={`artemis-drop${orionOver ? ' is-over' : ''}`}
+              className={`artemis-drop${orionOver || autoUpload ? ' is-over' : ''}`}
               onClick={() => orionInput.current?.click()}
               onDragOver={(e) => {
                 e.preventDefault()

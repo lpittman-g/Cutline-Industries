@@ -2,6 +2,7 @@ import { useEffect, useId } from 'react'
 
 export type CommandItem = {
   id: string
+  icon?: string
   label: string
   hint: string
 }
@@ -63,7 +64,10 @@ export function CommandMenu({
           {items.map((item) => (
             <li key={item.id}>
               <button type="button" role="menuitem" className="artemis-command-link" onClick={() => onSelect(item.id)}>
-                {item.label}
+                <strong>
+                  {item.icon ? <em aria-hidden="true">{item.icon}</em> : null}
+                  {item.label}
+                </strong>
                 <span>{item.hint}</span>
               </button>
             </li>

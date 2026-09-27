@@ -53,15 +53,24 @@ function pause(ms = 280) {
 export function BowChat({
   onOpenChronicle,
   knowledgeId,
+  hunt,
+  voiceMode,
 }: {
   onOpenChronicle: (section?: MemoryKind) => void
   knowledgeId?: string
+  hunt?: boolean
+  voiceMode?: boolean
 }) {
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE)
   const [message, setMessage] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'artemis', content: 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.' },
+    {
+      role: 'artemis',
+      content: hunt
+        ? 'New hunt started. Ask Artemis to open the trail — memory and voice are on.'
+        : 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.',
+    },
   ])
   const [busy, setBusy] = useState(false)
   const [checks, setChecks] = useState<ChronicleCheck[]>([])
@@ -96,6 +105,12 @@ export function BowChat({
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
   }, [messages])
+
+  useEffect(() => {
+    if (!voiceMode) return
+    setVoiceNote(`${VOICES[voice].label} voice mode on. Speak the last reply, or keep typing.`)
+    composerRef.current?.focus()
+  }, [voiceMode, voice])
 
   const send = async () => {
     const text = message.trim()

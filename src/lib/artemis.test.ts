@@ -17,6 +17,8 @@ import {
   parseConsoleView,
   parseMemorySection,
   parseQuiverEngine,
+  COMMAND_MENU_ITEMS,
+  commandMenuPath,
 } from './artemis'
 
 describe('Artemis landing copy', () => {
@@ -48,6 +50,37 @@ describe('console query parsing', () => {
     assert.equal(parseQuiverEngine(null), 'orion')
     assert.equal(parseQuiverEngine('orion'), 'orion')
     assert.equal(parseQuiverEngine('iron'), 'iron')
+  })
+})
+
+describe('command menu', () => {
+  it('lists the top-bar commands', () => {
+    assert.deepEqual(
+      COMMAND_MENU_ITEMS.map((item) => `${item.icon} ${item.label}`),
+      [
+        '⌘ New Hunt',
+        '💬 New Chat',
+        '🎙 Voice Mode',
+        '📂 Upload File',
+        '🧠 Chronicle',
+        '🔍 Research',
+        '⚡ Run Action',
+        '📋 Logs',
+        '⚙ Settings',
+      ],
+    )
+  })
+
+  it('routes each command to a console surface', () => {
+    assert.match(commandMenuPath('new-hunt', '9') ?? '', /view=chat.*fresh=hunt/)
+    assert.match(commandMenuPath('new-chat', '9') ?? '', /view=chat.*fresh=chat/)
+    assert.match(commandMenuPath('voice', '9') ?? '', /panel=voice/)
+    assert.match(commandMenuPath('upload', '9') ?? '', /view=files.*upload=1/)
+    assert.equal(commandMenuPath('chronicle'), '/console?view=memory&section=projects')
+    assert.equal(commandMenuPath('research'), '/console?view=memory&section=research')
+    assert.equal(commandMenuPath('action'), null)
+    assert.equal(commandMenuPath('logs'), '/console?view=logs')
+    assert.equal(commandMenuPath('settings'), '/console?view=logs&panel=lunar')
   })
 })
 

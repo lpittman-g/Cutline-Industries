@@ -142,6 +142,32 @@ export const CONSOLE_VIEWS: { id: ConsoleView; label: string; suffix: string }[]
   { id: 'logs', label: 'Logs', suffix: 'View' },
 ]
 
+export const COMMAND_MENU_ITEMS = [
+  { id: 'new-hunt', icon: '⌘', label: 'New Hunt', hint: 'Start a fresh hunt' },
+  { id: 'new-chat', icon: '💬', label: 'New Chat', hint: 'Open The Bow' },
+  { id: 'voice', icon: '🎙', label: 'Voice Mode', hint: 'Speak with Artemis' },
+  { id: 'upload', icon: '📂', label: 'Upload File', hint: 'Extract · chunk · index' },
+  { id: 'chronicle', icon: '🧠', label: 'Chronicle', hint: 'Memory board' },
+  { id: 'research', icon: '🔍', label: 'Research', hint: 'Research notes' },
+  { id: 'action', icon: '⚡', label: 'Run Action', hint: 'Trigger a workflow' },
+  { id: 'logs', icon: '📋', label: 'Logs', hint: 'Activity log' },
+  { id: 'settings', icon: '⚙', label: 'Settings', hint: 'Lunar Gate' },
+] as const
+
+export type CommandMenuId = (typeof COMMAND_MENU_ITEMS)[number]['id']
+
+export function commandMenuPath(id: CommandMenuId, nonce = '1'): string | null {
+  if (id === 'new-hunt') return `/console?view=chat&fresh=hunt&n=${nonce}`
+  if (id === 'new-chat') return `/console?view=chat&fresh=chat&n=${nonce}`
+  if (id === 'voice') return `/console?view=chat&panel=voice&n=${nonce}`
+  if (id === 'upload') return `/console?view=files&engine=orion&upload=1&n=${nonce}`
+  if (id === 'chronicle') return '/console?view=memory&section=projects'
+  if (id === 'research') return '/console?view=memory&section=research'
+  if (id === 'action') return null
+  if (id === 'logs') return '/console?view=logs'
+  return '/console?view=logs&panel=lunar'
+}
+
 export function parseConsoleView(value: string | null): ConsoleView {
   if (value === 'files' || value === 'logs' || value === 'chat' || value === 'memory') return value
   return 'chat'
