@@ -9,7 +9,37 @@ Monorepo for Lamont Pittman / Cutline Industries — the Thermal product and eve
 | Route | Purpose |
 |-------|---------|
 | `/` | Marketing landing — Enter Artemis → console |
-| `/console` | Artemis console (The Bow, Quiver, Lunar Gate, Logs) |
+| `/console` | Artemis console (The Bow, Chronicle, Quiver, Lunar Gate, Logs) |
+| `/console?view=memory&section=projects` | Chronicle sidebar (Projects, Decisions, Preferences, People, Files, Research, Conversations) |
+| Top-bar Command Menu | New Hunt · New Chat · Voice Mode · Upload File · Chronicle · Research · Run Action · Logs · Settings. `⌘K` / `Ctrl+K` opens the palette and focuses search. |
+
+File-backed memory (not Postgres):
+
+```
+artemis-data/
+├── memory.json              # notes + pin overlay
+├── user-preferences.json
+├── projects.json
+├── decisions.json
+├── people.json
+├── research/
+├── conversations/
+├── knowledge/               # Files + extracted upload text
+├── knowledge-index.json     # file cards: name, indexed, chunkCount, lastUsedAt
+├── rag/                     # per-file chunk stores for retrieval
+├── uploaded/                # original PDF/DOCX/TXT/JSON/CSV/XLSX/image/code
+└── logs/activity.jsonl
+```
+
+| Route | Purpose |
+|-------|---------|
+| `POST /api/artemis/chat` | Streaming Bow chat `{ message, conversationId, voice, knowledgeId? }` — retrieves RAG chunks into context |
+| `POST /api/artemis/voice` | TTS stub / OpenAI speech `{ text, voice }` |
+| `POST /api/artemis/upload` | RAG ingest: extractText → chunkText → indexChunks → `uploaded/` + `knowledge/` + `rag/` + `knowledge-index.json` (25MB) |
+| `GET /api/artemis/knowledge` | Indexed upload cards (name, indexed, chunkCount, lastUsedAt) |
+| `GET /api/artemis/drive` | Google Drive catalog / live files (`GOOGLE_CLOUD_PROJECT`) |
+| `POST /api/artemis/drive/import` | Import a Drive doc through extract → chunk → index |
+| `GET /api/artemis/memory` | Chronicle board mapped onto `artemis-data` |
 
 ### Thermal (public)
 

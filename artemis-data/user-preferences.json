@@ -1,0 +1,23 @@
+{
+  "activeVoice": "astra",
+  "voiceEnabled": true,
+  "memoryEnabled": true,
+  "items": [
+    {
+      "id": "pref_voice",
+      "title": "Default voice",
+      "body": "astra",
+      "pinned": true,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "pref_tone",
+      "title": "Response tone",
+      "body": "Operational, concise, and action-first. Prefer next steps over theory.",
+      "pinned": false,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    }
+  ]
+}

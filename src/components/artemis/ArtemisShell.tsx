@@ -1,28 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { CommandMenu, type CommandItem } from './CommandMenu'
+import { COMMAND_MENU_ITEMS, commandMenuPath, driveConsolePath, type CommandMenuId } from '../../lib/artemis'
+import { CommandMenu } from './CommandMenu'
 import { ArtemisMark } from './ArtemisMark'
 
-const LANDING_ITEMS: CommandItem[] = [
-  { id: 'enter', label: 'Enter Artemis', hint: 'Open the console' },
-  { id: 'capabilities', label: 'View Capabilities', hint: 'Bow · Orion · Chronicler' },
-  { id: 'bow', label: 'The Bow', hint: 'Console engine' },
-  { id: 'orion', label: 'Orion', hint: 'Vector store' },
-  { id: 'chronicler', label: 'Chronicler', hint: 'Hunt memory' },
-]
-
-const CONSOLE_ITEMS: CommandItem[] = [
-  { id: 'bow', label: 'The Bow', hint: 'Console engine' },
-  { id: 'quiver', label: 'The Quiver', hint: 'Data storage' },
-  { id: 'iron', label: 'The Iron Forge', hint: 'Enterprise stack' },
-  { id: 'lunar', label: 'Lunar Gate', hint: 'Core settings' },
-]
+const ACTION_STUBS = [
+  { id: 'drive', label: 'Import from Google Drive', hint: 'Lisa privacy docs → extract · chunk · index' },
+  { id: 'index', label: 'Index latest uploads', hint: 'Open Quiver and run extract → chunk → index' },
+  { id: 'brief', label: 'Generate hunt brief', hint: 'Start a New Hunt in The Bow' },
+  { id: 'chronicle', label: 'Summarize Chronicle', hint: 'Open memory research notes' },
+] as const
 
 export function ArtemisShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
-  const isConsole = location.pathname.startsWith('/console')
+  const [actionOpen, setActionOpen] = useState(false)
 
   useEffect(() => {
     const root = document.documentElement
@@ -39,27 +32,27 @@ export function ArtemisShell() {
   }, [location.pathname, location.search])
 
   const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const openMenu = useCallback(() => {
+    setActionOpen(false)
+    setMenuOpen(true)
+  }, [])
 
-  const onSelect = (id: string) => {
+  const go = (id: CommandMenuId) => {
     closeMenu()
-    if (!isConsole) {
-      if (id === 'enter' || id === 'bow' || id === 'chronicler') {
-        navigate('/console?view=chat')
-        return
-      }
-      if (id === 'orion') {
-        navigate('/console?view=files&engine=orion')
-        return
-      }
-      if (id === 'capabilities') {
-        document.getElementById('capabilities')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
+    if (id === 'action') {
+      setActionOpen(true)
       return
     }
-    if (id === 'bow') navigate('/console?view=chat')
-    else if (id === 'quiver') navigate('/console?view=files&engine=orion')
-    else if (id === 'iron') navigate('/console?view=files&engine=iron')
-    else if (id === 'lunar') navigate('/console?view=logs&panel=lunar')
+    const path = commandMenuPath(id, String(Date.now()))
+    if (path) navigate(path)
+  }
+
+  const runStub = (id: (typeof ACTION_STUBS)[number]['id']) => {
+    setActionOpen(false)
+    if (id === 'drive') navigate(driveConsolePath())
+    else if (id === 'index') navigate(commandMenuPath('upload', String(Date.now())) || '/console?view=files')
+    else if (id === 'brief') navigate(commandMenuPath('new-hunt', String(Date.now())) || '/console?view=chat')
+    else navigate(commandMenuPath('research') || '/console?view=memory&section=research')
   }
 
   return (
@@ -78,16 +71,45 @@ export function ArtemisShell() {
         </Link>
         <CommandMenu
           open={menuOpen}
-          items={isConsole ? CONSOLE_ITEMS : LANDING_ITEMS}
+          items={COMMAND_MENU_ITEMS}
+          onOpen={openMenu}
           onToggle={() => setMenuOpen((v) => !v)}
           onClose={closeMenu}
-          onSelect={onSelect}
+          onSelect={(id) => go(id as CommandMenuId)}
         />
       </header>
 
       <main className="artemis-main">
         <Outlet />
       </main>
+
+      {actionOpen && (
+        <div className="artemis-modal-backdrop" onClick={() => setActionOpen(false)}>
+          <div
+            className="artemis-modal"
+            role="dialog"
+            aria-labelledby="artemis-run-action-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="artemis-command-kicker">Command</p>
+            <h2 id="artemis-run-action-title">Run Action</h2>
+            <p>Scaffold workflows. Each action opens the matching console surface.</p>
+            <ul className="artemis-action-list">
+              {ACTION_STUBS.map((item) => (
+                <li key={item.id}>
+                  <button type="button" className="artemis-command-link" onClick={() => runStub(item.id)}>
+                    <strong>{item.label}</strong>
+                    <span>{item.hint}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="artemis-cta-secondary artemis-cta-compact" onClick={() => setActionOpen(false)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

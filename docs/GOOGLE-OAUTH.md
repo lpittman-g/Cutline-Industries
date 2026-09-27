@@ -28,6 +28,7 @@ Copy from `.env.example` into `.env` if missing.
 | OAuth consent screen | https://console.cloud.google.com/apis/credentials/consent?project=utility-mapper-504300-d6 |
 | Enable YouTube Data API | https://console.cloud.google.com/apis/library/youtube.googleapis.com?project=utility-mapper-504300-d6 |
 | Enable Gmail API | https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=utility-mapper-504300-d6 |
+| Enable Drive API (optional, Artemis RAG) | https://console.cloud.google.com/apis/library/drive.googleapis.com?project=utility-mapper-504300-d6 |
 | OAuth Playground | https://developers.google.com/oauthplayground/ |
 
 ## Scopes (must both be granted)

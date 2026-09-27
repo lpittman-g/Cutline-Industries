@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "id": "proj_thermal",
+      "title": "Thermal",
+      "body": "Cutline product that turns live-stream heat into monetized Shorts. Public routes live under /thermal, /bounty, /developers.",
+      "pinned": true,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    },
+    {
+      "id": "proj_artemis",
+      "title": "Artemis",
+      "body": "Operational AI interface for Cutline Industries. Landing at /; console at /console after Enter Artemis.",
+      "pinned": true,
+      "createdAt": "2026-09-20T00:00:00.000Z",
+      "updatedAt": "2026-09-20T00:00:00.000Z"
+    }
+  ]
+}
