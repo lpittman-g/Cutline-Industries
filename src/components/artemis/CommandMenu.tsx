@@ -45,8 +45,8 @@ export function CommandMenu({
       }
       onOpen()
     }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
   }, [open, onOpen])
 
   useEffect(() => {
