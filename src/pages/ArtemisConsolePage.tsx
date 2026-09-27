@@ -17,7 +17,7 @@ import { uid } from '../lib/utils'
 import { BowChat } from '../components/artemis/BowChat'
 import { MemoryBoard } from '../components/artemis/MemoryBoard'
 import { KnowledgeFileCard } from '../components/artemis/KnowledgeFileCard'
-import { uploadArtemisFile } from '../lib/artemisApi'
+import { fetchArtemisDrive, importArtemisDriveFile, uploadArtemisFile, type DriveFileRow } from '../lib/artemisApi'
 
 type QueueItem = { id: string; name: string; status: string; percent: number; card?: KnowledgeCard }
 
@@ -161,7 +161,9 @@ function QuiverPanel({
           </h2>
           <p>Universal file stack ingestion engine for Artemis AI</p>
         </div>
-        <span className="artemis-badge">{engine === 'orion' ? 'Orion Vector Active' : 'Iron Forge Active'}</span>
+        <span className="artemis-badge">
+          {engine === 'orion' ? 'Orion Vector Active' : engine === 'drive' ? 'Google Drive' : 'Iron Forge Active'}
+        </span>
       </div>
       {autoUpload && (
         <p className="artemis-banner">Upload File — drop or browse to extract, chunk, and index.</p>
@@ -188,6 +190,16 @@ function QuiverPanel({
           >
             <strong>The Iron Forge</strong>
             <span>Enterprise Microsoft Stack</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={engine === 'drive'}
+            className={engine === 'drive' ? 'is-active' : undefined}
+            onClick={() => onEngine('drive')}
+          >
+            <strong>Google Drive</strong>
+            <span>Workspace docs → RAG</span>
           </button>
         </div>
 
@@ -243,6 +255,8 @@ function QuiverPanel({
               </ul>
             )}
           </div>
+        ) : engine === 'drive' ? (
+          <DrivePanel onAskFile={onAskFile} />
         ) : (
           <div className="artemis-iron">
             <div className="artemis-iron-head">
@@ -303,6 +317,70 @@ function QuiverPanel({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DrivePanel({ onAskFile }: { onAskFile: (card: KnowledgeCard) => void }) {
+  const [projectId, setProjectId] = useState('')
+  const [connected, setConnected] = useState(false)
+  const [files, setFiles] = useState<DriveFileRow[]>([])
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [cards, setCards] = useState<Record<string, KnowledgeCard>>({})
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void fetchArtemisDrive()
+      .then((r) => {
+        setProjectId(r.projectId)
+        setConnected(r.connected)
+        setFiles(r.files)
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Drive unavailable'))
+  }, [])
+
+  const importFile = async (id: string) => {
+    setBusyId(id)
+    setError(null)
+    try {
+      const result = await importArtemisDriveFile(id)
+      setCards((prev) => ({ ...prev, [id]: result.index }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <div className="artemis-iron">
+      <div className="artemis-iron-head">
+        <div>
+          <h3>Google Drive</h3>
+          <p>GCP {projectId || 'utility-mapper-504300-d6'} · Workspace docs extract → chunk → index</p>
+        </div>
+        <span className="artemis-badge">{connected ? 'Drive live' : 'Catalog ready'}</span>
+      </div>
+      {error && <p className="artemis-banner">{error}</p>}
+      <ul className="artemis-queue" aria-label="Google Drive files">
+        {files.map((file) => (
+          <li key={file.id}>
+            <div>
+              <span>{file.title}</span>
+              <em>{file.source === 'live' ? 'Live Drive' : 'Workspace catalog'}</em>
+            </div>
+            <button
+              type="button"
+              className="artemis-cta-primary artemis-cta-compact artemis-cta-blue"
+              disabled={busyId === file.id}
+              onClick={() => void importFile(file.id)}
+            >
+              {busyId === file.id ? 'Importing…' : 'Import to Artemis'}
+            </button>
+            {cards[file.id] && <KnowledgeFileCard card={cards[file.id]} onAsk={onAskFile} />}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

@@ -37,6 +37,8 @@ artemis-data/
 | `POST /api/artemis/voice` | TTS stub / OpenAI speech `{ text, voice }` |
 | `POST /api/artemis/upload` | RAG ingest: extractText → chunkText → indexChunks → `uploaded/` + `knowledge/` + `rag/` + `knowledge-index.json` (25MB) |
 | `GET /api/artemis/knowledge` | Indexed upload cards (name, indexed, chunkCount, lastUsedAt) |
+| `GET /api/artemis/drive` | Google Drive catalog / live files (`GOOGLE_CLOUD_PROJECT`) |
+| `POST /api/artemis/drive/import` | Import a Drive doc through extract → chunk → index |
 | `GET /api/artemis/memory` | Chronicle board mapped onto `artemis-data` |
 
 ### Thermal (public)

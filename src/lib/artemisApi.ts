@@ -250,6 +250,37 @@ export function defaultVoice(): VoiceId {
   return DEFAULT_VOICE
 }
 
+export type DriveFileRow = {
+  id: string
+  title: string
+  mimeType: string
+  viewUrl?: string
+  source: 'catalog' | 'live'
+}
+
+export async function fetchArtemisDrive() {
+  const res = await fetch(`${API}/api/artemis/drive`, { credentials: 'include' })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{
+    ok: boolean
+    projectId: string
+    connected: boolean
+    source: string
+    files: DriveFileRow[]
+  }>
+}
+
+export async function importArtemisDriveFile(id: string) {
+  const res = await fetch(`${API}/api/artemis/drive/import`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<ArtemisUploadResult>
+}
+
 export function consolePath(view: ConsoleView, extras?: Record<string, string>) {
   const params = new URLSearchParams({ view, ...extras })
   return `/console?${params.toString()}`

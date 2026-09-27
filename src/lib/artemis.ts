@@ -133,7 +133,7 @@ export function askAboutFilePrompt(filename: string): string {
 }
 
 export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
-export type QuiverEngine = 'orion' | 'iron'
+export type QuiverEngine = 'orion' | 'iron' | 'drive'
 
 export const CONSOLE_VIEWS: { id: ConsoleView; label: string; suffix: string }[] = [
   { id: 'chat', label: 'Chat', suffix: 'View' },
@@ -195,7 +195,12 @@ export function parseMemorySection(value: string | null): MemorySection {
 }
 
 export function parseQuiverEngine(value: string | null): QuiverEngine {
-  return value === 'iron' ? 'iron' : 'orion'
+  if (value === 'iron' || value === 'drive') return value
+  return 'orion'
+}
+
+export function driveConsolePath() {
+  return '/console?view=files&engine=drive'
 }
 
 export function isVoiceId(value: string | null | undefined): value is VoiceId {

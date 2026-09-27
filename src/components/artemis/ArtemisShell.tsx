@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { COMMAND_MENU_ITEMS, commandMenuPath, type CommandMenuId } from '../../lib/artemis'
+import { COMMAND_MENU_ITEMS, commandMenuPath, driveConsolePath, type CommandMenuId } from '../../lib/artemis'
 import { CommandMenu } from './CommandMenu'
 import { ArtemisMark } from './ArtemisMark'
 
 const ACTION_STUBS = [
+  { id: 'drive', label: 'Import from Google Drive', hint: 'Lisa privacy docs → extract · chunk · index' },
   { id: 'index', label: 'Index latest uploads', hint: 'Open Quiver and run extract → chunk → index' },
   { id: 'brief', label: 'Generate hunt brief', hint: 'Start a New Hunt in The Bow' },
   { id: 'chronicle', label: 'Summarize Chronicle', hint: 'Open memory research notes' },
@@ -48,7 +49,8 @@ export function ArtemisShell() {
 
   const runStub = (id: (typeof ACTION_STUBS)[number]['id']) => {
     setActionOpen(false)
-    if (id === 'index') navigate(commandMenuPath('upload', String(Date.now())) || '/console?view=files')
+    if (id === 'drive') navigate(driveConsolePath())
+    else if (id === 'index') navigate(commandMenuPath('upload', String(Date.now())) || '/console?view=files')
     else if (id === 'brief') navigate(commandMenuPath('new-hunt', String(Date.now())) || '/console?view=chat')
     else navigate(commandMenuPath('research') || '/console?view=memory&section=research')
   }

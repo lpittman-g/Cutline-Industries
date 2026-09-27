@@ -35,6 +35,7 @@ import {
   touchKnowledgeEntry,
 } from './rag/indexChunks.ts'
 import { retrieveRelevantChunks } from './rag/retrieve.ts'
+import { getDriveStatus, importDriveFile } from './drive.ts'
 
 function sendError(res: Response, err: unknown, status = 500) {
   const message = err instanceof Error ? err.message : String(err)
@@ -402,6 +403,29 @@ export function registerArtemisRoutes(app: Express) {
       }
       const item = await addMemoryItem('files', name, `Attached in The Bow · ${name}`)
       res.status(201).json({ ok: true, item })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.get('/api/artemis/drive', async (_req, res) => {
+    try {
+      const drive = await getDriveStatus()
+      res.json({ ok: true, ...drive })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.post('/api/artemis/drive/import', async (req, res) => {
+    try {
+      const id = typeof req.body?.id === 'string' ? req.body.id.trim() : ''
+      if (!id) {
+        res.status(400).json({ ok: false, error: 'id is required' })
+        return
+      }
+      const result = await importDriveFile(id)
+      res.status(201).json({ ok: true, ...result })
     } catch (err) {
       sendError(res, err)
     }

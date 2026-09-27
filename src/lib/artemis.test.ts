@@ -49,10 +49,11 @@ describe('console query parsing', () => {
     assert.equal(parseConsoleView('memory'), 'memory')
   })
 
-  it('maps engine query to orion or iron', () => {
+  it('maps engine query to orion, iron, or drive', () => {
     assert.equal(parseQuiverEngine(null), 'orion')
     assert.equal(parseQuiverEngine('orion'), 'orion')
     assert.equal(parseQuiverEngine('iron'), 'iron')
+    assert.equal(parseQuiverEngine('drive'), 'drive')
   })
 })
 

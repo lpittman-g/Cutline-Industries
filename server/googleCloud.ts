@@ -15,6 +15,7 @@ export const GOOGLE_SETUP_LINKS = {
   oauthConsentScreen: `https://console.cloud.google.com/apis/credentials/consent?project=${PROJECT}`,
   enableYoutubeDataApi: `https://console.cloud.google.com/apis/library/youtube.googleapis.com?project=${PROJECT}`,
   enableGmailApi: `https://console.cloud.google.com/apis/library/gmail.googleapis.com?project=${PROJECT}`,
+  enableDriveApi: `https://console.cloud.google.com/apis/library/drive.googleapis.com?project=${PROJECT}`,
   oauthPlayground: 'https://developers.google.com/oauthplayground/',
   docs: 'docs/GOOGLE-OAUTH.md',
 } as const
@@ -48,6 +49,13 @@ export const GOOGLE_APIS = [
     consoleUrl: GOOGLE_SETUP_LINKS.enableGmailApi,
     required: true,
     purpose: 'Send Thermal sample pitch emails from Google Workspace',
+  },
+  {
+    id: 'drive',
+    name: 'Google Drive API',
+    consoleUrl: GOOGLE_SETUP_LINKS.enableDriveApi,
+    required: false,
+    purpose: 'Import Workspace docs into Artemis RAG (catalog works without live OAuth)',
   },
 ] as const
 
