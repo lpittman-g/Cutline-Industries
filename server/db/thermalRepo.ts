@@ -275,12 +275,21 @@ export async function getClipById(id: number): Promise<ClipWithMeta | null> {
 }
 
 export async function listBountyClips(limit = 50): Promise<ClipWithMeta[]> {
+  // EXISTS (not DISTINCT + ORDER BY bp.*) — Postgres rejects ORDER BY cols
+  // outside a SELECT DISTINCT select-list when a clip has multiple posts.
   const res = await getPool().query(
-    `SELECT DISTINCT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
+    `SELECT c.*, 'bounty' AS tier, 50.00::numeric AS price_usd
      FROM clips c
-     INNER JOIN bounty_posts bp ON bp.clip_id = c.id
-     WHERE c.media_url IS NOT NULL AND bp.status = 'posted'
-     ORDER BY bp.posted_at DESC NULLS LAST, c.created_at DESC
+     WHERE c.media_url IS NOT NULL
+       AND EXISTS (
+         SELECT 1 FROM bounty_posts bp
+         WHERE bp.clip_id = c.id AND bp.status = 'posted'
+       )
+     ORDER BY (
+       SELECT MAX(bp.posted_at) FROM bounty_posts bp
+       WHERE bp.clip_id = c.id AND bp.status = 'posted'
+     ) DESC NULLS LAST,
+     c.created_at DESC
      LIMIT $1`,
     [limit],
   )
@@ -509,11 +518,111 @@ export async function countQueuedBountyPosts(): Promise<number> {
   return res.rows[0]?.n ?? 0
 }
 
+/** Advisory-lock class for clip checkout session creation (see createCheckoutSession). */
+export const CLIP_CHECKOUT_LOCK_CLASS = 42001
+
+/** Advisory-lock class for retainer checkout session creation. */
+export const RETAINER_CHECKOUT_LOCK_CLASS = 42002
+
+/**
+ * Stripe webhook / confirm may retry. Allow unclaimed → claimed, or the same
+ * checkout session replaying; reject a second buyer session.
+ */
+export function canClaimClip(
+  row: {
+    status: string
+    stripe_checkout_session_id?: string | null
+  },
+  sessionId: string,
+): boolean {
+  if (row.status === 'unclaimed') return true
+  return row.status === 'claimed' && row.stripe_checkout_session_id === sessionId
+}
+
+/** Concurrent checkout lost the race; webhook should ack (not 500-retry). */
+export class ClipAlreadyClaimedError extends Error {
+  readonly clipId: number
+  readonly existingSessionId: string | null
+
+  constructor(clipId: number, existingSessionId: string | null) {
+    super(`Clip ${clipId} already claimed by another checkout session`)
+    this.name = 'ClipAlreadyClaimedError'
+    this.clipId = clipId
+    this.existingSessionId = existingSessionId
+  }
+}
+
+/**
+ * Stripe webhook / confirm may retry. Allow non-active → active, or the same
+ * checkout session replaying; reject a second buyer on an active retainer.
+ */
+export function canActivateRetainer(
+  row: {
+    status: string
+    stripe_checkout_session_id?: string | null
+  },
+  sessionId: string,
+): boolean {
+  if (row.status !== 'active') return true
+  return row.stripe_checkout_session_id === sessionId
+}
+
+/** Concurrent retainer checkout lost the race; webhook should ack (not 500-retry). */
+export class RetainerAlreadyActiveError extends Error {
+  readonly retainerId: number
+  readonly existingSessionId: string | null
+
+  constructor(retainerId: number, existingSessionId: string | null) {
+    super(`Retainer ${retainerId} already activated by another checkout session`)
+    this.name = 'RetainerAlreadyActiveError'
+    this.retainerId = retainerId
+    this.existingSessionId = existingSessionId
+  }
+}
+
 export async function setClipCheckoutSession(clipId: number, sessionId: string) {
   await getPool().query(
     `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
     [clipId, sessionId],
   )
+}
+
+/**
+ * Persist a checkout session only while the clip is still unclaimed.
+ * Prefer createCheckoutSession's advisory lock path; this helper remains for
+ * narrower reserve-after-Stripe call sites and regression tests.
+ */
+export async function reserveClipCheckoutSession(
+  clipId: number,
+  sessionId: string,
+): Promise<void> {
+  await withClient(async (client) => {
+    await client.query('BEGIN')
+    try {
+      const locked = await client.query(
+        `SELECT id, status, stripe_checkout_session_id
+         FROM clips WHERE id = $1 FOR UPDATE`,
+        [clipId],
+      )
+      const row = locked.rows[0] as
+        | { id: number; status: string; stripe_checkout_session_id: string | null }
+        | undefined
+      if (!row) {
+        throw new Error(`Clip ${clipId} not found`)
+      }
+      if (row.status === 'claimed') {
+        throw new ClipAlreadyClaimedError(clipId, row.stripe_checkout_session_id)
+      }
+      await client.query(
+        `UPDATE clips SET stripe_checkout_session_id = $2 WHERE id = $1`,
+        [clipId, sessionId],
+      )
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
+  })
 }
 
 export async function claimClip(input: {
@@ -524,25 +633,90 @@ export async function claimClip(input: {
   buyerEmail?: string | null
 }) {
   await withClient(async (client) => {
-    await client.query(
-      `UPDATE clips
-       SET status = 'claimed',
-           sale_amount_cents = $2,
-           claimed_at = CURRENT_TIMESTAMP,
-           stripe_checkout_session_id = $3
-       WHERE id = $1`,
-      [input.clipId, input.saleAmountCents, input.stripeCheckoutSessionId],
-    )
-    await client.query(
-      `UPDATE sales
-       SET status = 'completed',
-           stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
-           buyer_email = COALESCE($3, buyer_email),
-           completed_at = CURRENT_TIMESTAMP
-       WHERE stripe_checkout_session_id = $1`,
-      [input.stripeCheckoutSessionId, input.stripePaymentIntentId ?? null, input.buyerEmail ?? null],
-    )
+    await client.query('BEGIN')
+    try {
+      const locked = await client.query(
+        `SELECT id, status, stripe_checkout_session_id
+         FROM clips WHERE id = $1 FOR UPDATE`,
+        [input.clipId],
+      )
+      const row = locked.rows[0] as
+        | { id: number; status: string; stripe_checkout_session_id: string | null }
+        | undefined
+      if (!row) {
+        throw new Error(`Clip ${input.clipId} not found`)
+      }
+      if (!canClaimClip(row, input.stripeCheckoutSessionId)) {
+        throw new ClipAlreadyClaimedError(input.clipId, row.stripe_checkout_session_id)
+      }
+      await client.query(
+        `UPDATE clips
+         SET status = 'claimed',
+             sale_amount_cents = $2,
+             claimed_at = COALESCE(claimed_at, CURRENT_TIMESTAMP),
+             stripe_checkout_session_id = $3
+         WHERE id = $1`,
+        [input.clipId, input.saleAmountCents, input.stripeCheckoutSessionId],
+      )
+      await client.query(
+        `UPDATE sales
+         SET status = 'completed',
+             stripe_payment_intent_id = COALESCE($2, stripe_payment_intent_id),
+             buyer_email = COALESCE($3, buyer_email),
+             completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
+         WHERE stripe_checkout_session_id = $1`,
+        [
+          input.stripeCheckoutSessionId,
+          input.stripePaymentIntentId ?? null,
+          input.buyerEmail ?? null,
+        ],
+      )
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
   })
+}
+
+/**
+ * Mark the losing checkout's sales row after a claim/activate race.
+ * Use `refunded` when Stripe refund succeeded (or was already refunded);
+ * use `failed` when the refund could not be created. Idempotent for terminal rows.
+ */
+export async function markSaleLostClaimRace(input: {
+  stripeCheckoutSessionId: string
+  stripePaymentIntentId?: string | null
+  winningSessionId?: string | null
+  refundReason?: string
+  status: 'refunded' | 'failed'
+}): Promise<SaleRow | null> {
+  const refundReason = input.refundReason ?? 'clip_already_claimed'
+  const res = await getPool().query(
+    `UPDATE sales
+     SET status = $2,
+         stripe_payment_intent_id = COALESCE($3, stripe_payment_intent_id),
+         metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb
+     WHERE stripe_checkout_session_id = $1
+       AND status NOT IN ('refunded', 'failed', 'completed')
+     RETURNING *`,
+    [
+      input.stripeCheckoutSessionId,
+      input.status,
+      input.stripePaymentIntentId ?? null,
+      JSON.stringify({
+        lost_claim_race: true,
+        refund_reason: refundReason,
+        winning_session_id: input.winningSessionId ?? null,
+      }),
+    ],
+  )
+  if (res.rows[0]) return mapSale(res.rows[0])
+  const existing = await getPool().query(
+    `SELECT * FROM sales WHERE stripe_checkout_session_id = $1 LIMIT 1`,
+    [input.stripeCheckoutSessionId],
+  )
+  return existing.rows[0] ? mapSale(existing.rows[0]) : null
 }
 
 function mapSale(row: Record<string, unknown>): SaleRow {
@@ -697,29 +871,53 @@ export async function activateRetainer(input: {
   buyerEmail?: string | null
 }) {
   await withClient(async (client) => {
-    await client.query(
-      `UPDATE retainers
-       SET status = 'active',
-           stripe_subscription_id = COALESCE($2, stripe_subscription_id),
-           stripe_checkout_session_id = $3,
-           contact_email = COALESCE($4, contact_email),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [
-        input.retainerId,
-        input.stripeSubscriptionId ?? null,
-        input.stripeCheckoutSessionId,
-        input.buyerEmail ?? null,
-      ],
-    )
-    await client.query(
-      `UPDATE sales
-       SET status = 'completed',
-           buyer_email = COALESCE($2, buyer_email),
-           completed_at = CURRENT_TIMESTAMP
-       WHERE stripe_checkout_session_id = $1`,
-      [input.stripeCheckoutSessionId, input.buyerEmail ?? null],
-    )
+    await client.query('BEGIN')
+    try {
+      const locked = await client.query(
+        `SELECT id, status, stripe_checkout_session_id
+         FROM retainers WHERE id = $1 FOR UPDATE`,
+        [input.retainerId],
+      )
+      const row = locked.rows[0] as
+        | { id: number; status: string; stripe_checkout_session_id: string | null }
+        | undefined
+      if (!row) {
+        throw new Error(`Retainer ${input.retainerId} not found`)
+      }
+      if (!canActivateRetainer(row, input.stripeCheckoutSessionId)) {
+        throw new RetainerAlreadyActiveError(
+          input.retainerId,
+          row.stripe_checkout_session_id,
+        )
+      }
+      await client.query(
+        `UPDATE retainers
+         SET status = 'active',
+             stripe_subscription_id = COALESCE($2, stripe_subscription_id),
+             stripe_checkout_session_id = $3,
+             contact_email = COALESCE($4, contact_email),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [
+          input.retainerId,
+          input.stripeSubscriptionId ?? null,
+          input.stripeCheckoutSessionId,
+          input.buyerEmail ?? null,
+        ],
+      )
+      await client.query(
+        `UPDATE sales
+         SET status = 'completed',
+             buyer_email = COALESCE($2, buyer_email),
+             completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
+         WHERE stripe_checkout_session_id = $1`,
+        [input.stripeCheckoutSessionId, input.buyerEmail ?? null],
+      )
+      await client.query('COMMIT')
+    } catch (err) {
+      await client.query('ROLLBACK')
+      throw err
+    }
   })
 }
 

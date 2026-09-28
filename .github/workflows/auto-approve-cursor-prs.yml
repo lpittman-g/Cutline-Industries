@@ -1,12 +1,13 @@
 name: Auto-approve Cursor PRs
 
 # After verification succeeds on a cursor/* PR: mark ready, approve, squash-merge.
+# Thermal Autopilot PRs are excluded — that automation must never merge itself.
 # One-time repo setup: docs/PR-AUTO-APPROVE.md
 
 on:
   pull_request:
     branches: [main]
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
 
 concurrency:
   group: auto-approve-${{ github.event.pull_request.number }}
@@ -20,7 +21,10 @@ permissions:
 jobs:
   gate:
     name: Verify before auto-merge
-    if: startsWith(github.head_ref, 'cursor/')
+    if: >
+      startsWith(github.head_ref, 'cursor/') &&
+      !startsWith(github.head_ref, 'cursor/cutline-thermal-autopilot-') &&
+      !contains(join(github.event.pull_request.labels.*.name, ','), 'thermal-autopilot')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,7 +54,10 @@ jobs:
   approve_and_merge:
     name: Approve and merge
     needs: gate
-    if: startsWith(github.head_ref, 'cursor/')
+    if: >
+      startsWith(github.head_ref, 'cursor/') &&
+      !startsWith(github.head_ref, 'cursor/cutline-thermal-autopilot-') &&
+      !contains(join(github.event.pull_request.labels.*.name, ','), 'thermal-autopilot')
     runs-on: ubuntu-latest
     steps:
       # Required: `gh` needs a git checkout / repo context for some operations
