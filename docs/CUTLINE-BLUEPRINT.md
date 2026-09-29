@@ -56,7 +56,7 @@ We do **not** compete with Google, AWS, Replit, or OpenAI. We **use** them as le
 ### Phase 1 — Ship content daily (now)
 1. Drop VODs in `inbox/`
 2. Set `CUTLINE_DRY_RUN=0` when ready for real uploads
-3. Run `npm run autopilot` (or Autopilot page → run once)
+3. Run `npm run autopilot` (or Autopilot page → Run auto)
 4. Cadence: **3–10 Shorts / day**, private first 24h, then public
 5. Same-day cross-post TikTok + Reels when capacity allows
 
