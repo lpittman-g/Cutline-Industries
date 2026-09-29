@@ -16,6 +16,50 @@ export interface PipelineStep {
   outputs: string[]
 }
 
+/** Four-layer stack from the Cutline content engine brief. */
+export const STACK_PILLARS = [
+  {
+    id: 'ai',
+    name: '1. AI stack',
+    role: 'Content creation & automation engine',
+    bullets: [
+      'Script & concepting — ideas, title hooks, SEO keywords, full gaming scripts',
+      'Voiceovers & audio — AI TTS when not recording live',
+      'Visual assets — thumbnails, channel art, B-roll via image models',
+    ],
+  },
+  {
+    id: 'replit',
+    name: '2. Replit',
+    role: 'Rapid prototyping & workflow automation',
+    bullets: [
+      'YouTube API workers — trending videos, views, keyword performance',
+      'Auto descriptions, tags, chapters, social promo posts',
+      'Discord/Telegram bots + webhooks for news and publish schedules',
+    ],
+  },
+  {
+    id: 'aws',
+    name: '3. AWS',
+    role: 'Scalable backend & cloud storage',
+    bullets: [
+      'S3 — raw footage, thumbs, audio, exports',
+      'Lambda / EC2 — headless FFmpeg and Autopilot jobs',
+      'DynamoDB / RDS — pipeline status + analytics logs',
+    ],
+  },
+  {
+    id: 'adsense',
+    name: '4. AdSense & monetization',
+    role: 'Convert traffic into cash',
+    bullets: [
+      'YPP — 1k subs + 4k watch hours or 10M Short views',
+      'Companion guides/blog with AdSense on cutline-industries.studio',
+      'Stripe packs remain near-term cash while YPP ramps',
+    ],
+  },
+] as const
+
 export const CONTENT_PIPELINE: PipelineStep[] = [
   {
     id: 'p1',
@@ -23,7 +67,7 @@ export const CONTENT_PIPELINE: PipelineStep[] = [
     title: 'Trend radar',
     owner: 'Replit',
     detail:
-      'Python/Node workers scan gaming news, Reddit, and YouTube API for rising topics, keywords, and competitor gaps.',
+      'Python/Node workers (`scripts/replit/trend_radar.py`) scan gaming news, Reddit, and YouTube API for rising topics, keywords, and competitor gaps.',
     outputs: ['topic queue', 'SEO keyword list', 'trend score'],
   },
   {
@@ -59,7 +103,7 @@ export const CONTENT_PIPELINE: PipelineStep[] = [
     title: 'Render & storage',
     owner: 'AWS',
     detail:
-      'S3 stores raw + exports. Lambda/EC2 runs FFmpeg cuts, vertical Shorts, and packaging without local GPU dependency.',
+      'S3 stores raw + exports. Lambda/EC2 runs FFmpeg cuts, vertical Shorts, and packaging without local GPU dependency. DynamoDB/RDS track job status.',
     outputs: ['s3://cutline-media/...', 'shorts_out/', 'manifest.json'],
   },
   {
@@ -77,7 +121,7 @@ export const CONTENT_PIPELINE: PipelineStep[] = [
     title: 'Monetization layer',
     owner: 'AdSense',
     detail:
-      'YPP ad revenue on YouTube + companion guides/blog with AdSense on cutline-industries.studio for search traffic.',
+      'YPP ad revenue on YouTube (1k subs + 4k hours or 10M Short views) + companion guides/blog AdSense on cutline-industries.studio for search traffic.',
     outputs: ['AdSense earnings', 'YPP RPM', 'affiliate/sponsor CTAs'],
   },
 ]
