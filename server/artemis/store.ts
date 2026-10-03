@@ -661,24 +661,23 @@ export async function runArtemis(input: { message: string; context: MemoryContex
     .filter(Boolean)
     .join('\n')
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim()
-  if (!apiKey) return stub
+  const coreUrl = process.env.ARTEMIS_CORE_URL?.trim()
+  if (!coreUrl) return stub
 
   try {
-    const OpenAI = (await import('openai')).default
-    const client = new OpenAI({ apiKey })
-    const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini'
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are Artemis (${VOICES[input.voice].label} voice) for Cutline Industries. Be operational and concise. Use Chronicle context when relevant.\n\n${contextBlock}`,
-        },
-        { role: 'user', content: input.message },
-      ],
+    const fullMessage = input.context.snippets.length
+      ? `[Retrieved context:\n${contextBlock}\n]\n\n${input.message}`
+      : input.message
+    const res = await fetch(`${coreUrl}/v1/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: fullMessage, tier: 'gpt-2-sft' }),
+      signal: AbortSignal.timeout(30_000),
     })
-    return completion.choices[0]?.message?.content?.trim() || stub
+    if (!res.ok) return stub
+    const data = (await res.json()) as { answer?: string; status?: string }
+    if (data.status === 'training' || !data.answer) return stub
+    return data.answer
   } catch {
     return stub
   }
