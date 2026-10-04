@@ -644,9 +644,28 @@ export async function extractAndStoreLearning(input: { userMessage: string; resp
 }
 
 export async function runArtemis(input: { message: string; context: MemoryContext; voice: VoiceId }): Promise<string> {
+  let collected = ''
+  await streamRunArtemis({
+    history: [],
+    message: input.message,
+    context: input.context,
+    voice: input.voice,
+    onChunk: (text) => { collected += text },
+  })
+  return collected
+}
+
+export async function streamRunArtemis(input: {
+  history: { role: 'operator' | 'artemis'; content: string }[]
+  message: string
+  context: MemoryContext
+  voice: VoiceId
+  onChunk: (text: string) => void
+}): Promise<void> {
   const contextBlock = input.context.snippets.length
     ? input.context.snippets.map((s) => `- ${s}`).join('\n')
     : '- No matching Chronicle entries yet.'
+
   const stub = [
     `${VOICES[input.voice].label} here — The Bow is live.`,
     '',
@@ -661,24 +680,97 @@ export async function runArtemis(input: { message: string; context: MemoryContex
     .filter(Boolean)
     .join('\n')
 
-  const coreUrl = process.env.ARTEMIS_CORE_URL?.trim()
-  if (!coreUrl) return stub
+  // vLLM direct path — real SSE streaming with full conversation history
+  const vllmUrl = process.env.VLLM_BASE_URL?.trim()
+  if (vllmUrl) {
+    try {
+      const systemPrompt = [
+        'You are Artemis, a proprietary AI assistant built by Cutline Industries.',
+        'Be concise, direct, and helpful.',
+        input.context.snippets.length
+          ? `Retrieved context:\n${contextBlock}`
+          : '',
+        input.context.projects.length
+          ? `Active projects: ${input.context.projects.join(', ')}.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n')
 
-  try {
-    const fullMessage = input.context.snippets.length
-      ? `[Retrieved context:\n${contextBlock}\n]\n\n${input.message}`
-      : input.message
-    const res = await fetch(`${coreUrl}/v1/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: fullMessage, tier: 'gpt-2-sft' }),
-      signal: AbortSignal.timeout(30_000),
-    })
-    if (!res.ok) return stub
-    const data = (await res.json()) as { answer?: string; status?: string }
-    if (data.status !== 'ok' || !data.answer) return stub
-    return data.answer
-  } catch {
-    return stub
+      const vllmMessages = [
+        { role: 'system', content: systemPrompt },
+        ...input.history.map((m) => ({ role: m.role === 'operator' ? 'user' : 'assistant', content: m.content })),
+        { role: 'user', content: input.message },
+      ]
+
+      const vllmRes = await fetch(`${vllmUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.VLLM_API_KEY ? { Authorization: `Bearer ${process.env.VLLM_API_KEY}` } : {}),
+        },
+        body: JSON.stringify({
+          model: process.env.VLLM_MODEL ?? 'artemis',
+          messages: vllmMessages,
+          stream: true,
+        }),
+        signal: AbortSignal.timeout(60_000),
+      })
+
+      if (vllmRes.ok && vllmRes.body) {
+        const reader = vllmRes.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += decoder.decode(value, { stream: true })
+          const lines = buf.split('\n')
+          buf = lines.pop() ?? ''
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue
+            const payload = line.slice(5).trim()
+            if (payload === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] }
+              const text = parsed.choices?.[0]?.delta?.content
+              if (text) input.onChunk(text)
+            } catch {
+              // malformed SSE line — skip
+            }
+          }
+        }
+        return
+      }
+    } catch {
+      // fall through to core or stub
+    }
   }
+
+  // Artemis core fallback — non-streaming POST, emit answer as single chunk
+  const coreUrl = process.env.ARTEMIS_CORE_URL?.trim()
+  if (coreUrl) {
+    try {
+      const fullMessage = input.context.snippets.length
+        ? `[Retrieved context:\n${contextBlock}\n]\n\n${input.message}`
+        : input.message
+      const coreRes = await fetch(`${coreUrl}/v1/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: fullMessage, tier: 'gpt-2-sft' }),
+        signal: AbortSignal.timeout(30_000),
+      })
+      if (coreRes.ok) {
+        const data = (await coreRes.json()) as { answer?: string; status?: string }
+        if (data.status === 'ok' && data.answer) {
+          input.onChunk(data.answer)
+          return
+        }
+      }
+    } catch {
+      // fall through to stub
+    }
+  }
+
+  input.onChunk(stub)
 }

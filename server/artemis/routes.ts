@@ -19,6 +19,7 @@ import {
   nowIso,
   readConversation,
   runArtemis,
+  streamRunArtemis,
   setActiveVoice,
   uid,
   updateMemoryItem,
@@ -173,23 +174,30 @@ export function registerArtemisRoutes(app: Express) {
         }
         await mark('index', 'done')
 
-        await mark('generate', 'in_progress')
-        reply = await runArtemis({ message, context, voice })
-        const chunkSize = 48
-        for (let i = 0; i < reply.length; i += chunkSize) {
-          writeNdjson(res, { type: 'chunk', text: reply.slice(i, i + chunkSize) })
-        }
-        await mark('generate', 'done')
-
-        await mark('learn', 'in_progress')
-        await extractAndStoreLearning({ userMessage: message, response: reply })
         const existing = (await readConversation(conversationId)) ?? {
           id: conversationId,
           title: message.slice(0, 48) || 'Untitled Hunt',
           voice,
           updatedAt: nowIso(),
-          messages: [],
+          messages: [] as { role: 'operator' | 'artemis'; content: string; at: string }[],
         }
+
+        await mark('generate', 'in_progress')
+        reply = ''
+        await streamRunArtemis({
+          history: existing.messages.map((m) => ({ role: m.role, content: m.content })),
+          message,
+          context,
+          voice,
+          onChunk: (text) => {
+            reply += text
+            writeNdjson(res, { type: 'chunk', text })
+          },
+        })
+        await mark('generate', 'done')
+
+        await mark('learn', 'in_progress')
+        await extractAndStoreLearning({ userMessage: message, response: reply })
         existing.voice = voice
         existing.updatedAt = nowIso()
         if (existing.title === 'Untitled Hunt' || existing.title === 'Welcome hunt') {
