@@ -1575,6 +1575,55 @@ html.artemis-canvas ::selection {
   line-height: 1.6;
 }
 
+/* ─── Products list ────────────────────────────────────────────────────────── */
+.artemis-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  text-align: left;
+  max-width: 680px;
+  margin: 1.5rem auto 0;
+}
+
+.artemis-product-card {
+  padding: 1.4rem 1.5rem;
+  border: 1px solid var(--ag-line);
+  border-radius: var(--ag-radius);
+  background: var(--ag-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.artemis-product-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.artemis-product-card-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ag-ink);
+}
+
+.artemis-product-card-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ag-muted);
+}
+
+.artemis-product-card-body {
+  margin: 0;
+  font-size: 0.925rem;
+  line-height: 1.65;
+  color: var(--ag-muted);
+}
+
 /* ─── Landing CTA section ──────────────────────────────────────────────────── */
 .artemis-cta-section {
   margin-top: 3.5rem;

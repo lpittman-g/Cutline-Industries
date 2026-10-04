@@ -5,10 +5,12 @@ import { BowChat } from '../components/artemis/BowChat'
 import { ConversationSidebar } from '../components/artemis/ConversationSidebar'
 import { ArtemisMark } from '../components/artemis/ArtemisMark'
 
-type NavSection = 'chat' | 'memory' | 'files' | 'voice' | 'logs'
+type NavSection = 'chat' | 'activity' | 'code' | 'memory' | 'files' | 'voice' | 'logs'
 
 const NAV_ITEMS: { id: NavSection; icon: string; label: string }[] = [
   { id: 'chat', icon: '✦', label: 'The Bow' },
+  { id: 'activity', icon: '◉', label: 'Activity' },
+  { id: 'code', icon: '⌥', label: 'Code' },
   { id: 'memory', icon: '◈', label: 'Memory' },
   { id: 'files', icon: '⋔', label: 'Quiver' },
   { id: 'voice', icon: '◎', label: 'Voice Mode' },
@@ -124,6 +126,22 @@ export function ArtemisChatPage() {
             }}
             onOpenChronicle={() => setActiveNav('memory')}
           />
+        ) : activeNav === 'activity' ? (
+          <div className="achat-placeholder">
+            <span aria-hidden="true">◉</span>
+            <p>Activity — tool steps, generation events, and processing logs for your active conversation appear here during a hunt.</p>
+            <Link to="/console?view=chat" className="artemis-cta-secondary artemis-cta-compact">
+              Open Full Console
+            </Link>
+          </div>
+        ) : activeNav === 'code' ? (
+          <div className="achat-placeholder">
+            <span aria-hidden="true">⌥</span>
+            <p>Code — run Python, Node.js, or Bash from the full console sandbox.</p>
+            <Link to="/console?view=chat&panel=sandbox" className="artemis-cta-secondary artemis-cta-compact">
+              Open Sandbox
+            </Link>
+          </div>
         ) : activeNav === 'memory' ? (
           <div className="achat-placeholder">
             <span aria-hidden="true">◈</span>

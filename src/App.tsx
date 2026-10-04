@@ -7,6 +7,7 @@ import { CutlineProvider } from './context/CutlineContext'
 import { ArtemisLandingPage } from './pages/ArtemisLandingPage'
 import { ArtemisConsolePage } from './pages/ArtemisConsolePage'
 import { ArtemisChatPage } from './pages/ArtemisChatPage'
+import { ArtemisProductsPage } from './pages/ArtemisProductsPage'
 import { LandingPage } from './pages/LandingPage'
 import { BountyPage } from './pages/thermal/BountyPage'
 import { DevelopersPage } from './pages/thermal/DevelopersPage'
@@ -73,6 +74,7 @@ export default function App() {
               </RequireArtemisAuth>
             }
           />
+          <Route path="/products" element={<ArtemisProductsPage />} />
         </Route>
 
         {/* Thermal public product */}

@@ -92,11 +92,11 @@ export function ArtemisLandingPage() {
         <p className="artemis-kicker">{ARTEMIS_COPY.kicker}</p>
         <p className="artemis-lede">{ARTEMIS_COPY.description}</p>
         <div className="artemis-hero-actions">
-          <Link className="artemis-cta-primary artemis-cta-blue" to="/console?view=chat">
-            Enter Artemis <Arrow />
+          <Link className="artemis-cta-primary artemis-cta-blue" to="/artemisChat">
+            Open Artemis Chat <Arrow />
           </Link>
-          <Link className="artemis-cta-secondary" to="/signin">
-            Sign In <Arrow />
+          <Link className="artemis-cta-secondary" to="/products">
+            See Products <Arrow />
           </Link>
         </div>
       </section>
@@ -161,8 +161,8 @@ export function ArtemisLandingPage() {
       <section className="artemis-cta-section">
         <p className="artemis-tagline">{ARTEMIS_COPY.footer}</p>
         <div className="artemis-hero-actions">
-          <Link className="artemis-cta-primary artemis-cta-blue" to="/console?view=chat">
-            Open the Console <Arrow />
+          <Link className="artemis-cta-primary artemis-cta-blue" to="/artemisChat">
+            Open Artemis Chat <Arrow />
           </Link>
           <Link className="artemis-cta-secondary" to="/signup">
             Create Account <Arrow />
