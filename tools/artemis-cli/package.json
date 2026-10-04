@@ -1,0 +1,22 @@
+{
+  "name": "artemis-cli",
+  "version": "1.0.0",
+  "description": "Terminal client for the Artemis AI assistant",
+  "type": "module",
+  "bin": {
+    "artemis": "./cli.ts"
+  },
+  "scripts": {
+    "start": "tsx cli.ts",
+    "dev": "tsx --watch cli.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.1",
+    "typescript": "~6.0.2",
+    "@types/node": "^22.0.0"
+  }
+}

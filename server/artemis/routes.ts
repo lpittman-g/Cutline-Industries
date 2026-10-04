@@ -37,6 +37,8 @@ import {
 } from './rag/indexChunks.ts'
 import { retrieveRelevantChunks } from './rag/retrieve.ts'
 import { getDriveStatus, importDriveFile } from './drive.ts'
+import { runSandbox, type SandboxLanguage } from './sandbox.ts'
+import { attachAuthUser, requireAuth, requireRole } from '../auth/authMiddleware.ts'
 
 function sendError(res: Response, err: unknown, status = 500) {
   const message = err instanceof Error ? err.message : String(err)
@@ -69,12 +71,17 @@ async function streamSteps(
 }
 
 export function registerArtemisRoutes(app: Express) {
+  // Public: voice list — no sensitive data, safe to leave open
   app.get('/api/artemis/voices', async (_req, res) => {
     const activeVoice = await getActiveVoice()
     res.json({ ok: true, voices: VOICES, activeVoice })
   })
 
-  app.post('/api/artemis/voice', async (req: Request, res: Response) => {
+  // Attach session user to every /api/artemis/* request.
+  // Individual routes call requireAuth / requireRole as needed.
+  app.use('/api/artemis', attachAuthUser)
+
+  app.post('/api/artemis/voice', requireAuth, async (req: Request, res: Response) => {
     try {
       const text = typeof req.body?.text === 'string' ? req.body.text.trim() : ''
       const requested = typeof req.body?.voice === 'string' ? req.body.voice : ''
@@ -124,7 +131,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/chat', async (req: Request, res: Response) => {
+  app.post('/api/artemis/chat', requireAuth, async (req: Request, res: Response) => {
     try {
       const message = typeof req.body?.message === 'string' ? req.body.message.trim() : ''
       const conversationId =
@@ -224,7 +231,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/memory', async (_req, res) => {
+  app.get('/api/artemis/memory', requireAuth, async (_req, res) => {
     try {
       const [board, chronicle, prefs] = await Promise.all([
         loadMemoryBoard(),
@@ -244,7 +251,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/chronicle', async (_req, res) => {
+  app.get('/api/artemis/chronicle', requireAuth, async (_req, res) => {
     try {
       res.json({ ok: true, checks: await loadChronicleChecklist() })
     } catch (err) {
@@ -252,7 +259,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/conversations', async (_req, res) => {
+  app.get('/api/artemis/conversations', requireAuth, async (_req, res) => {
     try {
       res.json({ ok: true, conversations: await listConversations() })
     } catch (err) {
@@ -260,7 +267,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/conversations/:id', async (req, res) => {
+  app.get('/api/artemis/conversations/:id', requireAuth, async (req, res) => {
     try {
       const conv = await readConversation(String(req.params.id))
       if (!conv) {
@@ -273,7 +280,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.patch('/api/artemis/memory/:kind/:id', async (req, res) => {
+  app.patch('/api/artemis/memory/:kind/:id', requireAuth, async (req, res) => {
     try {
       const kind = parseKind(String(req.params.kind))
       if (!kind) {
@@ -295,7 +302,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/memory/:kind/:id/pin', async (req, res) => {
+  app.post('/api/artemis/memory/:kind/:id/pin', requireAuth, async (req, res) => {
     try {
       const kind = parseKind(String(req.params.kind))
       if (!kind) {
@@ -321,7 +328,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.delete('/api/artemis/memory/:kind/:id', async (req, res) => {
+  app.delete('/api/artemis/memory/:kind/:id', requireAuth, async (req, res) => {
     try {
       const kind = parseKind(String(req.params.kind))
       if (!kind) {
@@ -339,7 +346,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/memory/:kind/:id/export', async (req, res) => {
+  app.get('/api/artemis/memory/:kind/:id/export', requireAuth, async (req, res) => {
     try {
       const kind = parseKind(String(req.params.kind))
       if (!kind) {
@@ -367,7 +374,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/knowledge', async (_req, res) => {
+  app.get('/api/artemis/knowledge', requireAuth, async (_req, res) => {
     try {
       const files = (await listKnowledgeIndex()).map(toKnowledgeCard)
       res.json({ ok: true, files })
@@ -376,7 +383,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/knowledge/:id', async (req, res) => {
+  app.get('/api/artemis/knowledge/:id', requireAuth, async (req, res) => {
     try {
       const entry = await getKnowledgeEntry(String(req.params.id || ''))
       if (!entry) {
@@ -389,7 +396,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/knowledge/:id/touch', async (req, res) => {
+  app.post('/api/artemis/knowledge/:id/touch', requireAuth, async (req, res) => {
     try {
       const entry = await touchKnowledgeEntry(String(req.params.id || ''))
       if (!entry) {
@@ -402,7 +409,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/files', async (req, res) => {
+  app.post('/api/artemis/files', requireAuth, async (req, res) => {
     try {
       const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
       if (!name) {
@@ -416,7 +423,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.get('/api/artemis/drive', async (_req, res) => {
+  app.get('/api/artemis/drive', requireAuth, async (_req, res) => {
     try {
       const drive = await getDriveStatus()
       res.json({ ok: true, ...drive })
@@ -425,7 +432,7 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/drive/import', async (req, res) => {
+  app.post('/api/artemis/drive/import', requireAuth, async (req, res) => {
     try {
       const id = typeof req.body?.id === 'string' ? req.body.id.trim() : ''
       if (!id) {
@@ -439,7 +446,29 @@ export function registerArtemisRoutes(app: Express) {
     }
   })
 
-  app.post('/api/artemis/upload', async (req, res) => {
+  app.post('/api/artemis/sandbox', requireRole('operator'), async (req, res) => {
+    try {
+      const language = req.body?.language as SandboxLanguage | undefined
+      const code = typeof req.body?.code === 'string' ? req.body.code : ''
+      const timeout = typeof req.body?.timeout === 'number' ? req.body.timeout : undefined
+
+      if (!language || !['python', 'node', 'bash'].includes(language)) {
+        sendError(res, 'language must be python | node | bash', 400)
+        return
+      }
+      if (!code.trim()) {
+        sendError(res, 'code is required', 400)
+        return
+      }
+
+      const result = await runSandbox({ language, code, timeout })
+      res.json({ ok: true, ...result })
+    } catch (err) {
+      sendError(res, err)
+    }
+  })
+
+  app.post('/api/artemis/upload', requireAuth, async (req, res) => {
     try {
       const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
       const mimeType = typeof req.body?.mimeType === 'string' ? req.body.mimeType : ''

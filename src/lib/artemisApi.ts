@@ -21,6 +21,12 @@ async function parseError(res: Response) {
   }
 }
 
+function handleAuthError(res: Response) {
+  if (res.status === 401) {
+    window.location.href = `/signin?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
+  }
+}
+
 export async function fetchArtemisVoices() {
   const res = await fetch(`${API}/api/artemis/voices`, { credentials: 'include' })
   if (!res.ok) throw new Error(await parseError(res))
@@ -122,7 +128,7 @@ export function uploadArtemisFile(
 
 export async function fetchMemoryBoard() {
   const res = await fetch(`${API}/api/artemis/memory`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{
     ok: boolean
     sections: typeof MEMORY_SECTIONS
@@ -134,7 +140,7 @@ export async function fetchMemoryBoard() {
 
 export async function fetchChronicle() {
   const res = await fetch(`${API}/api/artemis/chronicle`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{ ok: boolean; checks: ChronicleCheck[] }>
 }
 
@@ -184,7 +190,7 @@ export type ChatStreamEvent =
 
 export async function fetchKnowledgeFile(id: string) {
   const res = await fetch(`${API}/api/artemis/knowledge/${encodeURIComponent(id)}`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{ ok: boolean; file: KnowledgeCard }>
 }
 
@@ -213,6 +219,7 @@ export async function streamArtemisChat(
     }),
   })
   if (!res.ok || !res.body) {
+    handleAuthError(res)
     throw new Error(await parseError(res))
   }
   const reader = res.body.getReader()
@@ -260,7 +267,7 @@ export type DriveFileRow = {
 
 export async function fetchArtemisDrive() {
   const res = await fetch(`${API}/api/artemis/drive`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{
     ok: boolean
     projectId: string
@@ -299,12 +306,12 @@ export type ConversationDetail = ConversationSummary & {
 
 export async function fetchConversations() {
   const res = await fetch(`${API}/api/artemis/conversations`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{ ok: boolean; conversations: ConversationSummary[] }>
 }
 
 export async function fetchConversation(id: string) {
   const res = await fetch(`${API}/api/artemis/conversations/${encodeURIComponent(id)}`, { credentials: 'include' })
-  if (!res.ok) throw new Error(await parseError(res))
+  if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{ ok: boolean; conversation: ConversationDetail }>
 }
