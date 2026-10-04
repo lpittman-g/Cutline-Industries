@@ -91,7 +91,7 @@ export function MfaModal({ mfaEnabled, onClose, onChanged }: Props) {
           </>
         )}
 
-        {phase === 'idle' && mfaEnabled && phase !== 'disable-confirm' && (
+        {phase === 'idle' && mfaEnabled && (
           <>
             <p style={{ color: 'var(--artemis-muted, #9ca3af)', marginBottom: '1.25rem' }}>
               Two-factor authentication is <strong style={{ color: '#4ade80' }}>active</strong> on your account.
