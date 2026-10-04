@@ -32,6 +32,7 @@ import { registerRampRoutes } from './rampApi.ts'
 import { registerSquarespaceRoutes } from './squarespaceApi.ts'
 import { registerArtemisRoutes } from './artemis/routes.ts'
 import { registerDeployRoutes } from './deploy/routes.ts'
+import { registerLinksRedirect, registerLinksRoutes } from './links/linksRoutes.ts'
 
 // Writable root for file-based state: /tmp on Vercel, project root otherwise
 export const DATA_ROOT = process.env.VERCEL ? '/tmp' : ROOT
@@ -445,8 +446,10 @@ export function createApp() {
   registerThermalRoutes(app)
   registerRampRoutes(app)
   registerSquarespaceRoutes(app)
+  registerLinksRedirect(app)   // must be before SPA catch-all
   registerArtemisRoutes(app)
   registerDeployRoutes(app)
+  registerLinksRoutes(app)
 
   setupSentryExpressErrorHandler(app)
 
