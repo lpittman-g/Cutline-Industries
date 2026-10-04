@@ -1,4 +1,29 @@
 services:
+  artemis-serve:
+    build:
+      context: .
+      dockerfile: scripts/serve/Dockerfile.artemis-serve
+    restart: unless-stopped
+    environment:
+      # Use the fine-tuned checkpoint if mounted, else pull gpt2 from HuggingFace.
+      # Override with: ARTEMIS_MODEL_PATH=/app/checkpoint (and mount the checkpoint volume)
+      - ARTEMIS_MODEL_PATH=${ARTEMIS_MODEL_PATH:-gpt2}
+      - ARTEMIS_DEVICE=cpu
+      - ARTEMIS_DTYPE=float32
+      - ARTEMIS_PORT=8100
+      - ARTEMIS_MAX_TOKENS=512
+    expose:
+      - "8100"
+    volumes:
+      - artemis_checkpoint:/app/checkpoint
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8100/v1/status"]
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
+
   api:
     build:
       context: .
@@ -7,11 +32,14 @@ services:
     env_file: .env.production
     environment:
       - NODE_ENV=production
+      - ARTEMIS_CORE_URL=http://artemis-serve:8100
     expose:
       - "8787"
     volumes:
       - artemis_data:/app/artemis-data
       - uploads:/app/uploaded
+    depends_on:
+      - artemis-serve
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8787/api/health"]
       interval: 30s
@@ -45,6 +73,8 @@ services:
 
 volumes:
   artemis_data:
+  artemis_checkpoint:
+  hf_cache:
   uploads:
   caddy_data:
   caddy_config:
