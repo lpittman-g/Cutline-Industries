@@ -2,9 +2,14 @@
   "name": "Cutline Industries",
   "snapshot": "snapshot-20260805-42cd5dcb-177e-411f-bd1f-2deada36cc58",
   "agentCanUpdateSnapshot": true,
-  "install": "npm install\ntest -f .env || cp .env.example .env\nbash scripts/cloud-postgres.sh ensure",
+  "install": "bash scripts/cursor-setup.sh",
   "start": "bash scripts/cloud-postgres.sh start",
   "terminals": [
+    {
+      "name": "shell",
+      "command": "bash --login",
+      "description": "Permanent terminal — VPS SSH, ant CLI, git, docker, all commands"
+    },
     {
       "name": "thermal",
       "command": "bash scripts/cloud-postgres.sh start && npm run db:migrate && npm run start",
@@ -14,6 +19,11 @@
       "name": "deploy",
       "command": "npm run deploy",
       "description": "Push to Gitea → VPS redeploy → regenerate cutline-hub.zip"
+    },
+    {
+      "name": "vps",
+      "command": "ssh vps",
+      "description": "Direct SSH into VPS (requires VPS_SSH_KEY secret)"
     }
   ],
   "ports": [
