@@ -70,6 +70,23 @@ services:
       - GITEA__security__INSTALL_LOCK=true
       - GITEA__service__DISABLE_REGISTRATION=${GITEA_DISABLE_REGISTRATION:-true}
       - GITEA__webhook__ALLOWED_HOST_LIST=deploy-agent
+      # Actions (replaces GitHub Actions)
+      - GITEA__actions__ENABLED=true
+      - GITEA__actions__DEFAULT_ACTIONS_URL=https://github.com
+      # Packages / container registry (replaces GitHub Packages)
+      - GITEA__packages__ENABLED=true
+      # Pages (replaces GitHub Pages)
+      - GITEA__server__ENABLE_GZIP=true
+      # OAuth provider (replaces GitHub OAuth Apps)
+      - GITEA__oauth2__ENABLE=true
+      - GITEA__oauth2__JWT_SECRET=${GITEA_OAUTH2_JWT_SECRET}
+      # Storage backend → Minio (replaces GitHub artifact storage)
+      - GITEA__storage__STORAGE_TYPE=minio
+      - GITEA__storage__MINIO_ENDPOINT=minio:9000
+      - GITEA__storage__MINIO_ACCESS_KEY_ID=${MINIO_ROOT_USER:-gitea}
+      - GITEA__storage__MINIO_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - GITEA__storage__MINIO_BUCKET=gitea
+      - GITEA__storage__MINIO_USE_SSL=false
     expose:
       - "3000"
     ports:
@@ -78,6 +95,91 @@ services:
       - gitea_data:/data
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - minio
+
+  # Gitea Actions runner (replaces GitHub Actions runners)
+  act-runner:
+    image: gitea/act_runner:latest
+    restart: unless-stopped
+    environment:
+      - GITEA_INSTANCE_URL=http://gitea:3000
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${GITEA_RUNNER_TOKEN}
+      - GITEA_RUNNER_NAME=cutline-runner
+      - GITEA_RUNNER_LABELS=ubuntu-latest:docker://node:20,ubuntu-22.04:docker://node:20
+      - CONFIG_FILE=/config/runner-config.yaml
+    volumes:
+      - act_runner_data:/data
+      - ./infra/act-runner-config.yaml:/config/runner-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - gitea
+
+  # S3-compatible storage for Actions artifacts + Packages (replaces GitHub artifact storage)
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-gitea}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Dependency update bot (replaces GitHub Dependabot)
+  renovate:
+    image: renovate/renovate:latest
+    restart: unless-stopped
+    environment:
+      - RENOVATE_PLATFORM=gitea
+      - RENOVATE_ENDPOINT=http://gitea:3000
+      - RENOVATE_TOKEN=${RENOVATE_GITEA_TOKEN}
+      - RENOVATE_AUTODISCOVER=true
+      - RENOVATE_AUTODISCOVER_FILTER=Cutline-Industries/*
+      - LOG_LEVEL=info
+    depends_on:
+      - gitea
+
+  # Metrics collection (replaces GitHub Insights)
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --web.enable-lifecycle
+    expose:
+      - "9090"
+    volumes:
+      - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  # Analytics dashboard (replaces GitHub Insights UI)
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      - GF_SERVER_ROOT_URL=https://insights.cutline-industries.studio
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    expose:
+      - "3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
 
   deploy-agent:
     build:
@@ -119,3 +221,7 @@ volumes:
   caddy_data:
   caddy_config:
   gitea_data:
+  act_runner_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:

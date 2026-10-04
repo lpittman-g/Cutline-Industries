@@ -3,6 +3,29 @@ git.cutline-industries.studio {
     encode gzip
 }
 
+# GitHub Pages equivalent — Gitea Pages
+pages.cutline-industries.studio {
+    reverse_proxy gitea:3000
+    encode gzip
+}
+
+# GitHub Insights equivalent — Grafana analytics
+insights.cutline-industries.studio {
+    reverse_proxy grafana:3000
+    encode gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
+
+# Container registry (GitHub Packages equivalent)
+registry.cutline-industries.studio {
+    reverse_proxy gitea:3000
+    encode gzip
+}
+
 cutline-industries.studio, www.cutline-industries.studio {
     # HTTPS is automatic via Let's Encrypt — no config needed
 

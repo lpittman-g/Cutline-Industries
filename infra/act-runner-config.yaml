@@ -1,0 +1,27 @@
+log:
+  level: info
+
+runner:
+  file: /data/.runner
+  capacity: 2
+  envs:
+    NODE_VERSION: "20"
+  timeout: 3h
+  insecure: false
+  fetch_timeout: 5s
+  fetch_interval: 2s
+
+cache:
+  enabled: true
+  dir: /data/cache
+  host: ""
+  port: 0
+
+container:
+  network: cutline_default
+  privileged: false
+  options:
+  workdir_parent: /data/workspace
+  valid_volumes:
+    - /data/workspace/**
+  docker_host: "-"
