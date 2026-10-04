@@ -174,16 +174,19 @@ export function registerArtemisRoutes(app: Express) {
         await mark('index', 'done')
 
         await mark('generate', 'in_progress')
-        reply = await runArtemis({ message, context, voice })
-        const chunkSize = 48
-        for (let i = 0; i < reply.length; i += chunkSize) {
-          writeNdjson(res, { type: 'chunk', text: reply.slice(i, i + chunkSize) })
-        }
+        const previous = await readConversation(conversationId)
+        reply = await runArtemis({
+          message,
+          context,
+          voice,
+          history: previous?.messages,
+          onChunk: (text) => writeNdjson(res, { type: 'chunk', text }),
+        })
         await mark('generate', 'done')
 
         await mark('learn', 'in_progress')
         await extractAndStoreLearning({ userMessage: message, response: reply })
-        const existing = (await readConversation(conversationId)) ?? {
+        const existing = previous ?? {
           id: conversationId,
           title: message.slice(0, 48) || 'Untitled Hunt',
           voice,

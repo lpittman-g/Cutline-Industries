@@ -643,7 +643,28 @@ export async function extractAndStoreLearning(input: { userMessage: string; resp
   await appendActivity('learn', input.userMessage.slice(0, 180))
 }
 
-export async function runArtemis(input: { message: string; context: MemoryContext; voice: VoiceId }): Promise<string> {
+/** How many prior conversation messages are replayed to the model each turn. */
+export const HISTORY_LIMIT = 12
+
+function emitInChunks(text: string, onChunk?: (text: string) => void, size = 48) {
+  if (!onChunk) return
+  for (let i = 0; i < text.length; i += size) onChunk(text.slice(i, i + size))
+}
+
+export function historyToMessages(history: ConversationMessage[] = []) {
+  return history.slice(-HISTORY_LIMIT).map((m) => ({
+    role: m.role === 'operator' ? ('user' as const) : ('assistant' as const),
+    content: m.content,
+  }))
+}
+
+export async function runArtemis(input: {
+  message: string
+  context: MemoryContext
+  voice: VoiceId
+  history?: ConversationMessage[]
+  onChunk?: (text: string) => void
+}): Promise<string> {
   const contextBlock = input.context.snippets.length
     ? input.context.snippets.map((s) => `- ${s}`).join('\n')
     : '- No matching Chronicle entries yet.'
@@ -662,24 +683,43 @@ export async function runArtemis(input: { message: string; context: MemoryContex
     .join('\n')
 
   const apiKey = process.env.OPENAI_API_KEY?.trim()
-  if (!apiKey) return stub
+  if (!apiKey) {
+    emitInChunks(stub, input.onChunk)
+    return stub
+  }
 
+  let reply = ''
   try {
     const OpenAI = (await import('openai')).default
     const client = new OpenAI({ apiKey })
     const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini'
-    const completion = await client.chat.completions.create({
+    const stream = await client.chat.completions.create({
       model,
+      stream: true,
       messages: [
         {
           role: 'system',
           content: `You are Artemis (${VOICES[input.voice].label} voice) for Cutline Industries. Be operational and concise. Use Chronicle context when relevant.\n\n${contextBlock}`,
         },
+        ...historyToMessages(input.history),
         { role: 'user', content: input.message },
       ],
     })
-    return completion.choices[0]?.message?.content?.trim() || stub
-  } catch {
-    return stub
+    for await (const part of stream) {
+      const delta = part.choices[0]?.delta?.content
+      if (!delta) continue
+      reply += delta
+      input.onChunk?.(delta)
+    }
+  } catch (err) {
+    console.warn('[artemis] model call failed:', err instanceof Error ? err.message : String(err))
+    if (reply) {
+      const note = '\n\n[Response interrupted — model call failed.]'
+      input.onChunk?.(note)
+      return (reply + note).trim()
+    }
   }
+  if (reply.trim()) return reply.trim()
+  emitInChunks(stub, input.onChunk)
+  return stub
 }
