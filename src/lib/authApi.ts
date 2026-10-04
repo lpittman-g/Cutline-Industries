@@ -89,3 +89,21 @@ export function verifyEmail(token: string) {
 export function logout() {
   return authJson<{ ok: boolean }>('/api/auth/logout', { method: 'POST', body: '{}' })
 }
+
+export function enableMfa() {
+  return authJson<{
+    ok: boolean
+    mfaEnabled: boolean
+    otpauthUri: string
+    secret: string
+    recoveryCode: string
+    message: string
+  }>('/api/auth/mfa/enable', { method: 'POST', body: '{}' })
+}
+
+export function disableMfa() {
+  return authJson<{ ok: boolean; mfaEnabled: boolean }>('/api/auth/mfa/disable', {
+    method: 'POST',
+    body: '{}',
+  })
+}
