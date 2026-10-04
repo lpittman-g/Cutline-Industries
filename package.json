@@ -19,6 +19,9 @@
     "auth:youtube": "tsx server/youtubeAuth.ts",
     "db:migrate": "tsx server/db/migrate.ts",
     "env:view": "tsx tools/cursor-env/cli.ts",
+    "deploy": "bash scripts/cursor-deploy.sh",
+    "deploy:push": "git push origin main && git push gitea main 2>/dev/null || true",
+    "deploy:zip": "curl -sf -X POST https://cutline-industries.studio/_internal/gen-zip -H 'Content-Type: application/json' -H \"x-deploy-signature: sha256=$(echo -n '{}' | openssl dgst -sha256 -hmac ${DEPLOY_WEBHOOK_SECRET} -hex | awk '{print $2}')\" -d '{}' && echo 'ZIP triggered'",
     "start": "concurrently -k \"npm:api\" \"npm:dev\""
   },
   "dependencies": {

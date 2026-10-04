@@ -9,6 +9,11 @@
       "name": "thermal",
       "command": "bash scripts/cloud-postgres.sh start && npm run db:migrate && npm run start",
       "description": "Thermal API (:8787) + Vite (:5173)"
+    },
+    {
+      "name": "deploy",
+      "command": "npm run deploy",
+      "description": "Push to Gitea → VPS redeploy → regenerate cutline-hub.zip"
     }
   ],
   "ports": [

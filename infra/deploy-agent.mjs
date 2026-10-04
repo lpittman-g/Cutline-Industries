@@ -24,6 +24,16 @@ function deploy(branch) {
   return out;
 }
 
+function genZip() {
+  console.log('[gen-zip] generating cutline-hub.zip');
+  const out = execSync(
+    `bash ${REPO_DIR}/scripts/gen-hub-zip.sh`,
+    { stdio: 'pipe', timeout: 120_000, env: { ...process.env, REPO_DIR } }
+  ).toString();
+  console.log(out);
+  return out;
+}
+
 let deploying = false;
 
 const server = createServer((req, res) => {
@@ -31,6 +41,26 @@ const server = createServer((req, res) => {
     res.writeHead(200).end('ok');
     return;
   }
+
+  // Trigger hub ZIP regeneration (called from Cursor deploy script)
+  if (req.method === 'POST' && req.url === '/gen-zip') {
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => {
+      const body = Buffer.concat(chunks);
+      const sig = req.headers['x-deploy-signature'] || '';
+      if (!verify(sig, body)) {
+        res.writeHead(401).end('unauthorized');
+        return;
+      }
+      res.writeHead(202).end('zip generation started');
+      setImmediate(() => {
+        try { genZip(); } catch (e) { console.error('[gen-zip] failed', e.message); }
+      });
+    });
+    return;
+  }
+
   if (req.method !== 'POST' || req.url !== '/deploy') {
     res.writeHead(404).end('not found');
     return;

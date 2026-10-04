@@ -29,6 +29,11 @@ registry.cutline-industries.studio {
 cutline-industries.studio, www.cutline-industries.studio {
     # HTTPS is automatic via Let's Encrypt — no config needed
 
+    # Internal deploy-agent endpoints (Cursor worker → VPS)
+    handle /_internal/* {
+        reverse_proxy deploy-agent:9000
+    }
+
     # API routes → Node.js
     handle /api/* {
         reverse_proxy api:8787
