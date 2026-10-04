@@ -77,6 +77,10 @@ export function ArtemisShell() {
           onClose={closeMenu}
           onSelect={(id) => go(id as CommandMenuId)}
         />
+        <nav className="artemis-topbar-nav" aria-label="Account">
+          <Link to="/thermal" className="artemis-topbar-link">Thermal</Link>
+          <Link to="/signin" className="artemis-topbar-link">Sign In</Link>
+        </nav>
       </header>
 
       <main className="artemis-main">

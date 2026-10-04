@@ -23,7 +23,7 @@ export function SigninPage() {
         mfaCode: mfaRequired ? mfaCode : undefined,
       })
       const next = searchParams.get('next')
-      navigate(next?.startsWith('/app') ? next : '/app/dashboard')
+      navigate(next && (next.startsWith('/app') || next.startsWith('/console')) ? next : '/console?view=chat')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign in failed'
       if (msg.toLowerCase().includes('mfa')) setMfaRequired(true)
@@ -38,7 +38,7 @@ export function SigninPage() {
       <div className="page-head">
         <div>
           <h1>Sign in</h1>
-          <p>Cutline Industries · Thermal Mission Control</p>
+          <p>Cutline Industries · Artemis</p>
         </div>
       </div>
 

@@ -1456,3 +1456,343 @@ html.artemis-canvas ::selection {
     transform: translateY(0);
   }
 }
+
+/* ─── Topbar nav links ─────────────────────────────────────────────────────── */
+.artemis-topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.artemis-topbar-link {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--ag-pill);
+  color: var(--ag-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.artemis-topbar-link:hover {
+  color: var(--ag-ink);
+  background: var(--ag-surface);
+}
+
+/* ─── Landing page wider container ────────────────────────────────────────── */
+.artemis-landing {
+  max-width: 52rem;
+}
+
+/* ─── How it works ─────────────────────────────────────────────────────────── */
+.artemis-how-it-works {
+  margin-top: 3.5rem;
+  text-align: center;
+}
+
+.artemis-how-it-works h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.75rem;
+  color: var(--ag-ink);
+}
+
+.artemis-steps {
+  display: grid;
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.artemis-step {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 16px;
+  background: var(--ag-surface);
+}
+
+.artemis-step-num {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  color: var(--ag-accent);
+  font-weight: 700;
+}
+
+.artemis-step strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ag-ink);
+}
+
+.artemis-step p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ag-body);
+  line-height: 1.6;
+}
+
+/* ─── Built different ──────────────────────────────────────────────────────── */
+.artemis-differentiators {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.artemis-differentiators h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.75rem;
+  color: var(--ag-ink);
+}
+
+.artemis-diff-grid {
+  display: grid;
+  gap: 1rem;
+  text-align: left;
+}
+
+.artemis-diff-card {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--ag-line);
+  border-radius: 16px;
+}
+
+.artemis-diff-card strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ag-ink);
+  margin-bottom: 0.3rem;
+}
+
+.artemis-diff-card p {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--ag-body);
+  line-height: 1.6;
+}
+
+/* ─── Landing CTA section ──────────────────────────────────────────────────── */
+.artemis-cta-section {
+  margin-top: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.artemis-cta-section .artemis-tagline {
+  margin: 0;
+}
+
+/* ─── Bubble head (label + copy button row) ────────────────────────────────── */
+.artemis-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.artemis-bubble-head > span {
+  display: block;
+  color: var(--ag-muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.artemis-copy-btn {
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--ag-line);
+  background: transparent;
+  color: var(--ag-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0;
+}
+
+.artemis-bubble:hover .artemis-copy-btn {
+  opacity: 1;
+}
+
+.artemis-copy-btn:hover {
+  color: var(--ag-ink);
+  background: var(--ag-surface);
+}
+
+/* ─── Markdown rendering in chat ───────────────────────────────────────────── */
+.artemis-bubble p,
+.artemis-bubble ol,
+.artemis-bubble ul {
+  margin: 0.25rem 0 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 14px;
+  background: var(--ag-surface);
+  color: var(--ag-ink);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.artemis-bubble.is-operator > p {
+  background: rgba(50, 121, 249, 0.1);
+}
+
+.artemis-bubble ol,
+.artemis-bubble ul {
+  padding-left: 2rem;
+}
+
+.artemis-bubble .artemis-md-h1,
+.artemis-bubble .artemis-md-h2,
+.artemis-bubble .artemis-md-h3 {
+  margin: 0.5rem 0 0.25rem;
+  padding: 0 0.85rem;
+  background: transparent;
+  color: var(--ag-ink);
+  font-weight: 700;
+}
+
+.artemis-bubble .artemis-md-h1 { font-size: 1.05rem; }
+.artemis-bubble .artemis-md-h2 { font-size: 0.97rem; }
+.artemis-bubble .artemis-md-h3 { font-size: 0.9rem; }
+
+.artemis-bubble .artemis-md-list {
+  list-style: disc;
+}
+
+.artemis-inline-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ag-accent, #60a5fa);
+}
+
+.artemis-code-block {
+  position: relative;
+  margin: 0.35rem 0 0;
+  border-radius: 12px;
+  background: #0f0f14;
+  border: 1px solid var(--ag-line);
+  overflow: hidden;
+}
+
+.artemis-code-lang {
+  display: block;
+  padding: 0.4rem 0.85rem 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--ag-muted);
+  text-transform: uppercase;
+}
+
+.artemis-code-block pre {
+  margin: 0;
+  padding: 0.6rem 0.85rem 0.85rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.artemis-code-copy {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--ag-line);
+  background: transparent;
+  color: var(--ag-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.artemis-code-block:hover .artemis-code-copy {
+  opacity: 1;
+}
+
+/* ─── Conversation sidebar ─────────────────────────────────────────────────── */
+.artemis-conv-sidebar {
+  width: 13.5rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-right: 1px solid var(--ag-line);
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.artemis-conv-sidebar > .artemis-cta-secondary {
+  font-size: 0.8rem;
+}
+
+.artemis-conv-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.artemis-conv-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.artemis-conv-item:hover {
+  background: var(--ag-surface);
+}
+
+.artemis-conv-item.is-active {
+  background: var(--ag-surface);
+  outline: 1px solid var(--ag-line);
+}
+
+.artemis-conv-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ag-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artemis-conv-time {
+  font-size: 0.65rem;
+  color: var(--ag-muted);
+}
+
+@media (min-width: 640px) {
+  .artemis-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .artemis-diff-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .artemis-conv-sidebar {
+    display: none;
+  }
+}

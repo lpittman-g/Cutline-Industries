@@ -285,3 +285,26 @@ export function consolePath(view: ConsoleView, extras?: Record<string, string>) 
   const params = new URLSearchParams({ view, ...extras })
   return `/console?${params.toString()}`
 }
+
+export type ConversationSummary = {
+  id: string
+  title: string
+  voice: string
+  updatedAt: string
+}
+
+export type ConversationDetail = ConversationSummary & {
+  messages: { role: 'operator' | 'artemis'; content: string; at: string }[]
+}
+
+export async function fetchConversations() {
+  const res = await fetch(`${API}/api/artemis/conversations`, { credentials: 'include' })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{ ok: boolean; conversations: ConversationSummary[] }>
+}
+
+export async function fetchConversation(id: string) {
+  const res = await fetch(`${API}/api/artemis/conversations/${encodeURIComponent(id)}`, { credentials: 'include' })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{ ok: boolean; conversation: ConversationDetail }>
+}

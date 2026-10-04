@@ -3,6 +3,43 @@ import { Link } from 'react-router-dom'
 import { ArtemisMark } from '../components/artemis/ArtemisMark'
 import { ARTEMIS_COPY, CAPABILITIES } from '../lib/artemis'
 
+const HOW_IT_WORKS = [
+  {
+    step: '01',
+    title: 'You send a message',
+    body: 'Ask anything — a question, a task, a file to analyze. Artemis receives it through an encrypted connection.',
+  },
+  {
+    step: '02',
+    title: 'Artemis reasons with your context',
+    body: 'The model searches your Chronicle, retrieves relevant knowledge, runs tools, and builds the answer — all on Cutline infrastructure.',
+  },
+  {
+    step: '03',
+    title: 'You get a verified answer',
+    body: 'The response streams back with sources cited and memory updated. Every session builds on the last.',
+  },
+]
+
+const DIFFERENTIATORS = [
+  {
+    title: 'Own model, from scratch',
+    body: 'Artemis is trained by Cutline Industries, not a wrapper around ChatGPT, Claude, or any external API. Blueprint Decision 5.',
+  },
+  {
+    title: 'Your data stays yours',
+    body: 'Conversations and knowledge index live on Cutline infrastructure. Nothing is sent to a third-party AI provider.',
+  },
+  {
+    title: 'Memory that compounds',
+    body: 'Chronicler captures decisions, preferences, and research. Every session starts with context — not a blank slate.',
+  },
+  {
+    title: 'Tools built in',
+    body: 'Web search, document ingestion, and code execution run natively. No plugins, no marketplace — just capability.',
+  },
+]
+
 function Arrow() {
   return (
     <span className="artemis-cta-arrow" aria-hidden="true">
@@ -58,9 +95,9 @@ export function ArtemisLandingPage() {
           <Link className="artemis-cta-primary artemis-cta-blue" to="/console?view=chat">
             Enter Artemis <Arrow />
           </Link>
-          <button type="button" className="artemis-cta-secondary" onClick={scrollToCapabilities}>
-            View Capabilities <Arrow />
-          </button>
+          <Link className="artemis-cta-secondary" to="/signin">
+            Sign In <Arrow />
+          </Link>
         </div>
       </section>
 
@@ -96,7 +133,42 @@ export function ArtemisLandingPage() {
         </div>
       </section>
 
-      <p className="artemis-tagline">{ARTEMIS_COPY.footer}</p>
+      <section className="artemis-how-it-works" aria-labelledby="how-heading">
+        <h2 id="how-heading">How it works</h2>
+        <div className="artemis-steps">
+          {HOW_IT_WORKS.map((item) => (
+            <div key={item.step} className="artemis-step">
+              <span className="artemis-step-num" aria-hidden="true">{item.step}</span>
+              <strong>{item.title}</strong>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="artemis-differentiators" aria-labelledby="diff-heading">
+        <h2 id="diff-heading">Built different</h2>
+        <div className="artemis-diff-grid">
+          {DIFFERENTIATORS.map((d) => (
+            <div key={d.title} className="artemis-diff-card">
+              <strong>{d.title}</strong>
+              <p>{d.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="artemis-cta-section">
+        <p className="artemis-tagline">{ARTEMIS_COPY.footer}</p>
+        <div className="artemis-hero-actions">
+          <Link className="artemis-cta-primary artemis-cta-blue" to="/console?view=chat">
+            Open the Console <Arrow />
+          </Link>
+          <Link className="artemis-cta-secondary" to="/signup">
+            Create Account <Arrow />
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

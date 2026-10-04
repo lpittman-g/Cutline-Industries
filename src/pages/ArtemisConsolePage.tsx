@@ -15,9 +15,10 @@ import {
 } from '../lib/artemis'
 import { uid } from '../lib/utils'
 import { BowChat } from '../components/artemis/BowChat'
+import { ConversationSidebar } from '../components/artemis/ConversationSidebar'
 import { MemoryBoard } from '../components/artemis/MemoryBoard'
 import { KnowledgeFileCard } from '../components/artemis/KnowledgeFileCard'
-import { fetchArtemisDrive, importArtemisDriveFile, uploadArtemisFile, type DriveFileRow } from '../lib/artemisApi'
+import { fetchArtemisDrive, fetchConversation, importArtemisDriveFile, uploadArtemisFile, type ConversationSummary, type DriveFileRow } from '../lib/artemisApi'
 
 type QueueItem = { id: string; name: string; status: string; percent: number; card?: KnowledgeCard }
 
@@ -33,6 +34,10 @@ export function ArtemisConsolePage() {
   const sessionKey = params.get('n') || 'live'
   const hunt = params.get('fresh') === 'hunt'
   const autoUpload = params.get('upload') === '1'
+
+  const [convRefreshKey, setConvRefreshKey] = useState(0)
+  const [activeConvId, setActiveConvId] = useState<string | undefined>(undefined)
+  const [loadedMessages, setLoadedMessages] = useState<{ role: 'operator' | 'artemis'; content: string }[] | undefined>(undefined)
 
   const setView = (next: ConsoleView, extras?: Record<string, string>) => {
     const nextParams = new URLSearchParams(params)
@@ -74,13 +79,43 @@ export function ArtemisConsolePage() {
 
       <div className="artemis-console-panel">
         {view === 'chat' && (
-          <BowChat
-            key={sessionKey}
-            knowledgeId={knowledgeId}
-            hunt={hunt}
-            voiceMode={voiceMode}
-            onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })}
-          />
+          <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+            <ConversationSidebar
+              activeId={activeConvId}
+              refreshKey={convRefreshKey}
+              onNewChat={() => {
+                setActiveConvId(undefined)
+                setLoadedMessages(undefined)
+                setParams((prev) => {
+                  const next = new URLSearchParams(prev)
+                  next.set('n', String(Date.now()))
+                  return next
+                }, { replace: true })
+              }}
+              onSelectConversation={(conv: ConversationSummary) => {
+                void fetchConversation(conv.id).then((r) => {
+                  setActiveConvId(r.conversation.id)
+                  setLoadedMessages(r.conversation.messages.map((m) => ({ role: m.role, content: m.content })))
+                  setView('chat')
+                }).catch(() => undefined)
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <BowChat
+                key={activeConvId ?? sessionKey}
+                knowledgeId={knowledgeId}
+                hunt={hunt}
+                voiceMode={voiceMode}
+                initialMessages={loadedMessages}
+                initialConversationId={activeConvId}
+                onConversationSaved={(id) => {
+                  setActiveConvId(id)
+                  setConvRefreshKey((k) => k + 1)
+                }}
+                onOpenChronicle={(section) => setView('memory', { section: section ?? 'projects' })}
+              />
+            </div>
+          </div>
         )}
         {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (

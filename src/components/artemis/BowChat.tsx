@@ -20,6 +20,7 @@ import {
 import { ProcessingStepper } from './ProcessingStepper'
 import { KnowledgeFileCard } from './KnowledgeFileCard'
 import { uid } from '../../lib/utils'
+import { MarkdownMessage } from './MarkdownMessage'
 
 function idleSteps(): Record<ProcessStepId, StepStatus> {
   return Object.fromEntries(PROCESS_STEPS.map((s) => [s.id, 'pending'])) as Record<ProcessStepId, StepStatus>
@@ -55,23 +56,33 @@ export function BowChat({
   knowledgeId,
   hunt,
   voiceMode,
+  initialMessages,
+  initialConversationId,
+  onConversationSaved,
 }: {
   onOpenChronicle: (section?: MemoryKind) => void
   knowledgeId?: string
   hunt?: boolean
   voiceMode?: boolean
+  initialMessages?: { role: 'operator' | 'artemis'; content: string }[]
+  initialConversationId?: string
+  onConversationSaved?: (id: string) => void
 }) {
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE)
   const [message, setMessage] = useState('')
-  const [conversationId, setConversationId] = useState<string | undefined>(undefined)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: 'artemis',
-      content: hunt
-        ? 'New hunt started. Ask Artemis to open the trail — memory and voice are on.'
-        : 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.',
-    },
-  ])
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId)
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    initialMessages && initialMessages.length > 0
+      ? initialMessages
+      : [
+          {
+            role: 'artemis',
+            content: hunt
+              ? 'New hunt started. Ask Artemis to open the trail — memory and voice are on.'
+              : 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.',
+          },
+        ],
+  )
   const [busy, setBusy] = useState(false)
   const [checks, setChecks] = useState<ChronicleCheck[]>([])
   const [voiceNote, setVoiceNote] = useState<string | null>(null)
@@ -149,7 +160,10 @@ export function BowChat({
             return next
           })
         }
-        if (event.type === 'done') setConversationId(event.conversationId)
+        if (event.type === 'done') {
+          setConversationId(event.conversationId)
+          onConversationSaved?.(event.conversationId)
+        }
       })
       void fetchChronicle()
         .then((r) => setChecks(r.checks))
@@ -329,8 +343,24 @@ export function BowChat({
         <div className="artemis-chat-log" ref={listRef}>
           {messages.map((msg, i) => (
             <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
-              <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
-              {msg.content ? <p>{msg.content}</p> : null}
+              <div className="artemis-bubble-head">
+                <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
+                {msg.content && (
+                  <button
+                    type="button"
+                    className="artemis-copy-btn"
+                    aria-label="Copy message"
+                    onClick={() => void navigator.clipboard.writeText(msg.content)}
+                  >
+                    Copy
+                  </button>
+                )}
+              </div>
+              {msg.content ? (
+                msg.role === 'artemis'
+                  ? <MarkdownMessage content={msg.content} />
+                  : <p>{msg.content}</p>
+              ) : null}
               {msg.steps && <ProcessingStepper statuses={msg.steps} />}
               {msg.cards?.map((card) => (
                 <KnowledgeFileCard key={card.id} card={card} onAsk={askAbout} />
