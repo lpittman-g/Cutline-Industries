@@ -765,7 +765,8 @@ export async function streamRunArtemis(input: {
       })
       if (coreRes.ok) {
         const data = (await coreRes.json()) as { answer?: string; status?: string }
-        if (data.status === 'ok' && data.answer) {
+        // Accept any status that includes an answer — "training" returns a real branded message
+        if (data.answer) {
           input.onChunk(data.answer)
           return
         }

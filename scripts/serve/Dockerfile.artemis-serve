@@ -1,0 +1,43 @@
+# Artemis inference container — CPU, no H100 required
+# Runs artemis-serve.py on port 8100.
+# Mount or COPY your checkpoint into /app/checkpoint before building.
+#
+# Build:
+#   docker build -f scripts/serve/Dockerfile.artemis-serve -t artemis-serve .
+#
+# Run (CPU, local checkpoint):
+#   docker run -p 8100:8100 \
+#     -v /path/to/artemis-checkpoint:/app/checkpoint:ro \
+#     -e ARTEMIS_MODEL_PATH=/app/checkpoint \
+#     artemis-serve
+#
+# Deploy to Azure Container Apps (existing environment: whitemeadow-751c0637):
+#   az containerapp update \
+#     --name artemis-api \
+#     --resource-group <your-rg> \
+#     --image <your-acr>/artemis-serve:latest \
+#     --set-env-vars ARTEMIS_MODEL_PATH=/app/checkpoint
+#
+# Hardware requirements (none of these need an H100):
+#   GPT-2 base  (117M):  1 GB RAM, any CPU     — ~1-3 tok/s
+#   GPT-2 med   (345M):  2 GB RAM, any CPU     — ~1-2 tok/s
+#   GPT-2 large (774M):  4 GB RAM, any CPU     — ~0.5-1 tok/s
+#   GPT-2 XL  (1.5B):    8 GB RAM, any CPU     — ~0.3-0.5 tok/s
+#   GPT-2 XL  (1.5B):   16 GB VRAM, T4 GPU    — ~30-50 tok/s  ($0.35/hr spot)
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir transformers accelerate
+
+COPY scripts/serve/artemis-serve.py /app/serve.py
+
+ENV ARTEMIS_MODEL_PATH=/app/checkpoint
+ENV ARTEMIS_DEVICE=cpu
+ENV ARTEMIS_DTYPE=float32
+ENV ARTEMIS_PORT=8100
+
+EXPOSE 8100
+CMD ["python", "/app/serve.py"]
