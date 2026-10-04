@@ -1,1 +1,21 @@
 {"at":"2026-09-20T00:00:00.000Z","event":"scaffold","detail":"Artemis data directory initialized"}
+{"at":"2026-10-04T10:04:26.149Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T10:04:26.153Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T10:04:26.194Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T10:04:26.258Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-04T13:23:34.496Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:34.499Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-04T13:23:34.503Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:34.538Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:44.962Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-04T13:23:45.311Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:45.337Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:45.352Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:55.022Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-04T13:23:55.147Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:55.151Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:23:55.168Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:24:04.320Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-04T13:24:04.416Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:24:04.435Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-04T13:24:04.453Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
