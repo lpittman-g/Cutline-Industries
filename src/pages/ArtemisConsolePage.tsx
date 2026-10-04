@@ -15,6 +15,7 @@ import {
 } from '../lib/artemis'
 import { uid } from '../lib/utils'
 import { BowChat } from '../components/artemis/BowChat'
+import { ChatBox } from '../components/artemis/ChatBox'
 import { ConversationSidebar } from '../components/artemis/ConversationSidebar'
 import { MemoryBoard } from '../components/artemis/MemoryBoard'
 import { KnowledgeFileCard } from '../components/artemis/KnowledgeFileCard'
@@ -117,6 +118,7 @@ export function ArtemisConsolePage() {
             </div>
           </div>
         )}
+        {view === 'quick' && <ChatBox />}
         {view === 'memory' && <MemoryBoard />}
         {view === 'files' && (
           <QuiverPanel

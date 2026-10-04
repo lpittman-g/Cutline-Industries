@@ -131,11 +131,12 @@ export function askAboutFilePrompt(filename: string): string {
   return `What should I know about ${filename}?`
 }
 
-export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs'
+export type ConsoleView = 'chat' | 'memory' | 'files' | 'logs' | 'quick'
 export type QuiverEngine = 'orion' | 'iron' | 'drive'
 
 export const CONSOLE_VIEWS: { id: ConsoleView; label: string; suffix: string }[] = [
   { id: 'chat', label: 'Chat', suffix: 'View' },
+  { id: 'quick', label: 'Quick', suffix: 'Chat' },
   { id: 'memory', label: 'Memory', suffix: 'View' },
   { id: 'files', label: 'Files', suffix: 'View' },
   { id: 'logs', label: 'Logs', suffix: 'View' },
@@ -184,7 +185,7 @@ export function commandMenuPath(id: CommandMenuId, nonce = '1'): string | null {
 }
 
 export function parseConsoleView(value: string | null): ConsoleView {
-  if (value === 'files' || value === 'logs' || value === 'chat' || value === 'memory') return value
+  if (value === 'files' || value === 'logs' || value === 'chat' || value === 'memory' || value === 'quick') return value
   return 'chat'
 }
 
