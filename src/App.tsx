@@ -16,6 +16,7 @@ import { SignupPage } from './pages/auth/SignupPage'
 import { SigninPage } from './pages/auth/SigninPage'
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage'
 import { RequireMissionControl } from './components/RequireMissionControl'
+import { RequireArtemisAuth } from './components/RequireArtemisAuth'
 import { DashboardPage } from './pages/app/DashboardPage'
 import { StreamsPage } from './pages/app/StreamsPage'
 import { ClipsPage } from './pages/app/ClipsPage'
@@ -55,7 +56,14 @@ export default function App() {
         {/* Artemis public product */}
         <Route element={<ArtemisShell />}>
           <Route path="/" element={<ArtemisLandingPage />} />
-          <Route path="/console" element={<ArtemisConsolePage />} />
+          <Route
+            path="/console"
+            element={
+              <RequireArtemisAuth>
+                <ArtemisConsolePage />
+              </RequireArtemisAuth>
+            }
+          />
         </Route>
 
         {/* Thermal public product */}

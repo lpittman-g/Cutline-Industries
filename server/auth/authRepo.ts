@@ -10,6 +10,7 @@ export type UserRow = {
   email_verified: boolean
   mfa_enabled: boolean
   mfa_secret: string | null
+  mfa_totp_secret: string | null
   failed_login_count: number
   locked_until: string | null
   role: UserRole
@@ -111,6 +112,15 @@ export async function setMfaEnabled(userId: number, enabled: boolean, secret: st
      SET mfa_enabled = $2, mfa_secret = $3, updated_at = CURRENT_TIMESTAMP
      WHERE id = $1`,
     [userId, enabled, secret],
+  )
+}
+
+export async function setMfaTotp(userId: number, totpSecret: string | null, recoveryCode: string | null) {
+  await getPool().query(
+    `UPDATE users
+     SET mfa_enabled = ($2 IS NOT NULL), mfa_totp_secret = $2, mfa_secret = $3, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $1`,
+    [userId, totpSecret, recoveryCode],
   )
 }
 

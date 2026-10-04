@@ -12,10 +12,12 @@ import {
   recordLoginAttempt,
   setFailedLogin,
   setMfaEnabled,
+  setMfaTotp,
   setUserRole,
   toPublicUser,
   type UserRole,
 } from './authRepo.ts'
+import { generateTotpSecret, totpUri, verifyTotp } from './totp.ts'
 import {
   SESSION_COOKIE,
   emailDomain,
@@ -275,15 +277,12 @@ export function registerAuthRoutes(app: Express) {
 
       if (user.mfa_enabled) {
         if (!mfaCode) {
-          res.status(401).json({
-            error: 'MFA code required',
-            mfaRequired: true,
-          })
+          res.status(401).json({ error: 'MFA code required', mfaRequired: true })
           return
         }
-        // Optional MFA: accept stored secret equality for recovery codes / future TOTP.
-        // Until TOTP is wired, require exact mfa_secret match (dev/ops set via enable endpoint).
-        if (!user.mfa_secret || mfaCode !== user.mfa_secret) {
+        const validTotp = user.mfa_totp_secret ? verifyTotp(user.mfa_totp_secret, mfaCode) : false
+        const validRecovery = user.mfa_secret ? mfaCode === user.mfa_secret : false
+        if (!validTotp && !validRecovery) {
           await recordLoginAttempt({ email, success: false, ip_address: ip })
           res.status(401).json({ error: 'Invalid MFA code', mfaRequired: true })
           return
@@ -322,7 +321,9 @@ export function registerAuthRoutes(app: Express) {
     }
   })
 
-  /** Optional MFA: enable with a shared recovery code (TOTP can replace later). */
+  /** MFA enable: generates a TOTP secret + a one-time recovery code.
+   *  Scan the returned otpauthUri with any authenticator app (Google Authenticator, Authy, 1Password, etc.).
+   *  Store the recoveryCode somewhere safe — it can sign in if you lose your device. */
   app.post('/api/auth/mfa/enable', dbRequired, async (req, res) => {
     try {
       if (!req.authUser) {
@@ -334,13 +335,16 @@ export function registerAuthRoutes(app: Express) {
         res.status(403).json({ error: 'MFA is disabled' })
         return
       }
-      const code = newOpaqueToken().slice(0, 8).toUpperCase()
-      await setMfaEnabled(req.authUser.id, true, code)
+      const totpSecret = generateTotpSecret()
+      const recoveryCode = newOpaqueToken().slice(0, 10).toUpperCase()
+      await setMfaTotp(req.authUser.id, totpSecret, recoveryCode)
       res.json({
         ok: true,
         mfaEnabled: true,
-        recoveryCode: code,
-        message: 'Store this recovery code. It is required at sign-in while MFA is on.',
+        otpauthUri: totpUri(totpSecret, req.authUser.email),
+        secret: totpSecret,
+        recoveryCode,
+        message: 'Scan the otpauthUri with an authenticator app. Save the recoveryCode — it bypasses TOTP if you lose your device.',
       })
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
