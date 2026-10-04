@@ -5,7 +5,7 @@ import { CommandMenu } from './CommandMenu'
 import { ArtemisMark } from './ArtemisMark'
 
 const ACTION_STUBS = [
-  { id: 'drive', label: 'Import from Google Drive', hint: 'Lisa privacy docs → extract · chunk · index' },
+  { id: 'drive', label: 'Import from Google Drive', hint: 'Select a file → extract · chunk · index' },
   { id: 'index', label: 'Index latest uploads', hint: 'Open Quiver and run extract → chunk → index' },
   { id: 'brief', label: 'Generate hunt brief', hint: 'Start a New Hunt in The Bow' },
   { id: 'chronicle', label: 'Summarize Chronicle', hint: 'Open memory research notes' },

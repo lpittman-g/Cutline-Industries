@@ -96,17 +96,6 @@ export function ArtemisLandingPage() {
         </div>
       </section>
 
-      <section className="artemis-ecosystem" aria-label="Ecosystem">
-        <p>{ARTEMIS_COPY.ecosystem}</p>
-        <ul>
-          <li aria-label="Google">G</li>
-          <li aria-label="Microsoft">⊞</li>
-          <li aria-label="Slack">#</li>
-          <li aria-label="Notion">N</li>
-          <li aria-label="Cloud">☁</li>
-        </ul>
-      </section>
-
       <p className="artemis-tagline">{ARTEMIS_COPY.footer}</p>
     </div>
   )

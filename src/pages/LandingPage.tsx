@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { AdSlot } from '../components/AdSlot'
 import { THERMAL, THERMAL_TIERS } from '../data/thermal'
 
 export function LandingPage() {
@@ -15,9 +14,11 @@ export function LandingPage() {
             for fans, ad packs for indie game studios.
           </p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
-              {THERMAL.discordBotCta}
-            </a>
+            {THERMAL.discordBotUrl && (
+              <a className="btn btn-primary" href={THERMAL.discordBotUrl} target="_blank" rel="noreferrer">
+                {THERMAL.discordBotCta}
+              </a>
+            )}
             <Link className="btn" to="/bounty">
               Open Bounty Board
             </Link>
@@ -47,9 +48,6 @@ export function LandingPage() {
               <p>{t.description}</p>
             </article>
           ))}
-        </div>
-        <div style={{ marginTop: '1.5rem' }}>
-          <AdSlot />
         </div>
       </section>
     </div>

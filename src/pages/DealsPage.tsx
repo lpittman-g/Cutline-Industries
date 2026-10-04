@@ -1,10 +1,7 @@
-import { useState } from 'react'
-import { DEAL_PACKAGES, DEMO_LEADS } from '../data/mega'
+import { DEAL_PACKAGES } from '../data/mega'
 
 export function DealsPage() {
-  const [pipeline] = useState(
-    DEMO_LEADS.filter((l) => ['replied', 'call', 'won'].includes(l.stage)),
-  )
+  const pipeline: { id: string; name: string; company: string; stage: string; notes: string }[] = []
 
   return (
     <div>

@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useCutline } from '../context/CutlineContext'
-import { DEMO_LEADS, DEAL_PACKAGES, MONEY_RAILS, PLATFORM_MODULES } from '../data/mega'
+import { DEAL_PACKAGES, MONEY_RAILS, PLATFORM_MODULES } from '../data/mega'
 
 export function CommandPage() {
   const { projectClips, projectPacks, activeProject } = useCutline()
   const ready = projectClips.filter((c) => c.status === 'ready' || c.status === 'exported').length
-  const hotLeads = DEMO_LEADS.filter((l) => l.stage === 'call' || l.stage === 'replied' || l.stage === 'won')
+  const hotLeads: unknown[] = []
 
   return (
     <div>

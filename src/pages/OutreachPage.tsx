@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { DEMO_LEADS, type Lead } from '../data/mega'
+import { type Lead } from '../data/mega'
 
 const STAGES: Lead['stage'][] = ['new', 'contacted', 'replied', 'call', 'won', 'lost']
 
 export function OutreachPage() {
-  const [leads, setLeads] = useState(DEMO_LEADS)
+  const [leads, setLeads] = useState<Lead[]>([])
   const [filter, setFilter] = useState<'all' | Lead['stage']>('all')
   const [draft, setDraft] = useState(
     `Hey {{name}} — I cut gaming Shorts packs for brands like yours.\nI can send a free 5-clip sample concept for {{company}} this week.\nWant the pack or a 15-min call?`,
@@ -93,6 +93,9 @@ export function OutreachPage() {
       </div>
 
       <div className="project-grid" style={{ marginTop: '1rem' }}>
+        {visible.length === 0 && (
+          <p style={{ color: 'var(--muted)', gridColumn: '1/-1' }}>No leads yet. Add your first lead to get started.</p>
+        )}
         {visible.map((lead) => (
           <article key={lead.id} className="panel pack-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>

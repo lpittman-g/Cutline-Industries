@@ -2,8 +2,7 @@ export const ARTEMIS_COPY = {
   name: 'Artemis',
   kicker: 'AI by Cutline Industries',
   description:
-    'Intelligence built for action. Artemis connects your tools, data, and AI workflows through one secure operational interface.',
-  ecosystem: 'Works across your ecosystem',
+    'Intelligence built for action. Artemis is a proprietary AI trained from scratch by Cutline Industries — your own model, running on your infrastructure, with no outside AI in the loop.',
   footer: 'Higher intelligence for a brighter tomorrow',
 } as const
 
@@ -12,7 +11,7 @@ export const CAPABILITIES = [
     id: 'bow',
     name: 'The Bow',
     hint: 'Execution console',
-    blurb: 'Premium multi-model execution and generation console.',
+    blurb: 'Artemis execution and generation console.',
     view: 'chat' as const,
     icon: 'bow',
   },

@@ -5,8 +5,7 @@ export const THERMAL = {
   description:
     'Autonomous real-time media network and web command center that converts stream chat velocity into monetized short-form video content.',
   discordBotCta: 'Add Thermal Bot to Discord',
-  // Placeholder until Discord OAuth app URL is wired
-  discordBotUrl: 'https://discord.com/application-directory',
+  discordBotUrl: '',
   cutlineRole: 'Cutline API + FFmpeg powers clip cutting inside Thermal.',
 }
 
