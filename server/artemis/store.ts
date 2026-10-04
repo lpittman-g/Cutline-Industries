@@ -676,7 +676,7 @@ export async function runArtemis(input: { message: string; context: MemoryContex
     })
     if (!res.ok) return stub
     const data = (await res.json()) as { answer?: string; status?: string }
-    if (data.status === 'training' || !data.answer) return stub
+    if (data.status !== 'ok' || !data.answer) return stub
     return data.answer
   } catch {
     return stub
