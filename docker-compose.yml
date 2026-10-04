@@ -57,6 +57,43 @@ services:
     depends_on:
       - api
 
+  gitea:
+    image: gitea/gitea:1.22-rootless
+    restart: unless-stopped
+    environment:
+      - GITEA__server__DOMAIN=${GITEA_DOMAIN:-git.cutline-industries.studio}
+      - GITEA__server__ROOT_URL=https://${GITEA_DOMAIN:-git.cutline-industries.studio}/
+      - GITEA__server__SSH_DOMAIN=${GITEA_DOMAIN:-git.cutline-industries.studio}
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__security__INSTALL_LOCK=true
+      - GITEA__service__DISABLE_REGISTRATION=${GITEA_DISABLE_REGISTRATION:-true}
+      - GITEA__webhook__ALLOWED_HOST_LIST=deploy-agent
+    expose:
+      - "3000"
+    ports:
+      - "2222:2222"
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+  deploy-agent:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.deploy-agent
+    restart: unless-stopped
+    environment:
+      - DEPLOY_SECRET=${DEPLOY_WEBHOOK_SECRET}
+      - REPO_DIR=/srv/repo
+      - COMPOSE_PROJECT=${COMPOSE_PROJECT_NAME:-cutline}
+    expose:
+      - "9000"
+    volumes:
+      - /srv/cutline-industries:/srv/repo
+      - /var/run/docker.sock:/var/run/docker.sock
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -70,6 +107,8 @@ services:
     depends_on:
       - api
       - web
+      - gitea
+      - deploy-agent
 
 volumes:
   artemis_data:
@@ -78,3 +117,4 @@ volumes:
   uploads:
   caddy_data:
   caddy_config:
+  gitea_data:

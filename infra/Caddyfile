@@ -1,3 +1,8 @@
+git.cutline-industries.studio {
+    reverse_proxy gitea:3000
+    encode gzip
+}
+
 cutline-industries.studio, www.cutline-industries.studio {
     # HTTPS is automatic via Let's Encrypt — no config needed
 
