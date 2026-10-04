@@ -1,0 +1,22 @@
+cutline-industries.studio, www.cutline-industries.studio {
+    # HTTPS is automatic via Let's Encrypt — no config needed
+
+    # API routes → Node.js
+    handle /api/* {
+        reverse_proxy api:8787
+    }
+
+    # Everything else → static frontend
+    handle {
+        reverse_proxy web:80
+    }
+
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
