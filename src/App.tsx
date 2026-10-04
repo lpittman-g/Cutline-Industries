@@ -6,6 +6,7 @@ import { PublicShell } from './components/PublicShell'
 import { CutlineProvider } from './context/CutlineContext'
 import { ArtemisLandingPage } from './pages/ArtemisLandingPage'
 import { ArtemisConsolePage } from './pages/ArtemisConsolePage'
+import { ArtemisChatPage } from './pages/ArtemisChatPage'
 import { LandingPage } from './pages/LandingPage'
 import { BountyPage } from './pages/thermal/BountyPage'
 import { DevelopersPage } from './pages/thermal/DevelopersPage'
@@ -61,6 +62,14 @@ export default function App() {
             element={
               <RequireArtemisAuth>
                 <ArtemisConsolePage />
+              </RequireArtemisAuth>
+            }
+          />
+          <Route
+            path="/artemisChat"
+            element={
+              <RequireArtemisAuth>
+                <ArtemisChatPage />
               </RequireArtemisAuth>
             }
           />
