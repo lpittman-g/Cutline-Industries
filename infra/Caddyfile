@@ -11,6 +11,13 @@ cutline-industries.studio, www.cutline-industries.studio {
         reverse_proxy api:8787
     }
 
+    # Downloads — served directly from repo
+    handle /downloads/* {
+        root * /srv/repo/public
+        file_server
+        header Content-Disposition "attachment"
+    }
+
     # Everything else → static frontend
     handle {
         reverse_proxy web:80

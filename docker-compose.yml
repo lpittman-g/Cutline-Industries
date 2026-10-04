@@ -104,6 +104,7 @@ services:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - /srv/cutline-industries:/srv/repo:ro
     depends_on:
       - api
       - web
