@@ -2,7 +2,10 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { ROOT } from '../youtubeAuth.ts'
 
-export const ARTEMIS_DATA = path.join(ROOT, 'artemis-data')
+// On Vercel the project root is read-only; /tmp is the only writable directory.
+export const ARTEMIS_DATA =
+  process.env.ARTEMIS_DATA_DIR ||
+  (process.env.VERCEL ? '/tmp/artemis-data' : path.join(ROOT, 'artemis-data'))
 
 export const VOICES = {
   astra: { id: 'astra', label: 'Astra' },

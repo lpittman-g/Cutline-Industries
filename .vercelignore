@@ -1,0 +1,10 @@
+artemis-data/
+inbox/
+token.json
+client_secret.json
+leads.json
+autopilot-state.json
+ai-pipeline-state.json
+autopilot.log
+ai-pipeline.log
+*.log
