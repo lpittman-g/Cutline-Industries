@@ -13,33 +13,11 @@ const FAMILY_EXTS: Record<UploadFamily, string[]> = {
   xlsx: ['.xlsx', '.xls'],
   image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'],
   code: [
-    '.js',
-    '.ts',
-    '.tsx',
-    '.jsx',
-    '.mjs',
-    '.cjs',
-    '.py',
-    '.go',
-    '.rs',
-    '.java',
-    '.rb',
-    '.php',
-    '.c',
-    '.cpp',
-    '.h',
-    '.cs',
-    '.sh',
-    '.sql',
-    '.yml',
-    '.yaml',
-    '.toml',
-    '.html',
-    '.css',
-    '.vue',
-    '.svelte',
-    '.kt',
-    '.swift',
+    '.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs',
+    '.py', '.go', '.rs', '.java', '.rb', '.php',
+    '.c', '.cpp', '.h', '.cs', '.sh', '.sql',
+    '.yml', '.yaml', '.toml', '.html', '.css',
+    '.vue', '.svelte', '.kt', '.swift',
   ],
 }
 
@@ -94,36 +72,19 @@ function clip(text: string, max = 16_000): string {
   return `${trimmed.slice(0, max)}\n\n…truncated…`
 }
 
-function extractPdfStrings(buffer: Buffer): string {
-  const raw = buffer.toString('latin1')
-  const parts: string[] = []
-  const re = /\((?:\\.|[^\\)]){5,}/g
-  let match: RegExpExecArray | null
-  while ((match = re.exec(raw))) {
-    const value = match[0]
-      .slice(1)
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '')
-      .replace(/\\\(/g, '(')
-      .replace(/\\\)/g, ')')
-      .replace(/\\[0-9]{1,3}/g, ' ')
-    if (/[a-zA-Z]{3,}/.test(value)) parts.push(value)
-    if (parts.length > 80) break
-  }
-  return clip(parts.join('\n'))
-}
-
-/** Extract text from an uploaded file. Heavy parsers (PDF/DOCX/XLSX/vision) are stubbed. */
-export function extractText(file: { name: string; mimeType?: string; buffer: Buffer }): {
+/** Extract text from an uploaded file. PDF, DOCX, XLSX use real parsers. */
+export async function extractText(file: { name: string; mimeType?: string; buffer: Buffer }): Promise<{
   family: UploadFamily
   text: string
   stub: boolean
-} {
+}> {
   const family = classifyUpload(file.name, file.mimeType)
   if (!family) throw new Error(`Unsupported file type: ${file.name}`)
+
   if (family === 'txt' || family === 'code' || family === 'csv') {
     return { family, text: clip(decodeText(file.buffer)), stub: false }
   }
+
   if (family === 'json') {
     const raw = decodeText(file.buffer)
     try {
@@ -132,32 +93,72 @@ export function extractText(file: { name: string; mimeType?: string; buffer: Buf
       return { family, text: clip(raw), stub: false }
     }
   }
+
   if (family === 'pdf') {
-    const scraped = extractPdfStrings(file.buffer)
-    if (scraped.length > 40) return { family, text: scraped, stub: false }
+    try {
+      const pdfParse = (await import('pdf-parse')).default
+      const result = await pdfParse(file.buffer)
+      const text = result.text?.trim()
+      if (text && text.length > 40) {
+        return { family, text: clip(text), stub: false }
+      }
+    } catch {
+      // fall through to stored-file notice
+    }
     return {
       family,
-      text: `PDF stored as uploaded/${safeKnowledgeName(file.name)}. Text extraction stub — add a PDF parser for full contents.`,
+      text: `PDF stored as uploaded/${safeKnowledgeName(file.name)}. No extractable text found (scanned or image-based PDF).`,
       stub: true,
     }
   }
+
   if (family === 'docx') {
+    try {
+      const mammoth = await import('mammoth')
+      const result = await mammoth.extractRawText({ buffer: file.buffer })
+      const text = result.value?.trim()
+      if (text && text.length > 10) {
+        return { family, text: clip(text), stub: false }
+      }
+    } catch {
+      // fall through
+    }
     return {
       family,
-      text: `DOCX stored as uploaded/${safeKnowledgeName(file.name)}. Parser stub — install a DOCX extractor for full text.`,
+      text: `DOCX stored as uploaded/${safeKnowledgeName(file.name)}. Text extraction failed — file may be corrupted or password-protected.`,
       stub: true,
     }
   }
+
   if (family === 'xlsx') {
+    try {
+      const XLSX = await import('xlsx')
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' })
+      const parts: string[] = []
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName]
+        if (!sheet) continue
+        const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false })
+        if (csv.trim()) parts.push(`## Sheet: ${sheetName}\n${csv}`)
+      }
+      const text = parts.join('\n\n').trim()
+      if (text.length > 10) {
+        return { family, text: clip(text), stub: false }
+      }
+    } catch {
+      // fall through
+    }
     return {
       family,
-      text: `Spreadsheet stored as uploaded/${safeKnowledgeName(file.name)}. XLSX parser stub — cells are not expanded yet.`,
+      text: `Spreadsheet stored as uploaded/${safeKnowledgeName(file.name)}. Could not extract cell data.`,
       stub: true,
     }
   }
+
+  // image — no vision API
   return {
     family,
-    text: `Image ${file.name} (${file.mimeType || 'image'}, ${file.buffer.length} bytes). Vision extraction stub.`,
+    text: `Image: ${file.name} (${file.mimeType || 'image'}, ${(file.buffer.length / 1024).toFixed(1)}KB). Stored as uploaded/${safeKnowledgeName(file.name)}.`,
     stub: true,
   }
 }

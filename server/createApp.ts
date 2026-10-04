@@ -104,6 +104,25 @@ export function createApp() {
     })
   })
 
+  /** Credential / integration readiness — safe to call unauthenticated (no secrets exposed). */
+  app.get('/api/status', (_req, res) => {
+    const e = process.env
+    res.json({
+      ok: true,
+      integrations: {
+        database:     Boolean(e.DATABASE_URL),
+        artemisVllm:  Boolean(e.VLLM_BASE_URL),
+        artemisCore:  Boolean(e.ARTEMIS_CORE_URL),
+        stripe:       Boolean(e.STRIPE_SECRET_KEY),
+        stripeWebhook:Boolean(e.STRIPE_WEBHOOK_SECRET),
+        twitch:       Boolean(e.TWITCH_CLIENT_ID && e.TWITCH_CLIENT_SECRET),
+        awsS3:        Boolean(e.AWS_ACCESS_KEY_ID && e.AWS_SECRET_ACCESS_KEY && e.AWS_S3_BUCKET_NAME),
+        youtube:      Boolean(e.GOOGLE_CLOUD_PROJECT),
+        sentry:       sentryEnabled(),
+      },
+    })
+  })
+
   app.get('/api/autopilot/status', async (_req, res) => {
     const stateFile = path.join(DATA_ROOT, 'autopilot-state.json')
     const state = await readJsonSafe(stateFile, {

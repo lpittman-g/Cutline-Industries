@@ -9,12 +9,12 @@ import { getKnowledgeEntry, indexChunks, removeKnowledgeEntry } from './rag/inde
 import { retrieveRelevantChunks } from './rag/retrieve.ts'
 
 describe('extractText', () => {
-  it('extracts json and stubs pdf', () => {
-    const json = extractText({ name: 'cfg.json', buffer: Buffer.from('{"voice":"astra"}') })
+  it('extracts json and stubs pdf', async () => {
+    const json = await extractText({ name: 'cfg.json', buffer: Buffer.from('{"voice":"astra"}') })
     assert.equal(json.family, 'json')
     assert.equal(json.stub, false)
     assert.match(json.text, /astra/)
-    const pdf = extractText({ name: 'deck.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
+    const pdf = await extractText({ name: 'deck.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
     assert.equal(pdf.family, 'pdf')
     assert.equal(pdf.stub, true)
   })

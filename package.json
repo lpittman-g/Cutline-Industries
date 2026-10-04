@@ -25,6 +25,7 @@
     "@aws-sdk/client-s3": "^3.1101.0",
     "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "@sentry/node": "^10.70.0",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.3",
     "@types/qrcode": "^1.5.6",
     "concurrently": "^10.0.4",
@@ -32,13 +33,16 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "googleapis": "^173.0.0",
+    "mammoth": "^1.13.0",
     "openai": "^7.3.0",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.22.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "7.18.2",
-    "stripe": "^22.4.0"
+    "stripe": "^22.4.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

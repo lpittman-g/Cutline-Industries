@@ -17,7 +17,7 @@ export const UPLOAD_MAX_BYTES = 25 * 1024 * 1024
 export { classifyUpload, extractText, uploadAcceptAttr, UPLOAD_FAMILIES, type UploadFamily }
 
 export function extractUploadText(input: { name: string; mimeType?: string; buffer: Buffer }) {
-  return extractText(input)
+  return extractText(input)  // returns Promise
 }
 
 async function uniqueInDir(dir: string, desired: string): Promise<string> {
@@ -64,7 +64,7 @@ export async function ingestArtemisUpload(input: {
   const originalName = await uniqueInDir(path.join(ARTEMIS_DATA, 'uploaded'), input.name)
   await fs.writeFile(path.join(ARTEMIS_DATA, 'uploaded', originalName), input.buffer)
 
-  const extracted = extractText({ name: input.name, mimeType: input.mimeType, buffer: input.buffer })
+  const extracted = await extractText({ name: input.name, mimeType: input.mimeType, buffer: input.buffer })
   const extractName = await uniqueInDir(path.join(ARTEMIS_DATA, 'knowledge'), `${originalName}.md`)
   const body = [
     `# ${input.name}`,

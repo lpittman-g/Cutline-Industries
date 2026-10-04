@@ -420,6 +420,30 @@ function DrivePanel({ onAskFile }: { onAskFile: (card: KnowledgeCard) => void })
   )
 }
 
+type IntegrationStatus = {
+  database: boolean
+  artemisVllm: boolean
+  artemisCore: boolean
+  stripe: boolean
+  stripeWebhook: boolean
+  twitch: boolean
+  awsS3: boolean
+  youtube: boolean
+  sentry: boolean
+}
+
+const INTEGRATION_LABELS: Record<keyof IntegrationStatus, string> = {
+  database: 'Database',
+  artemisVllm: 'Artemis vLLM',
+  artemisCore: 'Artemis Core',
+  stripe: 'Stripe',
+  stripeWebhook: 'Stripe Webhook',
+  twitch: 'Twitch',
+  awsS3: 'AWS S3',
+  youtube: 'YouTube',
+  sentry: 'Sentry',
+}
+
 function LogsPanel({ focusLunar }: { focusLunar: boolean }) {
   const userRef = useRef<HTMLInputElement>(null)
   const [health, setHealth] = useState('Probing…')
@@ -427,6 +451,7 @@ function LogsPanel({ focusLunar }: { focusLunar: boolean }) {
   const [authStatus, setAuthStatus] = useState('Lunar Gate idle')
   const [tribute, setTribute] = useState('Scout / checking...')
   const [user, setUser] = useState<AuthUser | null>(null)
+  const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null)
 
   const refresh = async () => {
     try {
@@ -447,6 +472,15 @@ function LogsPanel({ focusLunar }: { focusLunar: boolean }) {
       setTribute(`${p.tribute_tier || 'Scout'} · ${p.credits_used_this_month || 0} / ${p.monthly_token_credit || 50000}`)
     } catch {
       setTribute('Tribute status unavailable')
+    }
+    try {
+      const res = await fetch(`${API}/api/status`)
+      if (res.ok) {
+        const data = (await res.json()) as { integrations?: IntegrationStatus }
+        if (data.integrations) setIntegrations(data.integrations)
+      }
+    } catch {
+      // non-fatal
     }
   }
 
@@ -484,6 +518,22 @@ function LogsPanel({ focusLunar }: { focusLunar: boolean }) {
           <strong>{health}</strong>
         </article>
       </div>
+      {integrations && (
+        <section>
+          <h3>Integration status</h3>
+          <div className="artemis-integration-grid">
+            {(Object.keys(INTEGRATION_LABELS) as (keyof IntegrationStatus)[]).map((key) => (
+              <span
+                key={key}
+                className={`artemis-integration-chip ${integrations[key] ? 'artemis-integration-ok' : 'artemis-integration-missing'}`}
+              >
+                <span className="artemis-integration-dot" />
+                {INTEGRATION_LABELS[key]}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
       <section>
         <div className="artemis-log-head">
           <h3>Background model metrics</h3>

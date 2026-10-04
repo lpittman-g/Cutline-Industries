@@ -1898,3 +1898,50 @@ html.artemis-canvas ::selection {
   word-break: break-all;
   color: #e2e8f0;
 }
+
+/* Integration status grid */
+.artemis-integration-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.artemis-integration-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.artemis-integration-ok {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.artemis-integration-missing {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.25);
+  color: #fde68a;
+}
+
+.artemis-integration-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.artemis-integration-ok .artemis-integration-dot {
+  background: #4ade80;
+}
+
+.artemis-integration-missing .artemis-integration-dot {
+  background: #facc15;
+}
