@@ -26,6 +26,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "@sentry/node": "^10.70.0",
     "@types/pg": "^8.20.3",
+    "ai": "^7.0.127",
     "concurrently": "^10.0.4",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
