@@ -1,4 +1,4 @@
-# CLAUDE.md — Cutline Industries
+# ARTEMIS.md — Cutline Industries
 
 Agent orientation for the Cutline Industries monorepo.
 Read this first. Every rule here is permanent unless the user explicitly revokes it.
