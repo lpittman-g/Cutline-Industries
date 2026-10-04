@@ -31,6 +31,7 @@ import { registerAuthRoutes } from './auth/authRoutes.ts'
 import { registerRampRoutes } from './rampApi.ts'
 import { registerSquarespaceRoutes } from './squarespaceApi.ts'
 import { registerArtemisRoutes } from './artemis/routes.ts'
+import { registerChatRoute } from './chatRoute.ts'
 import { registerDeployRoutes } from './deploy/routes.ts'
 import { registerLinksRedirect, registerLinksRoutes } from './links/linksRoutes.ts'
 
@@ -448,6 +449,7 @@ export function createApp() {
   registerSquarespaceRoutes(app)
   registerLinksRedirect(app)   // must be before SPA catch-all
   registerArtemisRoutes(app)
+  registerChatRoute(app)
   registerDeployRoutes(app)
   registerLinksRoutes(app)
 
