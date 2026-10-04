@@ -34,7 +34,13 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 
 COPY scripts/serve/artemis-serve.py /app/serve.py
 
-ENV ARTEMIS_MODEL_PATH=/app/checkpoint
+# Optional: bake a fine-tuned checkpoint into the image.
+# If ./artemis-checkpoint exists at build time it is copied in.
+# Otherwise set ARTEMIS_MODEL_PATH=gpt2 at runtime and HuggingFace
+# downloads the base model on first start (needs outbound internet).
+# The deploy-weights.sh script handles both modes automatically.
+
+ENV ARTEMIS_MODEL_PATH=gpt2
 ENV ARTEMIS_DEVICE=cpu
 ENV ARTEMIS_DTYPE=float32
 ENV ARTEMIS_PORT=8100
