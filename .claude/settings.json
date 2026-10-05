@@ -5,7 +5,8 @@
       "Bash(az network dns *)",
       "Bash(az vm create *)",
       "Bash(modal *)",
-      "Bash(az rest --method PUT --url *SaaS/resources*)"
+      "Bash(az rest --method PUT --url *SaaS/resources*)",
+      "Bash(ssh -i * azureuser@172.203.229.191 *)"
     ]
   }
 }
