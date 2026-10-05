@@ -31,13 +31,14 @@
 
 set -euo pipefail
 
-DOMAIN="${DOMAIN:?set DOMAIN, e.g. api.artemis-ai.net}"
-DB_PASSWORD="${DB_PASSWORD:?set DB_PASSWORD}"
+DOMAIN="${DOMAIN:-api.artemis-ai.net}"
+# DB password: generate on-server so it never leaves this machine or appears in logs
+DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 40)}"
 VLLM_BASE_URL="${VLLM_BASE_URL:-http://127.0.0.1:8000}"
 VLLM_MODEL="${VLLM_MODEL:-artemis}"
 VLLM_API_KEY="${VLLM_API_KEY:-}"
 REPO_URL="${REPO_URL:-https://github.com/lpittman-g/Cutline-Industries}"
-LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:?set LETSENCRYPT_EMAIL}"
+LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-lpittman@cutline-industries.studio}"
 APP_DIR=/opt/artemis-chat
 APP_USER=artemis
 
@@ -157,6 +158,9 @@ echo "====================================================="
 echo " Gateway live at: https://$DOMAIN"
 echo " Health check:    curl https://$DOMAIN/api/health"
 echo "====================================================="
+echo ""
+echo "SAVE THIS — DB password (stored in /etc/artemis-chat.env on server):"
+echo "  artemis_chat DB password: $DB_PASSWORD"
 echo ""
 echo "Next steps:"
 echo "  1. Run infra/prepare-vercel.py --gateway-url https://$DOMAIN"
