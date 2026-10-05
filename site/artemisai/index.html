@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Sign in · Artemis AI</title>
+<title>Chat · Artemis AI</title>
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../artemis-icon.svg">
 <link rel="apple-touch-icon" href="../artemis-icon-192.png">
@@ -16,8 +16,7 @@
 <link rel="stylesheet" href="../mobile.css">
 <link rel="stylesheet" href="../workspace.css">
 </head>
-<body data-start="account">
-<div class="account-motion" aria-hidden="true"><canvas id="account-canvas"></canvas></div>
+<body data-start="chat">
 <header class="nav">
 <div class="wrap">
 <a class="brand" href="../">
@@ -35,7 +34,7 @@ Artemis AI
 </div>
 </header>
 <main>
-<section class="view" id="view-chat" data-view="chat" hidden>
+<section class="view" id="view-chat" data-view="chat" >
 <div class="wrap">
 <div class="chat">
 <aside aria-label="Conversations">
@@ -68,17 +67,16 @@ Artemis AI
 <section class="view" id="view-products" data-view="products" hidden>
 <div class="wrap"><div class="page-head"><span class="eyebrow">Products</span><h1>One Artemis.<br>Room to work.</h1><p>Chat, explore code, and follow the work behind an answer. The homepage keeps the existing platform overview.</p></div>
 <div class="product-grid">
-<article class="product-card"><span class="eyebrow">Conversations</span><h2>Artemis Chat</h2><p>Private, saved conversations with streaming replies, history search, edits, and exports.</p><p class="product-status">Account required. Answers need a connected Artemis model.</p><a class="btn btn-primary" href="../artemisai/">Open Chat</a></article>
+<article class="product-card"><span class="eyebrow">Conversations</span><h2>Artemis Chat</h2><p>Private, saved conversations with streaming replies, history search, edits, and exports.</p><p class="product-status">Account required. Answers need a connected Artemis model.</p><a class="btn btn-primary" href="../chat/">Open Chat</a></article>
 <article class="product-card"><span class="eyebrow">Included in Chat</span><h2>Artemis Workspace</h2><p>Switch between your conversation, code, and tool activity. Keep your work together.</p><p class="product-status">Tools depend on your plan and the model configuration.</p><a class="btn" href="../chat/?panel=code">Explore Workspace</a></article>
 <article class="product-card"><span class="eyebrow">Developer access</span><h2>Artemis API</h2><p>Integrate Artemis into your own application using server-side credentials.</p><p class="product-status">Provisioning and serving setup required. Contact us for access.</p><a class="btn" href="../#contact">Ask about API access</a></article>
 </div></div>
 </section>
-<section class="view" id="view-account" data-view="account" >
+<section class="view" id="view-account" data-view="account" hidden>
 <div class="wrap"><div class="page-head"><span class="eyebrow">Your account</span><h1>Your space with Artemis.</h1><p>Create an account or sign in to access your private chat history across devices. This page calls the Artemis account service on this site. It does not replace the homepage interest form.</p></div><div id="account-page-content"></div></div>
 </section>
 </main>
 <footer class="shell-foot"><div class="wrap"><p>Hosted by Cutline Industries. <a href="../">Back to the Artemis AI homepage</a>.</p></div></footer>
-<script src="../account-motion.js" defer></script>
 <script src="../app.js" defer></script>
 <script src="../polish.js" defer></script>
 <script src="../chat-stream.js" defer></script>

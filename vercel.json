@@ -3,6 +3,10 @@
   "framework": null,
   "buildCommand": null,
   "installCommand": null,
+  "redirects": [
+    {"source": "/chat", "destination": "/artemisai/", "permanent": true},
+    {"source": "/chat/", "destination": "/artemisai/", "permanent": true}
+  ],
   "headers": [
     {
       "source": "/(.*)",
