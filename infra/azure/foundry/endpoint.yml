@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+name: artemis-inference
+description: Artemis vLLM inference endpoint
+auth_mode: key
