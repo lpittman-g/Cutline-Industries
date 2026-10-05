@@ -18,55 +18,55 @@ const DASHES = [
 const SERVICES = [
   {
     icon: '✦',
-    name: 'Agent Platform',
-    desc: 'Deploy intelligent agents that hold context across sessions, use tools, and hand off to humans when it matters.',
+    name: 'Autonomous Agents',
+    desc: 'Agents that act on goals, not prompts. They run tools, make decisions, and escalate to humans only when they choose to.',
   },
   {
     icon: '◎',
     name: 'Voice Infrastructure',
-    desc: 'One API into Vapi, Bland, and Retell. Your operators see only the lines they're authorized to use.',
+    desc: 'Agents answer, route, and close calls autonomously. One API into Vapi, Bland, and Retell — no provider lock-in.',
   },
   {
     icon: '◈',
     name: 'Apollo Routing',
-    desc: 'Real-time call routing scored on cost, latency, and compliance. Switch providers without rewriting your stack.',
+    desc: 'Agentic routing scored in real time. Apollo decides the best path — cost, latency, compliance — without a human in the loop.',
   },
   {
     icon: '⋔',
-    name: 'Memory & Knowledge',
-    desc: 'Tenant-scoped memory that persists across sessions. Artemis remembers what matters and forgets what doesn't.',
+    name: 'Persistent Memory',
+    desc: 'Agents remember context across sessions and tenants. Every run starts informed; nothing is re-explained twice.',
   },
   {
     icon: '⌥',
-    name: 'Developer API',
-    desc: 'REST and streaming endpoints for every surface. Build agents, query memory, and stream responses in minutes.',
+    name: 'Agent API',
+    desc: 'REST and streaming endpoints for deploying autonomous agents. Goal-oriented task loops, tool calling, and memory in one SDK.',
   },
   {
     icon: '◉',
     name: 'Operator Console',
-    desc: 'The Bow puts every tenant, agent, and active run in one table. Dispatch, monitor, and hand off without switching tabs.',
+    desc: 'The Bow surfaces every active agent run in one table. Watch autonomous work in progress, intervene when needed, hand off cleanly.',
   },
 ]
 
 const AUDIENCES = [
   {
     tag: 'For Operators',
-    headline: 'Run every seat from one console.',
-    body: 'Multi-tenant deployments, live run status, and agent dispatch — all in The Bow. No dashboards to juggle, no scripts to maintain per provider.',
+    headline: 'Let agents run the hunt.',
+    body: 'Deploy autonomous agents per tenant. The Bow shows every active run in real time — dispatch, monitor, and intervene without switching tabs or writing scripts.',
     cta: 'Open The Bow',
     href: '/artemisChat',
   },
   {
     tag: 'For Developers',
-    headline: 'Ship agents, not boilerplate.',
-    body: 'REST + streaming API, a skills library, and memory built in. Bring your own model or use the Artemis engine. First agent in under an hour.',
-    cta: 'Read the docs',
+    headline: 'Build agents that act, not chat.',
+    body: 'Goal-oriented task loops, multi-step tool use, and tenant-scoped memory — all over one API. Define the objective. Artemis agents figure out the rest.',
+    cta: 'Start building',
     href: '/artemisChat',
   },
   {
     tag: 'For Enterprise',
-    headline: 'Isolated, auditable, and on your terms.',
-    body: 'Tenant-level data isolation, SOC 2 posture, and white-glove onboarding. SLA-backed infrastructure that runs where you need it.',
+    headline: 'Autonomous at scale. Governed by design.',
+    body: 'Tenant-level data isolation, auditable agent decisions, and SOC 2 posture. Agents run unsupervised — your compliance team stays in control.',
     cta: 'Talk to us',
     href: '/artemisChat',
   },
@@ -78,13 +78,13 @@ const TIERS = [
     price: 'Free',
     sub: 'No credit card required',
     features: [
-      '1 agent deployment',
+      '1 autonomous agent',
+      'Goal-based task runner',
       'The Bow console',
-      'Artemis engine access',
-      '1,000 messages / mo',
+      '1,000 agent actions / mo',
       'Community support',
     ],
-    cta: 'Start building',
+    cta: 'Deploy free',
     href: '/artemisChat',
     highlight: false,
   },
@@ -93,11 +93,11 @@ const TIERS = [
     price: '$299',
     sub: 'per month',
     features: [
-      'Unlimited agent deployments',
+      'Unlimited autonomous agents',
       'Apollo Mesh routing',
-      'Voice (Vapi · Bland · Retell)',
-      'Tenant-scoped memory',
-      '50,000 messages / mo',
+      'Voice agents (Vapi · Bland · Retell)',
+      'Persistent tenant memory',
+      '50,000 agent actions / mo',
       'Priority support',
     ],
     cta: 'Get Pro',
@@ -123,10 +123,10 @@ const TIERS = [
 ]
 
 const STATS = [
-  { value: '4',       label: 'Voice providers' },
-  { value: '1',       label: 'Unified API' },
-  { value: '<50ms',   label: 'Routing latency' },
-  { value: '∞',       label: 'Tenant isolation' },
+  { value: '∞',       label: 'Autonomous agents' },
+  { value: '1',       label: 'Agentic API' },
+  { value: '<50ms',   label: 'Decision latency' },
+  { value: '100%',    label: 'Tenant isolation' },
 ]
 
 function MeshDiagram() {
@@ -226,16 +226,17 @@ export function ArtemisLandingPage() {
           ))}
         </div>
         <div className="al-hero-inner">
-          <span className="al-kicker">Agent and Model Platform</span>
+          <span className="al-kicker">The Agentic Platform</span>
           <h1>Artemis AI</h1>
           <p>
-            Agents, models, and memory — wired together. Apollo routes calls,
-            The Bow runs hunts, Voice handles lines. One engine behind every seat.
+            Agents that act, decide, and hand off on their own. Define the goal —
+            Artemis runs the hunt. Apollo routes, Voice answers, memory persists.
+            You stay in control without staying in the loop.
           </p>
           <div className="al-hero-actions">
-            <Link to="/artemisChat" className="al-cta-dark">Get started</Link>
+            <Link to="/artemisChat" className="al-cta-dark">Deploy an agent</Link>
             <button type="button" className="al-cta-outline" onClick={scrollToProducts}>
-              View products
+              See how it works
             </button>
           </div>
         </div>
@@ -253,10 +254,10 @@ export function ArtemisLandingPage() {
 
       {/* ── Built for the seat ───────────────────── */}
       <section className="al-seat">
-        <h2>Built for the seat you are in.</h2>
+        <h2>Agents that work while you don't.</h2>
         <p>
-          Whether you're running a contact center, shipping agents, or managing enterprise
-          deployments — Artemis meets you where you work.
+          Artemis agents run goals autonomously — calling tools, making decisions,
+          routing work, and closing loops — so your team handles what only humans should.
         </p>
       </section>
 
@@ -267,7 +268,7 @@ export function ArtemisLandingPage() {
           <div>
             <span className="al-product-label">Apollo</span>
             <h3>Mesh routing</h3>
-            <p>Providers A–D plug into a central Mesh. Apollo scores each route in real time and sends calls down the best path — cost, latency, and compliance weighted together.</p>
+            <p>Agents don't pick providers — Apollo does. Routes are scored in real time across cost, latency, and compliance. The agent gets the best path without knowing it existed.</p>
           </div>
           <div>
             <div className="al-demo-card">
@@ -282,7 +283,7 @@ export function ArtemisLandingPage() {
           <div>
             <span className="al-product-label">Console</span>
             <h3>The Bow</h3>
-            <p>One table — every tenant, agent, and active run. Dispatch new hunts, monitor live status, and hand off to the right agent without switching tabs.</p>
+            <p>Agents run unsupervised. The Bow makes that visible — every tenant, every agent, every active run in one table. Dispatch a new hunt or intervene mid-run in one click.</p>
           </div>
           <div>
             <div className="al-demo-card">
@@ -296,7 +297,7 @@ export function ArtemisLandingPage() {
           <div>
             <span className="al-product-label">Telephony</span>
             <h3>Voice</h3>
-            <p>Vapi, Bland, and Retell — all live at once. Only lines the operator is authorized to use appear. Routing logic lives in Apollo, not in each provider's dashboard.</p>
+            <p>Voice agents answer, qualify, and close — without a human on the line. Vapi, Bland, and Retell run in parallel. Apollo decides which one picks up.</p>
           </div>
           <div>
             <div className="al-demo-card">
@@ -311,7 +312,7 @@ export function ArtemisLandingPage() {
           <div>
             <span className="al-product-label">Engine</span>
             <h3>Artemis</h3>
-            <p>System prompt, skills, and memory — defined once per tenant. Every agent session inherits them. Change a skill globally or scope it to one seat.</p>
+            <p>The autonomous core. System prompt, skills, and memory defined once — every agent inherits them. The engine decides what tool to call, what to remember, and when to hand off.</p>
           </div>
           <div>
             <div className="al-demo-card">
@@ -326,8 +327,8 @@ export function ArtemisLandingPage() {
       {/* ── Services grid ────────────────────────── */}
       <section className="al-services">
         <div className="al-section-head">
-          <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>What we offer</span>
-          <h2>Everything your stack needs, nothing it doesn't.</h2>
+          <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>Platform capabilities</span>
+          <h2>Everything an autonomous agent needs to run.</h2>
         </div>
         <div className="al-service-grid">
           {SERVICES.map((s) => (
@@ -344,7 +345,7 @@ export function ArtemisLandingPage() {
       <section className="al-audiences">
         <div className="al-section-head">
           <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>Who it's built for</span>
-          <h2>One platform. Every role.</h2>
+          <h2>One agentic platform. Every role.</h2>
         </div>
         <div className="al-audience-grid">
           {AUDIENCES.map((a) => (
@@ -362,14 +363,14 @@ export function ArtemisLandingPage() {
       <section className="al-developer">
         <div className="al-dev-inner">
           <div className="al-dev-copy">
-            <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>Developer API</span>
-            <h2>Ship your first agent in under an hour.</h2>
+            <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>Agent API</span>
+            <h2>Deploy autonomous agents in under an hour.</h2>
             <p>
-              Streaming responses, tool use, tenant-scoped memory, and voice routing — all
-              available over a single REST API. No infrastructure to manage.
+              Goal-oriented task loops, multi-step tool calling, tenant-scoped memory, and
+              voice routing — all over one REST API. Define the objective. The agent runs.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
-              <Link to="/artemisChat" className="al-cta-dark">Start building</Link>
+              <Link to="/artemisChat" className="al-cta-dark">Deploy an agent</Link>
               <Link to="/artemisChat" className="al-cta-outline">View docs</Link>
             </div>
           </div>
@@ -378,18 +379,17 @@ export function ArtemisLandingPage() {
               <span className="al-code-dot" style={{ background: '#ff5f57' }} />
               <span className="al-code-dot" style={{ background: '#febc2e' }} />
               <span className="al-code-dot" style={{ background: '#28c840' }} />
-              <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--ag-muted)', letterSpacing: '0.1em' }}>artemis-api.ts</span>
+              <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--ag-muted)', letterSpacing: '0.1em' }}>artemis-agent.ts</span>
             </div>
-            <pre className="al-code-pre"><code>{`const stream = await artemis.chat({
+            <pre className="al-code-pre"><code>{`const agent = await artemis.run({
   tenant: "acme-corp",
-  agent:  "artemis",
-  message: "Summarize last week's runs.",
-  stream:  true,
+  goal:   "Qualify leads from last 48 hours.",
+  tools:  ["crm.lookup", "voice.call", "memory.save"],
+  autonomous: true,
 })
 
-for await (const chunk of stream) {
-  process.stdout.write(chunk.text)
-}`}</code></pre>
+agent.on("decision", (d) => console.log(d))
+agent.on("done",     (r) => console.log(r.summary))`}</code></pre>
           </div>
         </div>
       </section>
@@ -398,7 +398,7 @@ for await (const chunk of stream) {
       <section className="al-pricing">
         <div className="al-section-head">
           <span className="al-kicker" style={{ marginBottom: '0.65rem' }}>Pricing</span>
-          <h2>Start free. Scale as you grow.</h2>
+          <h2>Start free. Run unlimited agents as you grow.</h2>
         </div>
         <div className="al-tier-grid">
           {TIERS.map((t) => (
@@ -426,10 +426,10 @@ for await (const chunk of stream) {
       {/* ── Final CTA ────────────────────────────── */}
       <section className="al-final-cta">
         <div className="al-final-cta-inner">
-          <h2>Ready to run your first agent?</h2>
-          <p>Artemis is live. Get started free — no card required.</p>
+          <h2>Ready to deploy your first autonomous agent?</h2>
+          <p>Artemis is live. Define the goal — the agent handles the rest. Free to start, no card required.</p>
           <div className="al-hero-actions" style={{ justifyContent: 'center' }}>
-            <Link to="/artemisChat" className="al-cta-dark">Enter Artemis →</Link>
+            <Link to="/artemisChat" className="al-cta-dark">Deploy an agent →</Link>
             <Link to="/artemisChat" className="al-cta-outline">Talk to us</Link>
           </div>
         </div>
@@ -441,7 +441,7 @@ for await (const chunk of stream) {
           <span className="al-footer-brand">Artemis AI</span>
           <span className="al-footer-copy">© {new Date().getFullYear()} Cutline Industries. All rights reserved.</span>
           <nav className="al-footer-nav" aria-label="Footer">
-            <Link to="/artemisChat">Chat</Link>
+            <Link to="/artemisChat">Agents</Link>
             <Link to="/artemisChat">Docs</Link>
             <Link to="/artemisChat">Privacy</Link>
           </nav>
