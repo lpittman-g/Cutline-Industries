@@ -167,7 +167,12 @@ nginx -t
 systemctl reload nginx
 
 echo "[setup] Obtaining TLS certificate with Let's Encrypt…"
-certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --redirect
+if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --redirect; then
+  echo "[setup] TLS certificate issued OK"
+else
+  echo "[setup] WARNING: certbot failed (DNS not yet propagated?). Re-run once domain is live:"
+  echo "  certbot --nginx -d $DOMAIN --non-interactive --agree-tos -m $LETSENCRYPT_EMAIL --redirect"
+fi
 
 echo ""
 echo "====================================================="
