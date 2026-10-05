@@ -93,17 +93,19 @@ export function ArtemisShell() {
       <header className="artemis-topbar">
         <Link to="/" className="artemis-brand">
           <ArtemisMark size={34} />
-          <span>Artemis</span>
+          <span>Artemis AI</span>
         </Link>
-        <CommandMenu
-          open={menuOpen}
-          items={COMMAND_MENU_ITEMS}
-          onOpen={openMenu}
-          onToggle={() => setMenuOpen((v) => !v)}
-          onClose={closeMenu}
-          onSelect={(id) => go(id as CommandMenuId)}
-        />
         <nav className="artemis-topbar-nav" aria-label="Account">
+          <Link to="/artemisChat" className="artemis-topbar-cta-dark">Get started</Link>
+          <CommandMenu
+            open={menuOpen}
+            items={COMMAND_MENU_ITEMS}
+            onOpen={openMenu}
+            onToggle={() => setMenuOpen((v) => !v)}
+            onClose={closeMenu}
+            onSelect={(id) => go(id as CommandMenuId)}
+            label="Menu"
+          />
           {user ? (
             <div ref={dropRef} className="artemis-user-menu" style={{ position: 'relative' }}>
               <button

@@ -19,6 +19,7 @@ export function CommandMenu({
   onToggle,
   onClose,
   onSelect,
+  label = 'Command Menu',
 }: {
   open: boolean
   items: readonly CommandItem[]
@@ -26,6 +27,7 @@ export function CommandMenu({
   onToggle: () => void
   onClose: () => void
   onSelect: (id: string) => void
+  label?: string
 }) {
   const drawerId = useId()
   const searchId = useId()
@@ -85,7 +87,7 @@ export function CommandMenu({
         onClick={onToggle}
       >
         <span className="artemis-command-dot" aria-hidden="true" />
-        Command Menu
+        {label}
         <kbd className="artemis-command-kbd">{shortcut}</kbd>
       </button>
 

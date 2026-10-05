@@ -1,23 +1,23 @@
-/* Artemis — frosted glass white/blue public surface */
+/* Artemis — dark motion surface */
 
 :root {
-  --ag-bg: #ffffff;
-  --ag-surface: #f8f9fc;
-  --ag-surface-2: #eff2f7;
-  --ag-ink: #121317;
-  --ag-body: #45474d;
-  --ag-muted: #6a6a71;
-  --ag-border: rgba(33, 34, 38, 0.06);
-  --ag-line: #e8eaee;
-  --ag-blue: #3279f9;
-  --ag-blue-deep: #1a73e8;
+  --ag-bg: #08090c;
+  --ag-surface: #0e1016;
+  --ag-surface-2: #14161d;
+  --ag-ink: #edeef2;
+  --ag-body: #9a9caa;
+  --ag-muted: #5f6070;
+  --ag-border: rgba(255, 255, 255, 0.07);
+  --ag-line: rgba(255, 255, 255, 0.1);
+  --ag-blue: #4d8ef8;
+  --ag-blue-deep: #3279f9;
   --ag-cyan: #22d3ee;
-  --ag-terminal: #18191d;
+  --ag-terminal: #030405;
   --ag-terminal-fg: #a7f3d0;
   --ag-radius: 22px;
   --ag-pill: 9999px;
-  --ag-shadow: 0 1px 2px rgba(18, 19, 23, 0.04), 0 8px 28px rgba(50, 121, 249, 0.06);
-  --ag-glow: 0 0 0 1px rgba(50, 121, 249, 0.08), 0 8px 32px rgba(50, 121, 249, 0.1);
+  --ag-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 8px 28px rgba(0,0,0,0.3);
+  --ag-glow: 0 0 0 1px rgba(77,142,248,0.14), 0 8px 32px rgba(77,142,248,0.16);
   --ag-font: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -26,7 +26,7 @@ html.artemis-canvas body {
   background-color: var(--ag-bg);
   background-image: none;
   color: var(--ag-ink);
-  color-scheme: light;
+  color-scheme: dark;
   font-family: var(--ag-font);
 }
 
@@ -50,9 +50,9 @@ html.artemis-canvas ::selection {
   pointer-events: none;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(50, 121, 249, 0.08), transparent 55%),
-    radial-gradient(ellipse 55% 45% at 10% 85%, rgba(34, 211, 238, 0.06), transparent 50%),
-    linear-gradient(180deg, #ffffff 0%, #f8f9fc 55%, #ffffff 100%);
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(50, 121, 249, 0.16), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 10% 85%, rgba(34, 211, 238, 0.09), transparent 50%),
+    linear-gradient(180deg, #08090c 0%, #0c0e14 55%, #08090c 100%);
 }
 
 .artemis-grid {
@@ -145,7 +145,7 @@ html.artemis-canvas ::selection {
   align-items: center;
   gap: 0.5rem;
   border: 1px solid var(--ag-line);
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px);
   color: var(--ag-ink);
   border-radius: var(--ag-pill);
@@ -195,7 +195,7 @@ html.artemis-canvas ::selection {
   width: 100%;
   border: 1px solid var(--ag-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--ag-surface-2);
   color: var(--ag-ink);
   padding: 0.65rem 0.8rem;
   font-size: 0.86rem;
@@ -235,11 +235,11 @@ html.artemis-canvas ::selection {
   z-index: 50;
   width: min(20rem, calc(100vw - 2rem));
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(14, 16, 22, 0.97);
   backdrop-filter: blur(16px);
   border: 1px solid var(--ag-border);
   border-radius: 20px;
-  box-shadow: 0 16px 48px rgba(18, 19, 23, 0.12);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
   transform: translateY(-12px);
   opacity: 0;
   pointer-events: none;
@@ -303,7 +303,7 @@ html.artemis-canvas ::selection {
 }
 
 .artemis-command-link:hover {
-  background: var(--ag-surface-2);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .artemis-modal-backdrop {
@@ -320,7 +320,7 @@ html.artemis-canvas ::selection {
 .artemis-modal {
   width: min(26rem, 100%);
   padding: 1.25rem 1.3rem 1.15rem;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(14, 16, 22, 0.98);
   border: 1px solid var(--ag-border);
   border-radius: 20px;
   box-shadow: var(--ag-glow);
@@ -436,7 +436,7 @@ html.artemis-canvas ::selection {
 
 .artemis-cta-secondary {
   border: 1px solid var(--ag-line);
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
   color: var(--ag-ink);
   padding: 0.9rem 1.5rem;
@@ -446,7 +446,7 @@ html.artemis-canvas ::selection {
 
 .artemis-cta-secondary:hover {
   border-color: var(--ag-blue);
-  color: var(--ag-blue-deep);
+  color: var(--ag-blue);
 }
 
 .artemis-cta-compact {
@@ -480,7 +480,7 @@ html.artemis-canvas ::selection {
   padding: 0.85rem 1rem;
   border: 1px solid var(--ag-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(16px);
   box-shadow: var(--ag-shadow);
   text-align: left;
@@ -586,7 +586,7 @@ html.artemis-canvas ::selection {
   padding: 0.35rem;
   border: 1px solid var(--ag-border);
   border-radius: var(--ag-pill);
-  background: rgba(248, 249, 252, 0.86);
+  background: rgba(14, 16, 22, 0.86);
   backdrop-filter: blur(12px);
   box-shadow: var(--ag-shadow);
 }
@@ -610,7 +610,7 @@ html.artemis-canvas ::selection {
 
 .artemis-tab:hover {
   color: var(--ag-ink);
-  background: rgba(18, 19, 23, 0.05);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .artemis-tab.is-active {
@@ -642,7 +642,7 @@ html.artemis-canvas ::selection {
   padding: 1.35rem 1.4rem 1.6rem;
   border: 1px solid var(--ag-border);
   border-radius: var(--ag-radius);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(14, 16, 22, 0.92);
   backdrop-filter: blur(16px);
   box-shadow: var(--ag-glow), var(--ag-shadow);
 }
@@ -705,7 +705,7 @@ html.artemis-canvas ::selection {
 
 .artemis-chip-btn {
   border: 1px solid var(--ag-line);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.06);
   color: var(--ag-ink);
   border-radius: var(--ag-pill);
   padding: 0.25rem 0.7rem;
@@ -746,7 +746,7 @@ html.artemis-canvas ::selection {
 .artemis-bow-actions select {
   width: 100%;
   border: 1px solid var(--ag-line);
-  background: #fff;
+  background: var(--ag-surface-2);
   color: var(--ag-ink);
   border-radius: 16px;
   padding: 0.8rem 1rem;
@@ -944,7 +944,7 @@ html.artemis-canvas ::selection {
   padding: 1rem;
   border: 1px solid var(--ag-border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--ag-surface);
 }
 
 .artemis-log-grid p,
@@ -1016,7 +1016,7 @@ html.artemis-canvas ::selection {
 .artemis-voice-select select {
   border: 1px solid var(--ag-line);
   border-radius: var(--ag-pill);
-  background: #fff;
+  background: var(--ag-surface-2);
   color: var(--ag-ink);
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
@@ -1110,7 +1110,7 @@ html.artemis-canvas ::selection {
   padding: 0.95rem 1.05rem;
   border: 1px solid var(--ag-border);
   border-radius: 16px;
-  background: #fff;
+  background: var(--ag-surface);
   box-shadow: var(--ag-shadow);
   display: grid;
   gap: 0.22rem;
@@ -1157,7 +1157,7 @@ html.artemis-canvas ::selection {
   min-width: 0;
   border: 1px solid var(--ag-line);
   border-radius: var(--ag-pill);
-  background: #fff;
+  background: var(--ag-surface-2);
   color: var(--ag-ink);
   padding: 0.7rem 1rem;
 }
@@ -1167,7 +1167,7 @@ html.artemis-canvas ::selection {
   height: 2.4rem;
   border: 1px solid var(--ag-line);
   border-radius: 50%;
-  background: #fff;
+  background: var(--ag-surface-2);
   color: var(--ag-ink);
   font-size: 1.2rem;
   line-height: 1;
@@ -1263,7 +1263,7 @@ html.artemis-canvas ::selection {
   padding: 0.55rem 0.85rem;
   border: 1px solid var(--ag-border);
   border-radius: var(--ag-pill);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.05);
   box-shadow: var(--ag-shadow);
   color: var(--ag-body);
   font: inherit;
@@ -1298,7 +1298,7 @@ html.artemis-canvas ::selection {
   padding: 1rem 1.1rem 1.15rem;
   border: 1px solid var(--ag-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(14, 16, 22, 0.9);
   box-shadow: var(--ag-shadow);
   backdrop-filter: blur(16px);
 }
@@ -1316,7 +1316,7 @@ html.artemis-canvas ::selection {
   padding: 1rem 1.1rem 1.15rem;
   border: 1px solid var(--ag-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(14, 16, 22, 0.9);
   box-shadow: var(--ag-shadow);
   backdrop-filter: blur(16px);
 }
@@ -1367,6 +1367,8 @@ html.artemis-canvas ::selection {
   border-radius: 12px;
   padding: 0.5rem 0.7rem;
   font: inherit;
+  background: var(--ag-surface-2);
+  color: var(--ag-ink);
 }
 
 @media (min-width: 900px) {
@@ -1468,7 +1470,7 @@ html.artemis-canvas ::selection {
 .artemis-topbar-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   margin-left: auto;
 }
 
@@ -1484,12 +1486,399 @@ html.artemis-canvas ::selection {
 
 .artemis-topbar-link:hover {
   color: var(--ag-ink);
-  background: var(--ag-surface);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* ─── Landing page wider container ────────────────────────────────────────── */
+.artemis-topbar-cta-dark {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-radius: var(--ag-pill);
+  background: var(--ag-ink);
+  color: var(--ag-bg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.artemis-topbar-cta-dark:hover {
+  background: #fff;
+  color: #08090c;
+}
+
+/* ─── Landing page — full rebuild ─────────────────────────────────────────── */
 .artemis-landing {
+  max-width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+/* Hero */
+.al-hero {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6rem 1.5rem 5rem;
+  overflow: hidden;
+}
+
+.al-hero-dashes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.al-dash {
+  position: absolute;
+  width: 120px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(77, 142, 248, 0.7), transparent);
+  animation: alDash var(--d, 4s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  top: var(--top, 30%);
+  left: -140px;
+  opacity: 0;
+}
+
+.al-dash:nth-child(even) {
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.55), transparent);
+}
+
+@keyframes alDash {
+  0%   { left: -140px; opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { left: calc(100% + 140px); opacity: 0; }
+}
+
+.al-hero-inner {
+  position: relative;
+  z-index: 1;
   max-width: 52rem;
+  margin: 0 auto;
+}
+
+.al-kicker {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  color: var(--ag-muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.al-hero-inner h1 {
+  margin: 0 0 1.1rem;
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  color: var(--ag-ink);
+}
+
+.al-hero-inner p {
+  max-width: 36rem;
+  margin: 0 auto 2rem;
+  color: var(--ag-body);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.al-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.al-cta-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--ag-pill);
+  background: var(--ag-ink);
+  color: var(--ag-bg);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.al-cta-dark:hover {
+  background: #fff;
+}
+
+.al-cta-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--ag-pill);
+  border: 1px solid var(--ag-line);
+  background: transparent;
+  color: var(--ag-ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.al-cta-outline:hover {
+  border-color: var(--ag-blue);
+  color: var(--ag-blue);
+}
+
+/* Seat section */
+.al-seat {
+  padding: 5rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--ag-border);
+}
+
+.al-seat h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 5vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ag-ink);
+}
+
+/* Product sections */
+.al-products {
+  border-top: 1px solid var(--ag-border);
+}
+
+.al-product {
+  display: grid;
+  gap: 2.5rem;
+  padding: 4.5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--ag-border);
+}
+
+.al-product-label {
+  display: block;
+  margin-bottom: 0.6rem;
+  color: var(--ag-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.al-product h3 {
+  margin: 0 0 0.65rem;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ag-ink);
+}
+
+.al-product p {
+  margin: 0;
+  color: var(--ag-body);
+  font-size: 0.97rem;
+  line-height: 1.7;
+  max-width: 28rem;
+}
+
+/* Demo cards */
+.al-demo-card {
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: #0a0b0e;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.al-demo-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--ag-font);
+  color: var(--ag-ink);
+}
+
+.al-demo-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--ag-blue);
+  box-shadow: 0 0 6px rgba(77,142,248,0.7);
+}
+
+.al-demo-badge {
+  margin-left: auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ag-muted);
+}
+
+/* Mesh network diagram */
+.al-mesh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.al-mesh svg {
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+}
+
+/* The Bow table */
+.al-bow-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.al-bow-table th {
+  padding: 0.35rem 0.65rem;
+  text-align: left;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ag-muted);
+  border-bottom: 1px solid var(--ag-border);
+}
+
+.al-bow-table td {
+  padding: 0.45rem 0.65rem;
+  color: var(--ag-body);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
+}
+
+.al-bow-table td:first-child {
+  color: var(--ag-ink);
+  font-weight: 500;
+}
+
+.al-run-pill {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.al-run-idle   { background: rgba(255,255,255,0.06); color: var(--ag-muted); }
+.al-run-inrun  { background: rgba(77,142,248,0.15); color: var(--ag-blue); }
+.al-run-auth   { background: rgba(34,197,94,0.12); color: #4ade80; }
+.al-run-routed { background: rgba(234,179,8,0.12); color: #facc15; }
+
+/* Voice bar chart */
+.al-voice-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+  height: 90px;
+}
+
+.al-voice-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.al-voice-bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--ag-blue);
+  opacity: 0.8;
+}
+
+.al-voice-bar-col span {
+  font-size: 0.6rem;
+  color: var(--ag-muted);
+  letter-spacing: 0.06em;
+}
+
+/* Artemis engine card */
+.al-engine-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.al-engine-row {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+}
+
+.al-engine-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ag-muted);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.al-engine-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.al-engine-chip {
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(77,142,248,0.12);
+  color: var(--ag-blue);
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.al-engine-meta {
+  font-size: 0.68rem;
+  color: var(--ag-muted);
+}
+
+/* Caption */
+.al-demo-caption {
+  margin-top: 0.75rem;
+  font-size: 0.68rem;
+  color: var(--ag-muted);
+  font-family: var(--ag-font);
+  font-style: italic;
+  text-align: center;
+}
+
+@media (min-width: 700px) {
+  .al-product {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  .al-product.al-flip { direction: rtl; }
+  .al-product.al-flip > * { direction: ltr; }
 }
 
 /* ─── How it works ─────────────────────────────────────────────────────────── */
@@ -2053,7 +2442,7 @@ html.artemis-canvas ::selection {
   flex-direction: column;
   width: 0;
   overflow: hidden;
-  background: rgba(248, 249, 252, 0.9);
+  background: rgba(10, 11, 15, 0.95);
   backdrop-filter: blur(16px);
   border-right: 1px solid var(--ag-line);
   transition: width 0.22s ease;
