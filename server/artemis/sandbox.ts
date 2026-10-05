@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { writeFile, unlink, rm, mkdtemp } from 'fs/promises'
+import { writeFile, rm, mkdtemp } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
 

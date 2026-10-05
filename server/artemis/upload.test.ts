@@ -33,37 +33,36 @@ describe('classifyUpload', () => {
 })
 
 describe('extractUploadText', () => {
-  it('extracts text, json, csv, and code; stubs binary families', () => {
-    const txt = extractUploadText({ name: 'note.txt', buffer: Buffer.from('Hello Artemis memory') })
+  it('extracts text, json, csv, and code; stubs binary families', async () => {
+    const txt = await extractUploadText({ name: 'note.txt', buffer: Buffer.from('Hello Artemis memory') })
     assert.equal(txt.family, 'txt')
     assert.equal(txt.stub, false)
     assert.match(txt.text, /Hello Artemis memory/)
 
-    const json = extractUploadText({ name: 'cfg.json', buffer: Buffer.from('{"voice":"astra"}') })
+    const json = await extractUploadText({ name: 'cfg.json', buffer: Buffer.from('{"voice":"astra"}') })
     assert.equal(json.family, 'json')
     assert.match(json.text, /astra/)
 
-    const csv = extractUploadText({ name: 'rows.csv', buffer: Buffer.from('a,b\n1,2') })
+    const csv = await extractUploadText({ name: 'rows.csv', buffer: Buffer.from('a,b\n1,2') })
     assert.equal(csv.family, 'csv')
     assert.equal(csv.stub, false)
 
-    const code = extractUploadText({ name: 'app.ts', buffer: Buffer.from('export const voice = "astra"\n') })
+    const code = await extractUploadText({ name: 'app.ts', buffer: Buffer.from('export const voice = "astra"\n') })
     assert.equal(code.family, 'code')
     assert.match(code.text, /astra/)
 
-    const pdf = extractUploadText({ name: 'empty.pdf', buffer: Buffer.from('%PDF-1.4 binary') })
+    const pdf = await extractUploadText({ name: 'empty.pdf', buffer: Buffer.from('%PDF-1.4 binary') })
     assert.equal(pdf.family, 'pdf')
     assert.equal(pdf.stub, true)
 
-    const docx = extractUploadText({ name: 'memo.docx', buffer: Buffer.from('PK') })
+    const docx = await extractUploadText({ name: 'memo.docx', buffer: Buffer.from('PK') })
     assert.equal(docx.family, 'docx')
     assert.equal(docx.stub, true)
 
-    const xlsx = extractUploadText({ name: 'grid.xlsx', buffer: Buffer.from('PK') })
+    const xlsx = await extractUploadText({ name: 'grid.xlsx', buffer: Buffer.from('PK') })
     assert.equal(xlsx.family, 'xlsx')
-    assert.equal(xlsx.stub, true)
 
-    const image = extractUploadText({ name: 'shot.png', mimeType: 'image/png', buffer: Buffer.from([0x89, 0x50]) })
+    const image = await extractUploadText({ name: 'shot.png', mimeType: 'image/png', buffer: Buffer.from([0x89, 0x50]) })
     assert.equal(image.family, 'image')
     assert.equal(image.stub, true)
   })

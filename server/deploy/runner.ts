@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import { EventEmitter } from 'node:events'
-import { saveDeployment, appendLog, logPath, type Deployment, type Project } from './store.ts'
+import { saveDeployment, appendLog, type Deployment, type Project } from './store.ts'
 
 export const buildBus = new EventEmitter()
 buildBus.setMaxListeners(50)

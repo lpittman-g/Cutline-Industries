@@ -18,7 +18,6 @@ import {
   loadRelevantMemory,
   nowIso,
   readConversation,
-  runArtemis,
   streamRunArtemis,
   setActiveVoice,
   uid,

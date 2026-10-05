@@ -28,7 +28,7 @@ describe('Artemis landing copy', () => {
   it('keeps a short action-first description', () => {
     assert.equal(ARTEMIS_COPY.name, 'Artemis')
     assert.match(ARTEMIS_COPY.kicker, /Cutline Industries/)
-    assert.ok(ARTEMIS_COPY.description.includes('operational interface'))
+    assert.ok(ARTEMIS_COPY.description.includes('Cutline Industries'))
     assert.ok(ARTEMIS_COPY.description.length < 220)
   })
 

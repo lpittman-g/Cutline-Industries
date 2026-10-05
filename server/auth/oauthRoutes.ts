@@ -9,7 +9,7 @@
  * Flow: GET /api/auth/oauth/:provider → redirect to provider
  *       GET /api/auth/oauth/:provider/callback → exchange code, create session
  */
-import { createHash, createSign, randomBytes } from 'node:crypto'
+import { createSign, randomBytes } from 'node:crypto'
 import type { Express, Request, Response } from 'express'
 import {
   SESSION_COOKIE,
@@ -23,7 +23,6 @@ import {
   findUserByEmail,
   insertUser,
   markEmailVerified,
-  toPublicUser,
 } from './authRepo.ts'
 import { thermalDbEnabled } from '../db/pool.ts'
 
