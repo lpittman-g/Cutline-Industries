@@ -78,3 +78,4 @@ secrets/approval-devices.json
 
 # Cursor MCP secrets
 .cursor/mcp.json
+__pycache__/
