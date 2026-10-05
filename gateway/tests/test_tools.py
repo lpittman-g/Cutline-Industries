@@ -249,6 +249,6 @@ def test_stream_endpoint_reports_tool_activity():
         assert kinds[:3] == ["plan", "tool_call", "tool_result"] and kinds[-1] == "done" and set(kinds[3:-1]) == {"token"}
         assert evs[-1]["answer"] == "Here is the news." and evs[-1]["tools_used"] == ["web_search"]
         status = json.load(urllib.request.urlopen(base + "/v1/status"))
-        assert status["tools"] == {"web_search": "fake", "web_fetch": True, "run_python": None}
+        assert status["tools"] == {"web_search": "fake", "web_fetch": True, "run_python": None, "research_search": None}
     finally:
         srv.shutdown()

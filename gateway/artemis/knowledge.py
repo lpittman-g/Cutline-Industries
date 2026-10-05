@@ -146,6 +146,21 @@ def tools_set() -> list[dict]:
     ex.append(_qa("What's the capital of France?", "Paris."))  # no tool needed for well-known facts
     ex.append(_qa("Can you browse the web?", "Yes, when your plan includes it: I can search the web and read pages, and on "
                                              "paid plans I can run Python code in an isolated sandbox to test what I write."))
+
+    # HeadAI research_search training examples
+    for topic in ["transformer architectures", "large language model scaling laws", "AI chip design trends",
+                  "federated learning research", "multimodal AI papers 2024"]:
+        convo(f"What are the latest research trends in {topic}?",
+              _call("research_search", query=topic),
+              ToolResult("research_search", True,
+                         f"[1] Research cluster: {topic.title()}\nhttps://vm2.headai.com/beacon\n"
+                         f"Top technology cluster on {topic} with high citation density in 2024."),
+              f"Based on the HeadAI research trends dataset, {topic} is an active cluster in 2024 AI research. "
+              f"I recommend checking the full cluster report for specific papers and citation networks.")
+    ex.append(_qa("Can you search research papers?",
+                  "Yes. Through the HeadAI AI Research Trends dataset I can look up technology clusters, "
+                  "research signals, and trend summaries across top AI publications from 2024. "
+                  "This is available to Neptune (my deep research brain) on eligible plans."))
     return ex
 
 

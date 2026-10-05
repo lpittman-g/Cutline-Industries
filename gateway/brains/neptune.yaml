@@ -44,3 +44,7 @@ training_sets:
 - business
 - brains
 - tools
+tools_allowed:
+- web_search
+- web_fetch
+- research_search

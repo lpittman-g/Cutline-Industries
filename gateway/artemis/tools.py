@@ -107,6 +107,36 @@ class WikipediaSearch:
                  "snippet": _strip_tags(r.get("snippet", ""))} for r in data.get("query", {}).get("search", [])[:count]]
 
 
+# ---- HeadAI research search -------------------------------------------------------------------------------
+class HeadAISearch:
+    """HeadAI Global AI Research Trends dataset via the Beacon API (Azure Marketplace subscription)."""
+    name = "headai"
+    _ENDPOINT = "https://vm2.headai.com/beacon?action=dispatch"
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    def search(self, query: str, count: int) -> list[dict]:
+        payload = json.dumps({"query": query, "limit": count, "token": self.api_key}).encode()
+        req = urllib.request.Request(
+            self._ENDPOINT,
+            data=payload,
+            headers={"User-Agent": USER_AGENT, "Content-Type": "application/json", "Accept": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15.0) as r:
+            data = json.loads(r.read(2_000_000))
+        results = data.get("results") or data.get("items") or []
+        hits = []
+        for item in results[:count]:
+            hits.append({
+                "title": str(item.get("title") or item.get("name") or ""),
+                "url": str(item.get("url") or item.get("source") or ""),
+                "snippet": _strip_tags(str(item.get("summary") or item.get("description") or item.get("abstract") or "")),
+            })
+        return hits
+
+
 # ---- web fetch --------------------------------------------------------------------------------------------
 def check_public_url(url: str) -> tuple[urllib.parse.SplitResult, str]:
     """Returns the parsed URL and one public IP address for it, or raises ToolError."""
@@ -286,14 +316,18 @@ TOOL_SPECS = {
     "run_python": {"description": "Run Python 3 code in an isolated sandbox with no internet access and see its output. "
                                   "Use it to test code you write and to calculate exactly.",
                    "arguments": {"code": "the Python source to run"}},
+    "research_search": {"description": "Search the HeadAI Global AI Research Trends dataset (2024, top-1000 technology clusters). "
+                                       "Use for AI/tech research trends, paper clusters, and technology signal queries.",
+                        "arguments": {"query": "research topic or technology to look up"}},
 }
 
 
 class Toolbox:
-    def __init__(self, search=None, code_runner=None, fetcher=fetch_page):
+    def __init__(self, search=None, code_runner=None, fetcher=fetch_page, research=None):
         self.search = search
         self.code = code_runner
         self.fetcher = fetcher
+        self.research = research
 
     @classmethod
     def from_env(cls) -> "Toolbox":
@@ -301,7 +335,9 @@ class Toolbox:
         search = BraveSearch(key) if key else WikipediaSearch()
         endpoint = os.environ.get("ARTEMIS_CODE_SESSIONS_ENDPOINT")
         code = AzureCodeSessions(endpoint) if endpoint else (LocalCodeRunner() if os.environ.get("ARTEMIS_LOCAL_CODE") == "1" else None)
-        return cls(search, code)
+        headai_key = os.environ.get("ARTEMIS_HEADAI_API_KEY")
+        research = HeadAISearch(headai_key) if headai_key else None
+        return cls(search, code, research=research)
 
     def available(self) -> list[str]:
         names = []
@@ -311,11 +347,14 @@ class Toolbox:
             names.append("web_fetch")
         if self.code:
             names.append("run_python")
+        if self.research:
+            names.append("research_search")
         return names
 
     def status(self) -> dict:
         return {"web_search": getattr(self.search, "name", None), "web_fetch": bool(self.fetcher),
-                "run_python": getattr(self.code, "name", None)}
+                "run_python": getattr(self.code, "name", None),
+                "research_search": getattr(self.research, "name", None)}
 
     def instructions(self, allowed: list[str]) -> str:
         """Appended to the system prompt so the model knows which tools it may call and how."""
@@ -362,6 +401,16 @@ class Toolbox:
                 return ToolResult(name, ok, "\n".join(parts), {"summary": f"Ran Python ({'ok' if ok else 'error'}"
                                                                           f"{', %d ms' % out['ms'] if out.get('ms') else ''})",
                                                                "code": code[:4000], "output": (out.get("stdout") or out.get("stderr") or "")[:4000]})
+            if name == "research_search":
+                query = str(args.get("query", "")).strip()[:300]
+                if not query:
+                    raise ToolError("research_search needs a query")
+                if not self.research:
+                    raise ToolError("research_search is not configured")
+                hits = self.research.search(query, 5)
+                content = "\n\n".join(f"[{i + 1}] {h['title']}\n{h['url']}\n{h['snippet']}" for i, h in enumerate(hits)) or "No results."
+                return ToolResult(name, True, content, {"summary": f"Searched AI research trends for \"{query}\"",
+                                                        "sources": [{"title": h["title"], "url": h["url"]} for h in hits]})
             raise ToolError(f"there is no tool called {name!r}")
         except ToolError as e:
             return ToolResult(name or "unknown", False, f"error: {e}", {"summary": f"{name or 'Tool'} failed: {e}"})
