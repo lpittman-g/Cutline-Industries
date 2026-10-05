@@ -71,6 +71,9 @@ export function BowChat({
   const [voice, setVoice] = useState<VoiceId>(DEFAULT_VOICE)
   const [message, setMessage] = useState('')
   const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId)
+  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null)
+  const [stopped, setStopped] = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages && initialMessages.length > 0
       ? initialMessages
@@ -123,11 +126,25 @@ export function BowChat({
     composerRef.current?.focus()
   }, [voiceMode, voice])
 
+  const stop = () => {
+    abortRef.current?.abort()
+  }
+
+  const retry = () => {
+    if (!lastUserMessage) return
+    setMessage(lastUserMessage)
+    setStopped(false)
+  }
+
   const send = async () => {
     const text = message.trim()
     if (!text || busy) return
     setMessage('')
+    setStopped(false)
+    setLastUserMessage(text)
     setBusy(true)
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
     setMessages((m) => [
       ...m,
       { role: 'operator', content: text },
@@ -164,19 +181,34 @@ export function BowChat({
           setConversationId(event.conversationId)
           onConversationSaved?.(event.conversationId)
         }
-      })
+      }, ctrl.signal)
       void fetchChronicle()
         .then((r) => setChecks(r.checks))
         .catch(() => undefined)
     } catch (err) {
-      const fail = err instanceof Error ? err.message : 'Chat failed'
-      setMessages((m) => {
-        const next = [...m]
-        const last = next[next.length - 1]
-        if (last?.role === 'artemis') next[next.length - 1] = { ...last, content: fail }
-        return next
-      })
+      const aborted = err instanceof Error && err.name === 'AbortError'
+      if (aborted) {
+        setStopped(true)
+        setMessages((m) => {
+          const next = [...m]
+          const last = next[next.length - 1]
+          if (last?.role === 'artemis' && !last.content) {
+            next[next.length - 1] = { ...last, content: '— stopped —' }
+          }
+          return next
+        })
+      } else {
+        const fail = err instanceof Error ? err.message : 'Chat failed'
+        setStopped(true)
+        setMessages((m) => {
+          const next = [...m]
+          const last = next[next.length - 1]
+          if (last?.role === 'artemis') next[next.length - 1] = { ...last, content: last.content || fail }
+          return next
+        })
+      }
     } finally {
+      abortRef.current = null
       setBusy(false)
     }
   }
@@ -425,9 +457,19 @@ export function BowChat({
           <button type="button" className="artemis-chip-btn" onClick={() => void speakLast()}>
             Speak
           </button>
-          <button type="submit" className="artemis-cta-primary artemis-cta-compact" disabled={busy || !message.trim()}>
-            Send
-          </button>
+          {busy ? (
+            <button type="button" className="artemis-cta-secondary artemis-cta-compact" onClick={stop}>
+              ◼ Stop
+            </button>
+          ) : stopped && lastUserMessage ? (
+            <button type="button" className="artemis-cta-secondary artemis-cta-compact" onClick={retry}>
+              ↺ Retry
+            </button>
+          ) : (
+            <button type="submit" className="artemis-cta-primary artemis-cta-compact" disabled={!message.trim()}>
+              Send
+            </button>
+          )}
         </form>
         <p className="artemis-upload-hint">{UPLOAD_LABELS.join(' · ')}</p>
       </div>

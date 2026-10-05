@@ -206,11 +206,13 @@ export async function touchKnowledgeFile(id: string) {
 export async function streamArtemisChat(
   input: { message: string; conversationId?: string; voice: VoiceId; knowledgeId?: string },
   onEvent: (event: ChatStreamEvent) => void,
+  signal?: AbortSignal,
 ) {
   const res = await fetch(`${API}/api/artemis/chat`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson, application/json' },
+    signal,
     body: JSON.stringify({
       message: input.message,
       conversationId: input.conversationId,
