@@ -31,6 +31,7 @@ import {
   verifyPassword,
 } from './authCrypto.ts'
 import { attachAuthUser, missionControlOpen, requireAuth, requireRole } from './authMiddleware.ts'
+import { registerOAuthRoutes } from './oauthRoutes.ts'
 
 declare global {
   namespace Express {
@@ -95,6 +96,7 @@ async function attachUser(req: Request, res: Response, next: NextFunction) {
 }
 
 export function registerAuthRoutes(app: Express) {
+  registerOAuthRoutes(app)
   app.use(attachUser)
 
   app.get('/api/auth/config', async (_req, res) => {

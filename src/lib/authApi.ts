@@ -101,6 +101,11 @@ export function enableMfa() {
   }>('/api/auth/mfa/enable', { method: 'POST', body: '{}' })
 }
 
+/** Redirect to provider OAuth flow. Returns the URL to navigate to. */
+export function oauthSigninUrl(provider: 'google' | 'microsoft' | 'apple') {
+  return `${API}/api/auth/oauth/${provider}`
+}
+
 export function disableMfa() {
   return authJson<{ ok: boolean; mfaEnabled: boolean }>('/api/auth/mfa/disable', {
     method: 'POST',

@@ -75,16 +75,7 @@ export function BowChat({
   const [stopped, setStopped] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(
-    initialMessages && initialMessages.length > 0
-      ? initialMessages
-      : [
-          {
-            role: 'artemis',
-            content: hunt
-              ? 'New hunt started. Ask Artemis to open the trail — memory and voice are on.'
-              : 'Welcome to The Bow. Ask Artemis anything — memory and voice are on.',
-          },
-        ],
+    initialMessages && initialMessages.length > 0 ? initialMessages : [],
   )
   const [busy, setBusy] = useState(false)
   const [checks, setChecks] = useState<ChronicleCheck[]>([])
@@ -396,32 +387,67 @@ export function BowChat({
         </div>
 
         <div className="artemis-chat-log" ref={listRef}>
-          {messages.map((msg, i) => (
-            <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
-              <div className="artemis-bubble-head">
-                <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
-                {msg.content && (
-                  <button
-                    type="button"
-                    className="artemis-copy-btn"
-                    aria-label="Copy message"
-                    onClick={() => void navigator.clipboard.writeText(msg.content)}
-                  >
-                    Copy
-                  </button>
-                )}
+          {messages.length === 0 ? (
+            <div className="achat-welcome">
+              <div className="achat-welcome-mark">
+                <ArtemisMark size={44} />
               </div>
-              {msg.content ? (
-                msg.role === 'artemis'
-                  ? <MarkdownMessage content={msg.content} />
-                  : <p>{msg.content}</p>
-              ) : null}
-              {msg.steps && <ProcessingStepper statuses={msg.steps} />}
-              {msg.cards?.map((card) => (
-                <KnowledgeFileCard key={card.id} card={card} onAsk={askAbout} />
-              ))}
-            </article>
-          ))}
+              <h2>{hunt ? 'New hunt ready.' : 'What can Artemis do today?'}</h2>
+              <p>Autonomous agents, voice routing, memory search — all from one interface.</p>
+              <div className="achat-welcome-chips">
+                {[
+                  'Start a new hunt',
+                  'Summarize my memory',
+                  'What can you do?',
+                  'Show active agents',
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    className="achat-welcome-chip"
+                    onClick={() => setMessage(chip)}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((msg, i) => (
+              <article key={`${msg.role}-${i}`} className={`artemis-bubble is-${msg.role}`}>
+                <div className="artemis-bubble-head">
+                  <span>{msg.role === 'operator' ? 'You' : 'Artemis'}</span>
+                  {msg.content && (
+                    <button
+                      type="button"
+                      className="artemis-copy-btn"
+                      aria-label="Copy message"
+                      onClick={() => void navigator.clipboard.writeText(msg.content)}
+                    >
+                      Copy
+                    </button>
+                  )}
+                </div>
+                {msg.content ? (
+                  msg.role === 'artemis'
+                    ? <MarkdownMessage content={msg.content} />
+                    : <p>{msg.content}</p>
+                ) : (
+                  msg.role === 'artemis' && busy && i === messages.length - 1 ? (
+                    <div className="achat-typing">
+                      <span className="achat-typing-dot" />
+                      <span className="achat-typing-dot" />
+                      <span className="achat-typing-dot" />
+                    </div>
+                  ) : null
+                )}
+                {msg.steps && <ProcessingStepper statuses={msg.steps} />}
+                {msg.cards?.map((card) => (
+                  <KnowledgeFileCard key={card.id} card={card} onAsk={askAbout} />
+                ))}
+              </article>
+            ))
+          )}
         </div>
 
         {voiceNote && <p className="artemis-banner">{voiceNote}</p>}

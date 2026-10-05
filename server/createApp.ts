@@ -81,12 +81,39 @@ type Lead = {
   createdAt: string
 }
 
+const ALLOWED_ORIGINS = new Set([
+  'https://cutline-industries.studio',
+  'https://www.cutline-industries.studio',
+  ...(process.env.CUTLINE_PUBLIC_URL ? [process.env.CUTLINE_PUBLIC_URL.replace(/\/$/, '')] : []),
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'] : []),
+])
+
 export function createApp() {
   const app = express()
 
+  // Security headers on every response
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('X-Frame-Options', 'DENY')
+    res.setHeader('X-XSS-Protection', '1; mode=block')
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+    }
+    next()
+  })
+
   app.use(
     cors({
-      origin: true,
+      origin: (origin, cb) => {
+        // Allow requests with no origin (server-to-server, curl)
+        if (!origin) return cb(null, true)
+        if (ALLOWED_ORIGINS.has(origin)) return cb(null, true)
+        // Allow any Vercel preview URL for this project
+        if (/^https:\/\/cutline-industries[a-z0-9-]*\.vercel\.app$/.test(origin)) return cb(null, true)
+        cb(new Error(`CORS: origin ${origin} not allowed`))
+      },
       credentials: true,
     }),
   )
