@@ -1,0 +1,15 @@
+.git
+.venv
+node_modules
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+**/*.db
+**/*.sqlite*
+.env
+.env.*
+*.zip
+handoff
+site/preview-*.png
+docs
+tests

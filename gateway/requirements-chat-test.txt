@@ -1,0 +1,5 @@
+-r requirements-chat.txt
+pytest>=8
+tokenizers
+jinja2
+playwright

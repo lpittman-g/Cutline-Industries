@@ -1,0 +1,35 @@
+# Local development only. Production uses HTTPS and secure cookies.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: artemis
+      POSTGRES_USER: artemis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a hex-only development database password}
+    volumes:
+      - chat-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artemis -d artemis"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  gateway:
+    build:
+      context: ../..
+      dockerfile: infra/azure/Dockerfile.chat
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DATABASE_URL: postgresql://artemis:${POSTGRES_PASSWORD:?Set a hex-only development database password}@postgres:5432/artemis
+      ARTEMIS_BIND: 0.0.0.0
+      PORT: "8080"
+      ARTEMIS_COOKIE_SECURE: "0"
+      ARTEMIS_ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      VLLM_BASE_URL: ${VLLM_BASE_URL:-}
+      VLLM_MODEL: ${VLLM_MODEL:-}
+      VLLM_API_KEY: ${VLLM_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  chat-postgres:
