@@ -1881,6 +1881,431 @@ html.artemis-canvas ::selection {
   .al-product.al-flip > * { direction: ltr; }
 }
 
+/* ─── Stats bar ───────────────────────────────────────────────────────────── */
+.al-stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+  border-top: 1px solid var(--ag-border);
+  border-bottom: 1px solid var(--ag-border);
+  background: rgba(255,255,255,0.02);
+}
+
+.al-stat {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  border-right: 1px solid var(--ag-border);
+}
+
+.al-stat:last-child { border-right: none; }
+
+.al-stat-value {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--ag-ink);
+  line-height: 1;
+}
+
+.al-stat-label {
+  margin-top: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--ag-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── seat subtitle ── */
+.al-seat p {
+  max-width: 38rem;
+  margin: 0.75rem auto 0;
+  color: var(--ag-body);
+  font-size: 0.97rem;
+  line-height: 1.7;
+}
+
+/* ─── Section head ─────────────────────────────────────────────────────────── */
+.al-section-head {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.al-section-head h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ag-ink);
+}
+
+/* ─── Services grid ────────────────────────────────────────────────────────── */
+.al-services {
+  padding: 5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--ag-border);
+}
+
+.al-service-grid {
+  display: grid;
+  gap: 1px;
+  background: var(--ag-border);
+  border: 1px solid var(--ag-border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .al-service-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .al-service-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.al-service-card {
+  padding: 1.75rem 1.6rem;
+  background: var(--ag-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: background 0.2s ease;
+}
+
+.al-service-card:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.al-service-icon {
+  font-size: 1.2rem;
+  color: var(--ag-blue);
+  line-height: 1;
+}
+
+.al-service-card strong {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ag-ink);
+}
+
+.al-service-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ag-body);
+  line-height: 1.65;
+}
+
+/* ─── Audiences ────────────────────────────────────────────────────────────── */
+.al-audiences {
+  padding: 5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--ag-border);
+}
+
+.al-audience-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 700px) {
+  .al-audience-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.al-audience-card {
+  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease;
+}
+
+.al-audience-card:hover {
+  border-color: rgba(77,142,248,0.3);
+}
+
+.al-audience-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ag-blue);
+}
+
+.al-audience-card h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ag-ink);
+  line-height: 1.25;
+}
+
+.al-audience-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ag-body);
+  line-height: 1.65;
+  flex: 1;
+}
+
+.al-audience-cta {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--ag-blue);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.al-audience-cta:hover { color: #fff; }
+
+/* ─── Developer section ────────────────────────────────────────────────────── */
+.al-developer {
+  border-top: 1px solid var(--ag-border);
+  border-bottom: 1px solid var(--ag-border);
+  background: rgba(255,255,255,0.015);
+}
+
+.al-dev-inner {
+  display: grid;
+  gap: 3rem;
+  padding: 5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  align-items: center;
+}
+
+@media (min-width: 720px) {
+  .al-dev-inner { grid-template-columns: 1fr 1fr; }
+}
+
+.al-dev-copy h2 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ag-ink);
+}
+
+.al-dev-copy p {
+  margin: 0;
+  color: var(--ag-body);
+  font-size: 0.97rem;
+  line-height: 1.7;
+}
+
+.al-dev-code {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  background: #060709;
+  overflow: hidden;
+}
+
+.al-code-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.al-code-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.al-code-pre {
+  margin: 0;
+  padding: 1.2rem 1.2rem 1.4rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: #a7f3d0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ─── Pricing ──────────────────────────────────────────────────────────────── */
+.al-pricing {
+  padding: 5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--ag-border);
+}
+
+.al-tier-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 700px) {
+  .al-tier-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.al-tier {
+  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--ag-border);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.al-tier-highlight {
+  border-color: rgba(77,142,248,0.4);
+  background: rgba(77,142,248,0.05);
+}
+
+.al-tier-head {
+  margin-bottom: 1.5rem;
+}
+
+.al-tier-name {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ag-muted);
+  margin-bottom: 0.65rem;
+}
+
+.al-tier-highlight .al-tier-name { color: var(--ag-blue); }
+
+.al-tier-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.al-tier-amount {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--ag-ink);
+  line-height: 1;
+}
+
+.al-tier-sub {
+  font-size: 0.8rem;
+  color: var(--ag-muted);
+}
+
+.al-tier-features {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex: 1;
+}
+
+.al-tier-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.86rem;
+  color: var(--ag-body);
+}
+
+.al-tier-features li span {
+  color: var(--ag-blue);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.al-tier .al-cta-dark,
+.al-tier .al-cta-outline {
+  width: 100%;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ─── Final CTA ────────────────────────────────────────────────────────────── */
+.al-final-cta {
+  border-top: 1px solid var(--ag-border);
+  background: rgba(77,142,248,0.04);
+}
+
+.al-final-cta-inner {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+  text-align: center;
+}
+
+.al-final-cta-inner h2 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--ag-ink);
+}
+
+.al-final-cta-inner p {
+  margin: 0 0 2rem;
+  color: var(--ag-body);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+/* ─── Footer ───────────────────────────────────────────────────────────────── */
+.al-footer {
+  border-top: 1px solid var(--ag-border);
+}
+
+.al-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 1.5rem 1.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.al-footer-brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ag-ink);
+  font-size: 0.9rem;
+}
+
+.al-footer-copy {
+  color: var(--ag-muted);
+  font-size: 0.75rem;
+  flex: 1;
+}
+
+.al-footer-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.al-footer-nav a {
+  color: var(--ag-muted);
+  font-size: 0.78rem;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.al-footer-nav a:hover { color: var(--ag-ink); }
+
 /* ─── How it works ─────────────────────────────────────────────────────────── */
 .artemis-how-it-works {
   margin-top: 3.5rem;
