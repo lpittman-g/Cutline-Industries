@@ -7,6 +7,10 @@
     {"source": "/chat", "destination": "/artemisai/", "permanent": true},
     {"source": "/chat/", "destination": "/artemisai/", "permanent": true}
   ],
+  "rewrites": [
+    {"source": "/api/:path*", "destination": "https://api.cutline-industries.studio/api/:path*"},
+    {"source": "/v1/:path*",  "destination": "https://api.cutline-industries.studio/v1/:path*"}
+  ],
   "headers": [
     {
       "source": "/(.*)",
