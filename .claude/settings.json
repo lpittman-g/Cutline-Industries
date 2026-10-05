@@ -4,7 +4,8 @@
       "Bash(az vm run-command *)",
       "Bash(az network dns *)",
       "Bash(az vm create *)",
-      "Bash(modal *)"
+      "Bash(modal *)",
+      "Bash(az rest --method PUT --url *SaaS/resources*)"
     ]
   }
 }
