@@ -104,8 +104,6 @@ export function ArtemisShell() {
           onSelect={(id) => go(id as CommandMenuId)}
         />
         <nav className="artemis-topbar-nav" aria-label="Account">
-          <Link to="/products" className="artemis-topbar-link">Products</Link>
-          <Link to="/artemisChat" className="artemis-topbar-link">Chat</Link>
           {user ? (
             <div ref={dropRef} className="artemis-user-menu" style={{ position: 'relative' }}>
               <button
