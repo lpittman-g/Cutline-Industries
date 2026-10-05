@@ -21,6 +21,7 @@ import { ProcessingStepper } from './ProcessingStepper'
 import { KnowledgeFileCard } from './KnowledgeFileCard'
 import { uid } from '../../lib/utils'
 import { MarkdownMessage } from './MarkdownMessage'
+import { ArtemisMark } from './ArtemisMark'
 
 function idleSteps(): Record<ProcessStepId, StepStatus> {
   return Object.fromEntries(PROCESS_STEPS.map((s) => [s.id, 'pending'])) as Record<ProcessStepId, StepStatus>
