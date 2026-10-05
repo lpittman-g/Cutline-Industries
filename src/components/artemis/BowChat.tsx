@@ -356,20 +356,43 @@ export function BowChat({
               {VOICES[voice].label} • Voice enabled • Memory enabled
             </p>
           </div>
-          <label className="artemis-voice-select">
-            Voice
-            <select
-              value={voice}
-              aria-label="Artemis voice"
-              onChange={(e) => setVoice(isVoiceId(e.target.value) ? e.target.value : DEFAULT_VOICE)}
+          <div className="artemis-chat-head-actions">
+            <label className="artemis-voice-select">
+              Voice
+              <select
+                value={voice}
+                aria-label="Artemis voice"
+                onChange={(e) => setVoice(isVoiceId(e.target.value) ? e.target.value : DEFAULT_VOICE)}
+              >
+                {Object.values(VOICES).map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="artemis-chip-btn"
+              aria-label="Export conversation"
+              title="Export as Markdown"
+              onClick={() => {
+                const lines = messages
+                  .filter((m) => m.content)
+                  .map((m) => `**${m.role === 'operator' ? 'You' : 'Artemis'}:** ${m.content}`)
+                const md = lines.join('\n\n')
+                const blob = new Blob([md], { type: 'text/markdown' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `artemis-chat-${new Date().toISOString().slice(0, 10)}.md`
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
             >
-              {Object.values(VOICES).map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              Export
+            </button>
+          </div>
         </div>
 
         <div className="artemis-chat-log" ref={listRef}>

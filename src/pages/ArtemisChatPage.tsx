@@ -89,6 +89,9 @@ export function ArtemisChatPage() {
             refreshKey={convRefreshKey}
             onNewChat={startNewChat}
             onSelectConversation={loadConversation}
+            onConversationDeleted={(id) => {
+              if (id === activeConvId) startNewChat()
+            }}
           />
         </div>
 

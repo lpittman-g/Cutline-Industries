@@ -317,3 +317,12 @@ export async function fetchConversation(id: string) {
   if (!res.ok) { handleAuthError(res); throw new Error(await parseError(res)) }
   return res.json() as Promise<{ ok: boolean; conversation: ConversationDetail }>
 }
+
+export async function deleteConversation(id: string) {
+  const res = await fetch(`${API}/api/artemis/conversations/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return res.json() as Promise<{ ok: boolean }>
+}
