@@ -39,13 +39,13 @@ BRAINS = [
 
 @app.function(
     image=image,
-    gpu=modal.gpu.H100(count=8),
+    gpu="H100:8",
     volumes={"/model": volume},
     secrets=[modal.Secret.from_name("artemis-secrets")],
     timeout=3600,
-    allow_concurrent_inputs=100,
-    scaledown_window=300,  # stay warm 5 min after last request, then shut down
+    scaledown_window=300,
 )
+@modal.concurrent(max_inputs=100)
 @modal.web_server(port=8000, startup_timeout=180)
 def serve():
     model_dir = "/model/artemis"
