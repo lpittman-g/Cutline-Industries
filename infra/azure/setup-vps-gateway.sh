@@ -32,7 +32,10 @@
 set -euo pipefail
 
 DOMAIN="${DOMAIN:-api.artemis-ai.net}"
-# DB password: generate on-server so it never leaves this machine or appears in logs
+# Re-use existing DB password if the env file already exists; generate once otherwise
+if [ -z "${DB_PASSWORD:-}" ] && [ -f /etc/artemis-chat.env ]; then
+  DB_PASSWORD=$(grep '^ARTEMIS_DATABASE_URL=' /etc/artemis-chat.env | sed 's|.*://[^:]*:\([^@]*\)@.*|\1|')
+fi
 DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 40)}"
 VLLM_BASE_URL="${VLLM_BASE_URL:-http://127.0.0.1:8000}"
 VLLM_MODEL="${VLLM_MODEL:-artemis}"
@@ -44,6 +47,14 @@ APP_USER=artemis
 
 echo "[setup] Installing system packages…"
 export DEBIAN_FRONTEND=noninteractive
+# Wait for any concurrent apt operations to finish
+for _i in $(seq 1 24); do
+  fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1 || break
+  sleep 5
+done
+apt-get update -qq
+apt-get install -y -qq software-properties-common
+add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update -qq
 apt-get install -y -qq \
   python3.12 python3.12-venv python3-pip \
@@ -56,6 +67,7 @@ id "$APP_USER" &>/dev/null || useradd -r -s /bin/false -d "$APP_DIR" "$APP_USER"
 mkdir -p "$APP_DIR"
 
 echo "[setup] Cloning/pulling repo…"
+git config --system --add safe.directory "$APP_DIR"
 if [ -d "$APP_DIR/.git" ]; then
   git -C "$APP_DIR" pull --ff-only
 else
@@ -70,8 +82,9 @@ sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install --quiet \
 
 echo "[setup] Setting up PostgreSQL…"
 systemctl enable postgresql --now
-sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='artemis_chat'" | grep -q 1 || \
-  sudo -u postgres psql -c "CREATE USER artemis_chat WITH PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='artemis_chat'" | grep -q 1 \
+  && sudo -u postgres psql -c "ALTER USER artemis_chat WITH PASSWORD '$DB_PASSWORD';" \
+  || sudo -u postgres psql -c "CREATE USER artemis_chat WITH PASSWORD '$DB_PASSWORD';"
 sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='artemis_chat'" | grep -q 1 || \
   sudo -u postgres psql -c "CREATE DATABASE artemis_chat OWNER artemis_chat;"
 
@@ -81,7 +94,7 @@ PORT=8080
 ARTEMIS_BIND=127.0.0.1
 ARTEMIS_COOKIE_SECURE=1
 ARTEMIS_ALLOWED_ORIGINS=https://cutline-industries.studio,https://www.$DOMAIN
-DATABASE_URL=postgresql://artemis_chat:${DB_PASSWORD}@127.0.0.1:5432/artemis_chat
+ARTEMIS_DATABASE_URL=postgresql://artemis_chat:${DB_PASSWORD}@127.0.0.1:5432/artemis_chat
 VLLM_BASE_URL=${VLLM_BASE_URL}
 VLLM_MODEL=${VLLM_MODEL}
 VLLM_API_KEY=${VLLM_API_KEY}
@@ -99,7 +112,7 @@ Requires=postgresql.service
 [Service]
 Type=simple
 User=$APP_USER
-WorkingDirectory=$APP_DIR
+WorkingDirectory=$APP_DIR/gateway
 EnvironmentFile=/etc/artemis-chat.env
 ExecStart=$APP_DIR/.venv/bin/python -m artemis.chat_app
 Restart=on-failure
@@ -111,6 +124,9 @@ UNIT
 
 systemctl daemon-reload
 systemctl enable artemis-chat
+# Kill any stray process holding the port before (re)starting the service
+fuser -k 8080/tcp 2>/dev/null || true
+sleep 1
 systemctl restart artemis-chat
 sleep 3
 systemctl is-active artemis-chat && echo "[setup] Gateway started OK" || { echo "[setup] Gateway failed to start"; journalctl -u artemis-chat -n 30; exit 1; }

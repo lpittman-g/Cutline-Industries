@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(az vm run-command *)",
+      "Bash(az network dns *)"
+    ]
+  }
+}
