@@ -1,0 +1,15 @@
+[Unit]
+Description=Artemis dataset ingest: %i
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=86400
+StartLimitBurst=5
+
+[Service]
+User=artemis
+ExecStart=/opt/ingest/bin/python /opt/ingest/ingest.py %i
+Restart=on-failure
+RestartSec=300
+
+[Install]
+WantedBy=multi-user.target
