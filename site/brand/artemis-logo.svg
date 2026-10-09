@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 414 96" width="414" height="96" role="img" aria-label="Artemis">
+  <title>Artemis</title>
+  <!-- Mark: the Artemis "A" reversed out of a solid tile, so it reads as a badge
+       rather than a leading letter next to the wordmark's own A. -->
+  <g transform="translate(8,8)">
+    <rect width="80" height="80" rx="18" fill="#3279f9"/>
+    <g transform="scale(0.4167) translate(0,3)"
+       stroke="#ffffff" stroke-width="13.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M48 148 96 38l48 110M69 106h54"/>
+      <circle cx="96" cy="38" r="6" fill="#ffffff" stroke="none"/>
+    </g>
+  </g>
+  <!-- Wordmark: monoline caps, stroke weight matched to the mark -->
+  <g transform="translate(112,24)" stroke="#3279f9" stroke-width="6" fill="none"
+     stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(0,0)"><path d="M0 48 17 0l17 48M7 32h20"/></g>
+    <g transform="translate(50,0)"><path d="M0 0v48M0 0h19c9 0 9 23 0 23H0M16 23l15 25"/></g>
+    <g transform="translate(98,0)"><path d="M0 0h34M17 0v48"/></g>
+    <g transform="translate(148,0)"><path d="M30 0H0v48h30M0 24h22"/></g>
+    <g transform="translate(194,0)"><path d="M0 48V0l17 25L34 0v48"/></g>
+    <g transform="translate(244,0)"><path d="M0 0v48"/></g>
+    <g transform="translate(262,0)"><path d="M29 11C29 4 23 0 16 0 8 0 3 5 3 11c0 7 6 10 13 13s13 6 13 13c0 7-6 11-13 11-7 0-13-4-13-11"/></g>
+  </g>
+</svg>
