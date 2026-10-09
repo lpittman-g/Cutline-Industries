@@ -124,7 +124,9 @@ def main(argv=None) -> int:
     ap.add_argument("--stop-at", type=int, default=0,
                     help="stop early (Kaggle cuts sessions at 9h/12h); resume with the same --steps")
     ap.add_argument("--lr", type=float, default=3e-4)
-    ap.add_argument("--vocab", type=int, default=32000)
+    ap.add_argument("--vocab", type=int, default=0,
+                    help="tokenizer vocabulary size; defaults to the --size config's "
+                         "vocab_size, which it must match")
     ap.add_argument("--batch", type=int, default=0, help="override the VRAM-derived micro-batch")
     ap.add_argument("--accum", type=int, default=0, help="override the VRAM-derived accumulation")
     ap.add_argument("--precision", default="auto", choices=("auto", "bf16", "fp16", "fp32"))
@@ -186,8 +188,21 @@ def main(argv=None) -> int:
     tok = work / "tokenizer.json"
     data = work / "data"
 
+    # The tokenizer's vocabulary MUST equal the model config's vocab_size. A larger
+    # tokenizer emits ids past the end of the embedding table and training dies with
+    # "IndexError: index out of range in self" on the first batch, which does not name
+    # the real cause. Default it from the config rather than making the caller match it.
+    from artemis.train import model_config
+    want_vocab = model_config(args.size).vocab_size
+    vocab = args.vocab or want_vocab
+    if vocab != want_vocab:
+        print(f"--vocab {vocab} does not match the '{args.size}' config's vocab_size "
+              f"({want_vocab}); the embedding table would be indexed out of range",
+              file=sys.stderr)
+        return 2
+
     print(f"device     : {name}" + (f" ({vram:.1f} GB)" if vram else ""))
-    print(f"stage      : {args.size}")
+    print(f"stage      : {args.size} (vocab {vocab})")
     print(f"batch plan : micro {batch} x accum {accum}")
     print(f"corpus     : {', '.join(str(c) for c in corpora)}")
 
@@ -195,7 +210,7 @@ def main(argv=None) -> int:
     # the data and invalidate the checkpoint's step accounting.
     if not tok.exists():
         print("training tokenizer ...", flush=True)
-        train_tokenizer([str(c) for c in corpora], args.vocab, tok)
+        train_tokenizer([str(c) for c in corpora], vocab, tok)
     else:
         print(f"tokenizer  : reusing {tok}")
 

@@ -146,7 +146,56 @@ stage-1 run that a Kaggle T4 would do for nothing.
 
 Use CPU when it is what you have, or to run a second experiment in parallel with a GPU
 run. It is not the fast path, and the 48 regional vCPUs granted in `eastus2` do not change
-that — they are generic CPU cores, not GPU quota.
+that — they are generic CPU cores, not GPU quota, and nothing is provisioned against them
+until a VM is created.
+
+## Using a GPU and CPU cores together — `run_parallel.py`
+
+Not in one job. Synchronous data-parallel training steps at the slowest rank's pace:
+
+| Arrangement | Throughput | vs GPU alone |
+|---|---|---|
+| T4 alone | 17,600 tok/s | 1.00× |
+| T4 + 48-core CPU, equal split | 3,400 tok/s | **0.19×** |
+| T4 + 48-core CPU, speed-proportional | 19,300 tok/s | 1.10× |
+
+An equal split is five times *slower* than the GPU by itself, because the GPU idles ~90%
+of every step. Even a perfectly balanced split only buys 10% — and each step has to
+all-reduce 612 MB of gradients, which costs 0.5 s on a same-datacentre 10 GbE link and
+25–245 s on anything real, against 0.93 s of T4 compute. A free Kaggle GPU has no inbound
+networking, so it cannot join a process group at all.
+
+Independent runs have none of these problems. Each device trains its own config at full
+speed with zero synchronisation, and the ramp's `search_space` in `engine.yaml` wants
+several configs compared anyway, so the parallelism costs nothing:
+
+```bash
+# GPU run + 2 CPU runs, learning rates taken from engine.yaml's search_space
+python infra/singlegpu/run_parallel.py --corpus data/c.txt \
+    --license MIT --origin "my corpus" --out runs/sweep --steps 2000
+
+python infra/singlegpu/run_parallel.py ... --cpu-workers 3 --no-gpu   # CPU only
+python infra/singlegpu/run_parallel.py ... --dry-run                  # show the plan
+```
+
+Each run gets its own `--out` subdirectory, so checkpoints and metrics never collide and
+any run resumes independently. Cores are **partitioned** between workers and pinned with
+`OMP_NUM_THREADS` and `MKL_NUM_THREADS` — `torch.set_num_threads` alone does not stop
+OpenMP and MKL from each spawning a thread per core in every worker, and that
+oversubscription makes every run slower. Two cores are reserved to feed batches to the GPU
+run. `gateway/tests/test_parallel_runs.py` checks the total never exceeds the cores
+available and that no worker is given zero cores.
+
+Verified end to end on a 4-core host: two concurrent `proto` runs at lr 1.5e-4 and 3.0e-4
+both finished 8 steps in 39 s, reaching val 7.833 and 7.689 respectively.
+
+### Tokenizer vocabulary must match the model config
+
+`--vocab` now defaults to the `--size` config's `vocab_size` and a mismatch is rejected up
+front. Training a 32000-token tokenizer for a config with `vocab_size: 4096` emits ids past
+the end of the embedding table, and the run dies on its first batch with
+`IndexError: index out of range in self`, which does not name the real cause. This was a
+live bug found by running the parallel launcher rather than reasoning about it.
 
 ## Not done
 
