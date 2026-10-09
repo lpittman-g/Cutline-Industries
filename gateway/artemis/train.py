@@ -1,8 +1,14 @@
 """Pretrain the Artemis model (Prime Core + experts) from random initialization.
 
 Single process:   python -m artemis.train --size proto --data runs/data --out runs/proto
+One GPU (T4/A10): python -m artemis.train --size 100m --data runs/data --out runs/100m --batch 4 --accum 8
 8 GPUs (1 VM):    torchrun --nproc_per_node 8 -m artemis.train --size 1b --data ... --out ...
 Resumes automatically from the latest checkpoint in --out (same model config required).
+
+Precision is chosen for the GPU unless --precision says otherwise. Ampere and newer
+(A10, A100, H100) train in bf16, which needs no loss scaling. Turing (T4) has no bf16,
+so it trains in fp16 with a GradScaler; the scaler's state rides along in the checkpoint
+so a resumed run keeps its scale instead of re-converging on one.
 
 Loss = next-token loss + balance_coef * load-balancing loss + router_z_coef * router z-loss
        + route_coef * routing-supervision loss (only on domain-labeled tokens; --route-coef 0 turns it off).
@@ -33,6 +39,29 @@ CONFIGS = Path(__file__).resolve().parent.parent / "configs" / "models.yaml"
 
 def model_config(size: str) -> ModelConfig:
     return ModelConfig(**yaml.safe_load(CONFIGS.read_text())[size])
+
+
+def resolve_precision(device: torch.device, choice: str) -> tuple[torch.dtype | None, bool, str]:
+    """Pick the autocast dtype for this device. Returns (dtype, needs_grad_scaler, label).
+
+    dtype None means run in fp32 with autocast off. fp16 is the only mode that needs a
+    scaler: its gradients underflow to zero without one, where bf16 has fp32's exponent
+    range and does not.
+    """
+    if device.type != "cuda":
+        if choice not in ("auto", "fp32"):
+            raise SystemExit(f"--precision {choice} needs a CUDA device; this process is on {device.type}")
+        return None, False, "fp32 (cpu)"
+    bf16 = torch.cuda.is_bf16_supported()
+    if choice == "auto":
+        choice = "bf16" if bf16 else "fp16"
+    if choice == "bf16" and not bf16:
+        raise SystemExit(f"--precision bf16 but {torch.cuda.get_device_name(device)} has no bf16; use fp16")
+    if choice == "fp32":
+        return None, False, "fp32"
+    if choice == "bf16":
+        return torch.bfloat16, False, "bf16"
+    return torch.float16, True, "fp16 + GradScaler"
 
 
 def lr_at(step: int, max_steps: int, peak: float, warmup: int) -> float:
@@ -82,6 +111,8 @@ def main(argv=None) -> dict:
     ap.add_argument("--eval-batches", type=int, default=10)
     ap.add_argument("--ckpt-every", type=int, default=100)
     ap.add_argument("--seed", type=int, default=1337)
+    ap.add_argument("--precision", default="auto", choices=("auto", "bf16", "fp16", "fp32"),
+                    help="auto picks bf16 on Ampere+ and fp16 on Turing (T4), which has no bf16")
     args = ap.parse_args(argv)
 
     ddp = int(os.environ.get("WORLD_SIZE", "1")) > 1
@@ -103,6 +134,8 @@ def main(argv=None) -> dict:
     model = ArtemisLM(cfg).to(device)
     model.route_coef = args.route_coef
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.95), weight_decay=0.1, fused=device.type == "cuda")
+    amp_dtype, needs_scaler, precision_label = resolve_precision(device, args.precision)
+    scaler = torch.amp.GradScaler(device.type, enabled=needs_scaler)
 
     step = 0
     latest = out / "latest.pt"
@@ -113,6 +146,8 @@ def main(argv=None) -> dict:
         checkpoint.load_state(model, ck["model"], str(latest))
         if ck.get("optim"):
             opt.load_state_dict(ck["optim"])
+        if ck.get("scaler") and needs_scaler:
+            scaler.load_state_dict(ck["scaler"])
         step = ck["step"]
         if ck.get("rng"):
             torch.set_rng_state(ck["rng"]["torch"].cpu())
@@ -131,9 +166,17 @@ def main(argv=None) -> dict:
     val = TokenStream(Path(args.data) / "val.bin", manifest["dtype"], cfg.max_seq_len, seed=0)
     log = open(out / "metrics.jsonl", "a") if main_proc else None
     if main_proc:
+        gpu = torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu"
+        vram = torch.cuda.get_device_properties(device).total_memory / 1e9 if device.type == "cuda" else 0.0
+        env = {"device": gpu, "vram_gb": round(vram, 1), "precision": precision_label,
+               "world_size": dist.get_world_size() if ddp else 1,
+               "tokens_per_step": args.batch * args.accum * cfg.max_seq_len * (dist.get_world_size() if ddp else 1)}
+        print(f"{gpu} ({vram:.1f} GB) | {precision_label} | {cfg.param_count() / 1e6:.0f}M params "
+              f"| batch {args.batch} x accum {args.accum} x seq {cfg.max_seq_len} "
+              f"= {env['tokens_per_step']:,} tokens/step", flush=True)
         (out / "run.json").write_text(json.dumps({"config": cfg.to_dict(), "params": cfg.param_count(),
                                                   "active_params": cfg.active_param_count(), "optimizer": audit,
-                                                  "args": vars(args), "data_manifest": manifest}, indent=2))
+                                                  "args": vars(args), "env": env, "data_manifest": manifest}, indent=2))
     tokens_per_step = args.batch * args.accum * cfg.max_seq_len * (dist.get_world_size() if ddp else 1)
     t0 = time.time()
     end = min(args.stop_at, args.steps) if args.stop_at else args.steps
@@ -146,9 +189,9 @@ def main(argv=None) -> dict:
             x, y, d = train.batch(args.batch, with_domains=True)
             sync = not ddp or micro == args.accum - 1
             ctx = model.no_sync() if ddp and not sync else torch.enable_grad()
-            with ctx, torch.autocast(device.type, dtype=torch.bfloat16, enabled=device.type == "cuda"):
+            with ctx, torch.autocast(device.type, dtype=amp_dtype or torch.float32, enabled=amp_dtype is not None):
                 _, loss = model(x.to(device), y.to(device), d.to(device) if cfg.moe_layers else None)
-                (loss / args.accum).backward()
+                scaler.scale(loss / args.accum).backward()
             total += loss.item() / args.accum
             for k in ("lm_loss", "balance_loss", "z_loss", "route_loss"):
                 if k in raw.last_stats:
@@ -157,14 +200,28 @@ def main(argv=None) -> dict:
             raise RuntimeError(f"non-finite loss at step {step}; stopping before the run is wasted")
         step += 1
         record_eval = step % args.eval_every == 0 or step == end
+        # unscale first: grad_norms and clip_grad_norm_ both read .grad, and under fp16 those
+        # are still multiplied by the scale factor until this call.
+        if needs_scaler:
+            scaler.unscale_(opt)
         norms = grad_norms(raw) if main_proc and cfg.moe_layers and (record_eval or step == 1) else None
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0).item()
-        opt.step()
+        scale_before = scaler.get_scale() if needs_scaler else 0.0
+        scaler.step(opt)
+        scaler.update()
+        # fp16 overflow: the scaler discards the step and halves the scale. Expected on the
+        # first few steps, a problem only if it never stops.
+        skipped = needs_scaler and scaler.get_scale() < scale_before
         opt.zero_grad(set_to_none=True)
         if main_proc:
             rec = {"step": step, "loss": round(total, 4), **{k: round(v, 4) for k, v in parts.items()},
-                   "lr": opt.param_groups[0]["lr"], "grad_norm": round(grad_norm, 3),
+                   "lr": opt.param_groups[0]["lr"],
+                   # an fp16 overflow makes this inf, which is not valid JSON; record null instead
+                   "grad_norm": round(grad_norm, 3) if math.isfinite(grad_norm) else None,
                    "tokens": step * tokens_per_step, "elapsed_s": round(time.time() - t0, 1)}
+            if skipped:
+                rec["scaler_skipped_step"] = True
+                rec["grad_scale"] = scaler.get_scale()
             if cfg.moe_layers and "load" in raw.last_stats:
                 rec["expert_load"] = [[round(v, 3) for v in layer] for layer in raw.last_stats["load"].tolist()]
                 rec["router_entropy"] = [round(v, 3) for v in raw.last_stats["entropy"].tolist()]
@@ -176,7 +233,8 @@ def main(argv=None) -> dict:
             log.write(json.dumps(rec) + "\n")
             log.flush()
             if step % args.ckpt_every == 0 or step == end:
-                checkpoint.save(latest, raw, opt, step, vars(args))
+                extra = {"scaler": scaler.state_dict()} if needs_scaler else None
+                checkpoint.save(latest, raw, opt, step, vars(args), extra=extra)
     result = {}
     if main_proc:
         result = json.loads(open(out / "metrics.jsonl").read().strip().splitlines()[-1])
