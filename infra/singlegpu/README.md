@@ -77,26 +77,76 @@ of re-converging on one.
 
 ## Batch sizing
 
-The micro-batch is derived from the card's reported VRAM, but every card trains on the
-**same effective batch** — 32 sequences × 2048 tokens = 65,536 tokens/step — so results
-are comparable across hardware and only the accumulation count changes.
+The micro-batch is the largest that fits the card. The **effective batch is held
+constant** at 32 sequences × 2048 = 65,536 tokens/step, so results stay comparable across
+hardware and only the accumulation count changes.
 
-| Card | Reported VRAM | micro-batch × accum |
+| Device | Reported VRAM | micro-batch × accum |
 |---|---|---|
 | ~11GB slice | 11.4 | 2 × 16 |
-| T4 / P100 | 15.8 / 16.3 | 4 × 8 |
-| A10 / L4 | 23.0 / 22.5 | 8 × 4 |
-| A100 40GB | 39.6 | 16 × 2 |
-| A100 / H100 80GB | 79.2 | 32 × 1 |
+| T4 / P100 | 15.8 / 16.3 | 8 × 4 |
+| A10 / L4 | 23.0 / 22.5 | 16 × 2 |
+| A100 / H100 | 39.6+ | 32 × 1 |
+| CPU | — | 4 × 8 |
 
-Sizing follows the step's largest allocation — the fp32 logits copy `cross_entropy`
-makes, `batch × 2048 × 32000 × 4` bytes, about 1.0 GB per sequence — on top of ~2.5 GB of
-fp32 weights, gradients and AdamW moments. Override with `--batch` / `--accum`.
+Per-sequence cost at seq 2048 / vocab 32000 is roughly 1.0 GB — fp16 logits (131 MB), the
+fp32 copy `cross_entropy` makes (262 MB), its working memory (~262 MB) and activations
+across 12 layers (~94 MB) — on top of ~2.5 GB of fp32 weights, gradients and AdamW
+moments, which is fixed.
 
 Ceilings are **reported** VRAM, which runs under the marketing number (a 16GB T4 reports
 ~15.8), so each ceiling sits just above its card. An earlier version got this wrong and a
-T4 fell through to the A10's larger micro-batch; `gateway/tests/test_single_gpu_plan.py`
-guards against it.
+T4 fell through to the A10's micro-batch; `gateway/tests/test_single_gpu_plan.py` guards
+against it. Every micro-batch must divide 32 exactly, which is also tested.
+
+### `--autotune`, and what a bigger batch does and does not buy
+
+Arithmetic predicts GPU memory badly — allocator fragmentation, cuDNN workspaces and
+kernel scratch all move the real ceiling. `--autotune` probes the device instead, stepping
+down through divisors of 32 until a full forward/backward/`opt.step()` completes, and uses
+the largest that does. It catches OOM and falls back to 1, which always fits; a non-OOM
+error propagates rather than being misread as "doesn't fit".
+
+What this does **not** do is make training faster in proportion. Raising the micro-batch
+means fewer, larger matmuls, which is a modest efficiency win — measured on CPU with the
+`100m` config, going from micro-batch 1 to 2 bought about 20% (212 → 254 tokens/sec) and
+the curve flattens after that. Throughput is set by the hardware, not by this setting.
+
+Raising the *effective* batch is a different thing again, and not a free win: at a fixed
+learning rate it means fewer optimizer updates for the same tokens, which can train
+*worse*. 65,536 tokens/step is already generous for a 153M model. Change it deliberately,
+with the learning rate, not to go faster.
+
+## CPU training (`--device cpu`)
+
+Supported, and honest about the cost. Measured on this repo's `100m` config
+(153M params, seq 2048, fp32):
+
+| Threads | tokens/sec | scaling efficiency |
+|---|---|---|
+| 1 | 82 | — |
+| 2 | 151 | 92% |
+| 4 | 250 | 76% |
+
+Scaling is sublinear and falls off further once memory bandwidth binds, so 48 cores
+extrapolates to roughly **1,400–2,000 tokens/sec** at 35–50% efficiency — not 48 × 82.
+
+Against that, for the ~3.1B-token stage-1 budget (20 tokens/param):
+
+| Hardware | tokens/sec | Stage 1, continuous |
+|---|---|---|
+| 48-core CPU | ~1,700 | **~21 days** |
+| Tesla T4 (free tier) | ~17,600 | ~2 days |
+| A100 80GB | ~136,000 | ~7 hours |
+
+The T4 figure assumes ~25% MFU on 65 TFLOPS fp16; the CPU figures are measured and
+extrapolated. So a 48-core VM is about **10× slower than one free T4** — and it is not
+free: 48 vCPUs runs on the order of $2/hour, which is roughly **$1,000** for a single
+stage-1 run that a Kaggle T4 would do for nothing.
+
+Use CPU when it is what you have, or to run a second experiment in parallel with a GPU
+run. It is not the fast path, and the 48 regional vCPUs granted in `eastus2` do not change
+that — they are generic CPU cores, not GPU quota.
 
 ## Not done
 

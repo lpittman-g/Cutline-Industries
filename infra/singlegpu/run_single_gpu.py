@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -26,30 +27,88 @@ REPO = Path(__file__).resolve().parents[2]
 GATEWAY = REPO / "gateway"
 sys.path.insert(0, str(GATEWAY))
 
-# (VRAM ceiling GB, micro-batch, accum) for the 100m config at seq 2048, smallest card
-# first. Every row multiplies to 32 sequences = 65,536 tokens/step, so the optimizer sees
-# the same batch on every card and only the micro-batch changes to fit.
+EFFECTIVE_SEQUENCES = 32   # sequences per optimizer step, held constant across hardware
+
+# (VRAM ceiling GB, micro-batch) for the 100m config at seq 2048, smallest card first.
+# The micro-batch is the LARGEST that fits; accum is whatever keeps the effective batch
+# at EFFECTIVE_SEQUENCES. Bigger micro-batches are modestly faster (fewer, larger
+# matmuls) until they do not fit, at which point they fail outright - so these are sized
+# to the memory, and --autotune probes the real device when you want the true maximum.
 #
-# The ceilings are the cards' REPORTED VRAM, which runs a little under the marketing
-# number (a 16GB T4 reports ~15.8), so each ceiling sits just above the card it is for.
-# Sizing is driven by the largest allocation in the step: the fp32 logits copy that
-# cross_entropy makes, batch x 2048 x 32000 x 4 bytes - 1.0 GB per sequence of batch,
-# on top of ~2.5 GB of fp32 weights, grads and AdamW moments.
+# Ceilings are REPORTED VRAM, which runs under the marketing number (a 16GB T4 reports
+# ~15.8), so each ceiling sits just above the card it is for.
+#
+# Per-sequence cost at seq 2048 / vocab 32000, roughly 1.0 GB:
+#   fp16 logits        2048 x 32000 x 2  = 131 MB
+#   fp32 logits copy   cross_entropy()   = 262 MB
+#   cross_entropy work                   ~ 262 MB
+#   activations, 12 layers               ~  94 MB
+# on top of ~2.5 GB of fp32 weights, gradients and AdamW moments, which is fixed.
 BATCH_PLAN = [
-    (12.0, 2, 16),   # older/smaller cards, and Colab's occasional 11GB K80-class slice
-    (17.0, 4, 8),    # T4 16GB, P100 16GB  <- the free tier
-    (25.0, 8, 4),    # A10 24GB, L4 24GB
-    (50.0, 16, 2),   # A100 40GB
+    (12.0, 2),    # ~11GB slices (older Colab)
+    (17.0, 8),    # T4 16GB, P100 16GB  <- the free tier
+    (25.0, 16),   # A10 24GB, L4 24GB
 ]
-LARGEST = (32, 1)    # A100 80GB, H100 80GB
+LARGEST = EFFECTIVE_SEQUENCES   # A100/H100: the whole step fits in one micro-batch
+
+# CPU is compute-bound, not memory-bound. Measured on this repo's 100m config, going from
+# micro-batch 1 to 2 bought ~20% (212 -> 254 tok/s) and the curve flattens, while step
+# latency grows linearly - so a large micro-batch only delays the first checkpoint.
+CPU_MICRO_BATCH = 4
+
+
+def divisors(n: int) -> list[int]:
+    return [d for d in range(1, n + 1) if n % d == 0]
 
 
 def plan_for(vram_gb: float) -> tuple[int, int]:
-    """Pick (micro_batch, accum) for a card of this size. Every result is 32 sequences."""
-    for ceiling, batch, accum in BATCH_PLAN:
+    """Pick (micro_batch, accum) for a card of this size, holding the effective batch."""
+    micro = LARGEST
+    for ceiling, batch in BATCH_PLAN:
         if vram_gb <= ceiling:
-            return batch, accum
-    return LARGEST
+            micro = batch
+            break
+    micro = min(micro, EFFECTIVE_SEQUENCES)
+    return micro, EFFECTIVE_SEQUENCES // micro
+
+
+def autotune_micro_batch(size: str, device, amp_dtype, start: int, log=print) -> int:
+    """Find the largest micro-batch that actually completes a step on THIS device.
+
+    Probes downward through divisors of EFFECTIVE_SEQUENCES so micro x accum stays exact.
+    Arithmetic predicts memory badly (allocator fragmentation, cuDNN workspaces, kernel
+    scratch), so this measures instead. Falls back to 1, which always fits.
+    """
+    import torch
+    from artemis.model import ArtemisLM
+    from artemis.train import model_config
+
+    cfg = model_config(size)
+    candidates = sorted((d for d in divisors(EFFECTIVE_SEQUENCES) if d <= start), reverse=True)
+    for micro in candidates:
+        model = opt = None
+        try:
+            model = ArtemisLM(cfg).to(device)
+            opt = torch.optim.AdamW(model.parameters(), lr=1e-9)
+            x = torch.randint(0, cfg.vocab_size, (micro, cfg.max_seq_len), device=device)
+            d = torch.full((micro, cfg.max_seq_len), -1, device=device)
+            with torch.autocast(device.type, dtype=amp_dtype or torch.float32,
+                                enabled=amp_dtype is not None):
+                _, loss = model(x, x, d if cfg.moe_layers else None)
+            loss.backward()
+            opt.step()            # AdamW allocates its moments here, so include it
+            log(f"  autotune: micro-batch {micro} fits")
+            return micro
+        except (torch.cuda.OutOfMemoryError, RuntimeError) as exc:
+            if "out of memory" not in str(exc).lower():
+                raise
+            log(f"  autotune: micro-batch {micro} does not fit")
+        finally:
+            del model, opt
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+                torch.cuda.reset_peak_memory_stats()
+    return 1
 
 
 def main(argv=None) -> int:
@@ -69,6 +128,14 @@ def main(argv=None) -> int:
     ap.add_argument("--batch", type=int, default=0, help="override the VRAM-derived micro-batch")
     ap.add_argument("--accum", type=int, default=0, help="override the VRAM-derived accumulation")
     ap.add_argument("--precision", default="auto", choices=("auto", "bf16", "fp16", "fp32"))
+    ap.add_argument("--device", default="auto", choices=("auto", "cuda", "cpu"),
+                    help="auto uses the GPU when there is one. cpu trains on cores only: "
+                         "viable but roughly 10x slower than a single T4 (see README)")
+    ap.add_argument("--threads", type=int, default=0,
+                    help="CPU worker threads; defaults to every core")
+    ap.add_argument("--autotune", action="store_true",
+                    help="probe the device for the largest micro-batch that actually fits, "
+                         "instead of using the table")
     args = ap.parse_args(argv)
 
     import torch
@@ -82,14 +149,33 @@ def main(argv=None) -> int:
         print(f"corpus file(s) not found: {', '.join(missing)}", file=sys.stderr)
         return 2
 
-    if not torch.cuda.is_available():
-        print("No CUDA device. This script is for a single GPU; on CPU use --size proto instead:\n"
-              "  python -m artemis.train --size proto --data <dir> --out <dir>", file=sys.stderr)
+    use_cuda = torch.cuda.is_available() if args.device == "auto" else args.device == "cuda"
+    if use_cuda and not torch.cuda.is_available():
+        print("--device cuda but no CUDA device is visible", file=sys.stderr)
         return 2
 
-    name = torch.cuda.get_device_name(0)
-    vram = torch.cuda.get_device_properties(0).total_memory / 1e9
-    batch, accum = plan_for(vram)
+    if use_cuda:
+        device = torch.device("cuda", 0)
+        name = torch.cuda.get_device_name(0)
+        vram = torch.cuda.get_device_properties(0).total_memory / 1e9
+        batch, accum = plan_for(vram)
+    else:
+        device = torch.device("cpu")
+        threads = args.threads or os.cpu_count() or 1
+        torch.set_num_threads(threads)
+        name = f"cpu x{threads}"
+        vram = 0.0
+        batch, accum = CPU_MICRO_BATCH, EFFECTIVE_SEQUENCES // CPU_MICRO_BATCH
+        print(f"CPU training on {threads} threads. This is compute-bound: expect roughly "
+              f"10x a single T4.\n  See infra/singlegpu/README.md for measured rates before "
+              f"committing to a long run.", file=sys.stderr)
+
+    if args.autotune:
+        from artemis.train import resolve_precision
+        amp_dtype, _, _ = resolve_precision(device, args.precision)
+        batch = autotune_micro_batch(args.size, device, amp_dtype, start=batch)
+        accum = EFFECTIVE_SEQUENCES // batch
+
     batch = args.batch or batch
     accum = args.accum or accum
 
@@ -100,7 +186,7 @@ def main(argv=None) -> int:
     tok = work / "tokenizer.json"
     data = work / "data"
 
-    print(f"GPU        : {name} ({vram:.1f} GB)")
+    print(f"device     : {name}" + (f" ({vram:.1f} GB)" if vram else ""))
     print(f"stage      : {args.size}")
     print(f"batch plan : micro {batch} x accum {accum}")
     print(f"corpus     : {', '.join(str(c) for c in corpora)}")
