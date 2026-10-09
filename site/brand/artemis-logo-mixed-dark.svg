@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 356 96" width="356" height="96" role="img" aria-label="Artemis">
+  <title>Artemis</title>
+  <g transform="translate(8,8)">
+    <rect width="80" height="80" rx="18" fill="#3279f9"/>
+    <g transform="scale(0.4167) translate(0,3)"
+       stroke="#ffffff" stroke-width="13.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M48 148 96 38l48 110M69 106h54"/>
+      <circle cx="96" cy="38" r="6" fill="#ffffff" stroke="none"/>
+    </g>
+  </g>
+  <!-- Wordmark: mixed case. Cap 48, x-height 34, baseline y=48, even 7u optical gaps. -->
+  <g transform="translate(112,24)" stroke="#ffffff" stroke-width="6" fill="none"
+     stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(0,0)"><path d="M0 48 17 0l17 48M7 32h20"/></g>
+    <g transform="translate(47,0)"><path d="M0 14v34M0 26c0-7 5-12 13-12"/></g>
+    <g transform="translate(73,0)"><path d="M9 3v35c0 6 4 10 10 10M0 14h18"/></g>
+    <g transform="translate(102,0)"><path d="M2 31h28c0-10-6-17-14-17s-14 7-14 17 6 17 14 17c5 0 9-2 12-6"/></g>
+    <g transform="translate(145,0)"><path d="M0 14v34M0 26c0-7 4-12 10-12s10 5 10 12v22M20 26c0-7 4-12 10-12s10 5 10 12v22"/></g>
+    <g transform="translate(198,0)"><path d="M0 14v34"/><circle cx="0" cy="3" r="3" fill="#ffffff" stroke="none"/></g>
+    <g transform="translate(209,0)"><path d="M22 21c0-5-5-7-10-7s-10 2-10 7c0 9 20 4 20 13 0 5-5 7-10 7s-10-2-10-7"/></g>
+  </g>
+</svg>
