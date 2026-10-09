@@ -23,8 +23,23 @@ import os
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
-GATEWAY = REPO / "gateway"
+def _package_root() -> Path:
+    """Find the directory holding artemis/ and configs/.
+
+    In the repo that is gateway/. In a flattened bundle (a Kaggle dataset, a tarball
+    on a bare VM) this script sits beside them instead, so check both rather than
+    assuming a fixed depth.
+    """
+    here = Path(__file__).resolve()
+    for cand in (here.parents[2] / "gateway", here.parent, *here.parents):
+        if (cand / "artemis").is_dir() and (cand / "configs" / "models.yaml").is_file():
+            return cand
+    raise SystemExit("cannot locate the artemis package: no directory with artemis/ "
+                     "and configs/models.yaml near " + str(here))
+
+
+GATEWAY = _package_root()
+REPO = GATEWAY.parent
 sys.path.insert(0, str(GATEWAY))
 
 EFFECTIVE_SEQUENCES = 32   # sequences per optimizer step, held constant across hardware
