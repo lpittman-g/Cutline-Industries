@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192" role="img" aria-label="Artemis">
+  <title>Artemis</title>
+  <rect width="192" height="192" rx="44" fill="#3279f9"/>
+  <g stroke="#ffffff" stroke-width="13.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 148 96 38l48 110M69 106h54"/>
+    <circle cx="96" cy="38" r="6" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>
