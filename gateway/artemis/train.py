@@ -41,6 +41,21 @@ def model_config(size: str) -> ModelConfig:
     return ModelConfig(**yaml.safe_load(CONFIGS.read_text())[size])
 
 
+def native_bf16(device: torch.device) -> bool:
+    """True only when the GPU has bf16 in hardware (compute capability >= 8.0).
+
+    torch.cuda.is_bf16_supported() defaults to including_emulation=True and so returns
+    True on a Tesla T4 (sm_75), where bf16 exists only as slow software emulation.
+    Trusting it picks emulated bf16 on exactly the cards the fp16 path is for - verified
+    on a real T4, which reported bf16 True under the default and False with emulation
+    excluded. The keyword is recent, so fall back to the capability check directly.
+    """
+    try:
+        return bool(torch.cuda.is_bf16_supported(including_emulation=False))
+    except TypeError:
+        return torch.cuda.get_device_properties(device).major >= 8
+
+
 def resolve_precision(device: torch.device, choice: str) -> tuple[torch.dtype | None, bool, str]:
     """Pick the autocast dtype for this device. Returns (dtype, needs_grad_scaler, label).
 
@@ -52,7 +67,7 @@ def resolve_precision(device: torch.device, choice: str) -> tuple[torch.dtype | 
         if choice not in ("auto", "fp32"):
             raise SystemExit(f"--precision {choice} needs a CUDA device; this process is on {device.type}")
         return None, False, "fp32 (cpu)"
-    bf16 = torch.cuda.is_bf16_supported()
+    bf16 = native_bf16(device)
     if choice == "auto":
         choice = "bf16" if bf16 else "fp16"
     if choice == "bf16" and not bf16:

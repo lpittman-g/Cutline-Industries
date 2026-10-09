@@ -10,12 +10,24 @@ import math
 import pytest
 import torch
 
-from artemis.train import resolve_precision
+from artemis.train import native_bf16, resolve_precision
 
 
-def fake_cuda(monkeypatch, *, bf16: bool, name: str = "Fake GPU"):
-    """Make resolve_precision see a CUDA device with or without bf16."""
-    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda *a, **k: bf16)
+def fake_cuda(monkeypatch, *, bf16: bool, name: str = "Fake GPU", emulated: bool = False):
+    """Make resolve_precision see a CUDA device.
+
+    `bf16` is NATIVE hardware support. `emulated=True` models the real trap: a card
+    with no hardware bf16 where torch.cuda.is_bf16_supported() still answers True
+    under its default including_emulation=True. A Tesla T4 behaves exactly this way,
+    so the stub must too - an earlier version of this helper ignored the keyword and
+    let a genuine bug through to a live GPU.
+    """
+    def is_bf16_supported(including_emulation: bool = True):
+        if not including_emulation:
+            return bf16
+        return bf16 or emulated
+
+    monkeypatch.setattr(torch.cuda, "is_bf16_supported", is_bf16_supported)
     monkeypatch.setattr(torch.cuda, "get_device_name", lambda *a, **k: name)
     return torch.device("cuda", 0)
 
@@ -47,6 +59,41 @@ def test_turing_picks_fp16_with_a_scaler(monkeypatch):
     assert dtype is torch.float16
     assert scaler is True, "fp16 gradients underflow to zero without a GradScaler"
     assert "GradScaler" in label
+
+
+def test_emulated_bf16_does_not_count_as_bf16(monkeypatch):
+    """Regression: a real Tesla T4 reports bf16 True via software emulation.
+
+    torch.cuda.is_bf16_supported() defaults to including_emulation=True, so a card with
+    no hardware bf16 answers True. Taking that at face value selects emulated bf16 -
+    slow, and on precisely the cards the fp16 path exists to serve. Observed on a live
+    Kaggle T4, which printed bf16 True before this was fixed.
+    """
+    dev = fake_cuda(monkeypatch, bf16=False, emulated=True, name="Tesla T4")
+    dtype, scaler, label = resolve_precision(dev, "auto")
+    assert dtype is torch.float16, "emulated bf16 must not be mistaken for native bf16"
+    assert scaler is True
+    assert "GradScaler" in label
+
+
+def test_emulated_bf16_is_still_refused_when_asked_for_explicitly(monkeypatch):
+    dev = fake_cuda(monkeypatch, bf16=False, emulated=True, name="Tesla T4")
+    with pytest.raises(SystemExit, match="no bf16"):
+        resolve_precision(dev, "bf16")
+
+
+def test_native_bf16_is_detected_by_capability(monkeypatch):
+    """native_bf16 falls back to the compute-capability check on older torch."""
+    monkeypatch.setattr(torch.cuda, "is_bf16_supported",
+                        lambda: (_ for _ in ()).throw(TypeError("no kwarg")))
+
+    class Props:
+        def __init__(self, major): self.major = major
+
+    monkeypatch.setattr(torch.cuda, "get_device_properties", lambda *a, **k: Props(7))
+    assert native_bf16(torch.device("cuda", 0)) is False, "sm_75 has no hardware bf16"
+    monkeypatch.setattr(torch.cuda, "get_device_properties", lambda *a, **k: Props(8))
+    assert native_bf16(torch.device("cuda", 0)) is True, "sm_80 does"
 
 
 def test_bf16_is_refused_on_a_gpu_that_lacks_it(monkeypatch):
