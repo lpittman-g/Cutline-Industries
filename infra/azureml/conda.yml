@@ -1,0 +1,9 @@
+name: artemis-train
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - tokenizers>=0.15
+      - pyyaml>=6
+      - numpy>=1.26

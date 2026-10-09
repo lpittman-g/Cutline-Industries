@@ -1,0 +1,11 @@
+$schema: https://azuremlschemas.azureedge.net/latest/amlCompute.schema.json
+# One 8xH100 node (ND96isr_H100_v5). min_instances: 0 means ZERO cost while idle —
+# the node only provisions when a job runs, and scales back down after 15 min idle.
+# Requires the standardNDSH100v5Family vCPU quota (96) to be approved first.
+name: artemis-h100
+type: amlcompute
+size: Standard_ND96isr_H100_v5
+min_instances: 0
+max_instances: 1
+idle_time_before_scale_down: 900
+tier: dedicated
