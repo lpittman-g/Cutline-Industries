@@ -1,0 +1,10 @@
+$schema: https://azuremlschemas.azureedge.net/latest/azureBlob.schema.json
+# Registers the training lake as an AML datastore. The account key is NOT stored here:
+# supply it at create time from Key Vault so no secret lands in git, e.g.
+#   az ml datastore create -f datastore.yml -g artm-rg -w artemis-aml \
+#     --set credentials.account_key="$(az keyvault secret show --vault-name cutline-kv-comms \
+#       --name artemistrainingdata-storage-key --query value -o tsv)"
+name: artemis_lake
+type: azure_blob
+account_name: artemistrainingdata
+container_name: datasets

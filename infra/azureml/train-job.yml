@@ -1,0 +1,30 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+# First ramp stage: pretrain the 100m size on one 8xH100 node, reading FineWeb token
+# shards from the lake and writing checkpoints back to the lake. Change `size` and the
+# shards path to advance the ramp (100m -> 1b -> 3b -> 8b) once a stage proves stable.
+display_name: artemis-pretrain-100m
+experiment_name: artemis-pretrain
+compute: azureml:artemis-h100
+environment: azureml:artemis-train@latest
+code: ../../              # repo root; launch.sh sets PYTHONPATH=gateway for `-m artemis.train`
+inputs:
+  shards:
+    type: uri_folder
+    path: azureml://datastores/artemis_lake/paths/processed-data/fineweb
+    mode: ro_mount
+outputs:
+  run:
+    type: uri_folder
+    path: azureml://datastores/artemis_lake/paths/checkpoints/100m
+    mode: rw_mount
+command: >-
+  bash infra/azureml/launch.sh
+  --shards ${{inputs.shards}}
+  --out ${{outputs.run}}
+  --size 100m
+  --token-budget 20000000000
+resources:
+  instance_count: 1
+distribution:
+  type: pytorch
+  process_count_per_instance: 8
