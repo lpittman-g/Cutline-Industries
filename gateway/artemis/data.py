@@ -29,6 +29,119 @@ def _iter_docs(path: Path, default_domain):
         yield path.read_text(), default_domain
 
 
+def _iter_text_blocks(path: Path, block_chars: int = 1 << 20):
+    """Yield a large plain-text file in blank-line-aligned blocks.
+
+    _iter_docs() reads a .txt file whole, so a 500 MB corpus becomes ONE document
+    and tok.encode() builds a ~130M-element Python list in a single call. That is
+    what OOM-killed the first Gutenberg run. Splitting on blank lines keeps
+    documents from being cut mid-sentence.
+    """
+    buf = []
+    size = 0
+    with path.open("r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            buf.append(line)
+            size += len(line)
+            if size >= block_chars and line.strip() == "":
+                block = "".join(buf)
+                buf, size = [], 0
+                if block.strip():        # never emit a whitespace-only block
+                    yield block
+    if buf:
+        tail = "".join(buf)
+        if tail.strip():
+            yield tail
+
+
+class _ShardWriter:
+    """Appends tokens straight to disk so nothing accumulates in memory."""
+
+    def __init__(self, path: Path, dtype):
+        self.handle = open(path, "wb")
+        self.dtype = dtype
+        self.count = 0
+
+    def write(self, ids):
+        np.asarray(ids, dtype=self.dtype).tofile(self.handle)
+        self.count += len(ids)
+
+    def close(self):
+        self.handle.close()
+
+
+def _sha256_file(path: Path) -> str:
+    """Streaming digest - prepare() called read_bytes() and held the whole file."""
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def prepare_streaming(sources: list[dict], tokenizer_path: str, out_dir: str,
+                      val_fraction: float = 0.01, block_chars: int = 1 << 20) -> dict:
+    """Same output as prepare(), with memory bounded by block_chars instead of corpus size.
+
+    Writes train/val .bin (+ .dom when any source is domain-labelled) and manifest.json,
+    byte-identical in format to prepare() so TokenStream reads them unchanged.
+    """
+    tok = load_tokenizer(tokenizer_path)
+    eos = tok.token_to_id("<|eos|>")
+    dtype = np.uint32 if tok.get_vocab_size() > 65535 else np.uint16
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    writers = {n: _ShardWriter(out / f"{n}.bin", dtype) for n in ("train", "val")}
+    labels = {n: _ShardWriter(out / f"{n}.dom", np.uint8) for n in ("train", "val")}
+    manifest = {"tokenizer": str(tokenizer_path),
+                "tokenizer_sha256": _sha256_file(Path(tokenizer_path)),
+                "experts": list(EXPERT_NAMES), "sources": []}
+    seen = set()
+    labeled = False
+    try:
+        for src in sources:
+            p = Path(src["path"])
+            if not src.get("license"):
+                raise ValueError(f"{p}: every source needs a recorded license")
+            counts = {"train": 0, "val": 0}
+            docs = (_iter_docs(p, src.get("domain")) if p.suffix == ".jsonl"
+                    else ((b, src.get("domain")) for b in _iter_text_blocks(p, block_chars)))
+            for text, domain in docs:
+                digest = hashlib.sha256(text.encode()).hexdigest()
+                if digest in seen:
+                    continue
+                seen.add(digest)
+                if domain is not None and domain not in EXPERT_NAMES:
+                    raise ValueError(f"{p}: unknown domain {domain!r}")
+                label = EXPERT_NAMES.index(domain) if domain else UNLABELED
+                labeled = labeled or label != UNLABELED
+                ids = tok.encode(text).ids + [eos]
+                if len(ids) > 4096:
+                    cut = len(ids) - max(1, int(len(ids) * val_fraction))
+                    parts = [("train", ids[:cut]), ("val", ids[cut:])]
+                else:
+                    parts = [("val" if int(digest[:8], 16) / 0xFFFFFFFF < val_fraction else "train", ids)]
+                for name, chunk in parts:
+                    writers[name].write(chunk)
+                    labels[name].write([label] * len(chunk))
+                    counts[name] += len(chunk)
+            manifest["sources"].append({**src, "sha256": _sha256_file(p),
+                                        "tokens": counts["train"] + counts["val"],
+                                        "train_tokens": counts["train"], "val_tokens": counts["val"]})
+    finally:
+        for w in list(writers.values()) + list(labels.values()):
+            w.close()
+
+    if not labeled:
+        for n in ("train", "val"):
+            (out / f"{n}.dom").unlink(missing_ok=True)
+    manifest.update(dtype=np.dtype(dtype).name, train_tokens=writers["train"].count,
+                    val_tokens=writers["val"].count, domain_labels=bool(labeled))
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    return manifest
+
+
 def prepare(sources: list[dict], tokenizer_path: str, out_dir: str, val_fraction: float = 0.01) -> dict:
     """sources: [{"path", "license", "origin", optional "domain"}]. Writes train/val .bin (+ .dom) and manifest.json."""
     tok = load_tokenizer(tokenizer_path)

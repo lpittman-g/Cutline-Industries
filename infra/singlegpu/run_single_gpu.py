@@ -156,7 +156,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     import torch
-    from artemis.data import prepare
+    from artemis.data import prepare_streaming
     from artemis.tokenizer import train_tokenizer
     from artemis.train import main as train_main
 
@@ -233,7 +233,9 @@ def main(argv=None) -> int:
         print("tokenizing corpus into shards ...", flush=True)
         sources = [{"path": str(c), "license": args.license, "origin": args.origin,
                     **({"domain": args.domain} if args.domain else {})} for c in corpora]
-        manifest = prepare(sources, str(tok), str(data))
+        # streaming: memory is bounded by block size, not corpus size. prepare()
+        # OOM-killed a 526 MB Gutenberg run by building one ~130M-element list.
+        manifest = prepare_streaming(sources, str(tok), str(data))
         print(f"  train tokens {manifest['train_tokens']:,}  val tokens {manifest['val_tokens']:,}")
     else:
         manifest = json.loads((data / "manifest.json").read_text())
