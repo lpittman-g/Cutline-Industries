@@ -7,6 +7,12 @@
 
 company: Artemis AI
 product: Artemis
+# Single source of truth for who built Artemis. Used by the runtime system prompt
+# (artemis/brains.py) and the identity training set (artemis/knowledge.py), so the
+# live answer and the trained weights cannot drift apart.
+founder: Latoya Pittman
+founder_title: software engineer and CEO of Cutline Industries
+parent_company: Cutline Industries
 
 plans:
   free:
