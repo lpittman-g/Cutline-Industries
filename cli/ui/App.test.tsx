@@ -133,3 +133,91 @@ test('typed characters accumulate and then send on Enter', async () => {
   await settle(250);
   assert.match(String(lastFrame()), /Done\./);
 });
+
+// ------------------------------------------------------------------ the status bar
+
+import type { ServerReading } from '../server.ts';
+
+const UP: ServerReading = { reachable: true, model: 'artemis-1b', gpuCache: 0.42, running: 1, queued: 0 };
+const DOWN: ServerReading = { reachable: false, model: '', gpuCache: null, running: null, queued: null, detail: 'connection refused' };
+
+function bar(extra: Record<string, unknown>) {
+  return render(createElement(StatusBar, {
+    model: ARTEMIS, modelId: 'artemis', root: '/repo', search: true, ...extra,
+  }));
+}
+
+test('before the first probe the bar says it is checking, not that the server is down', async () => {
+  const view = bar({ state: 'unknown', health: null });
+  await settle();
+  const frame = String(view.lastFrame());
+  assert.match(frame, /Checking server/);
+  assert.ok(!/disconnected/i.test(frame));
+});
+
+test('a reachable idle server reads Ready and names the loaded model', async () => {
+  const view = bar({ state: 'ready', health: UP });
+  await settle();
+  assert.match(String(view.lastFrame()), /Ready \(artemis-1b\)/);
+});
+
+test('generating shows the live token rate', async () => {
+  const view = bar({ state: 'generating', rate: 18.4, health: UP });
+  await settle();
+  assert.match(String(view.lastFrame()), /Generating….*18\.4 tok\/s/s);
+});
+
+test('a near-full context warns and says what to do', async () => {
+  const view = bar({ state: 'context', contextUsed: 3500, contextLimit: 4096, health: UP });
+  await settle();
+  const frame = String(view.lastFrame());
+  assert.match(frame, /Context ~85%/);
+  assert.match(frame, /clear room/);
+});
+
+test('a dead server shows the reason it gave', async () => {
+  const view = bar({ state: 'offline', health: DOWN });
+  await settle();
+  assert.match(String(view.lastFrame()), /Server disconnected — connection refused/);
+});
+
+test('a GPU figure is shown only when the server published one', async () => {
+  // Drawing 0% for "not told" would report an idle GPU, which is a different claim.
+  const withGpu = bar({ state: 'ready', health: UP });
+  const without = bar({ state: 'ready', health: { ...UP, gpuCache: null } });
+  await settle();
+  assert.match(String(withGpu.lastFrame()), /kv 42%/);
+  assert.ok(!/kv /.test(String(without.lastFrame())));
+});
+
+test('context use is marked as an estimate, never as an exact count', async () => {
+  const view = bar({ state: 'ready', contextUsed: 1000, contextLimit: 4096, health: UP });
+  await settle();
+  assert.match(String(view.lastFrame()), /ctx ~24% of 4096/);
+});
+
+test('the bar polls the server and recovers when it comes back', async () => {
+  const readings: ServerReading[] = [DOWN, UP];
+  let calls = 0;
+  const probe = (async () => readings[Math.min(calls++, readings.length - 1)] as ServerReading) as never;
+  const { lastFrame } = render(createElement(App, {
+    client: scripted([['hi']]), model: ARTEMIS, modelId: 'artemis', root: '/repo',
+    search: false, baseUrl: 'http://gpu-vm:8000', pollMs: 250, probe,
+  }));
+  await settle(80);                 // the first probe has answered, the second has not
+  assert.match(String(lastFrame()), /Server disconnected/);
+  await settle(350);                // the second probe lands and the bar recovers
+  assert.match(String(lastFrame()), /Ready \(artemis-1b\)/);
+});
+
+test('the rate shown comes from the stream, not from a guess', async () => {
+  const { lastFrame } = render(createElement(App, {
+    client: scripted([['aaaaaaaa', 'bbbbbbbb', 'cccccccc']]),
+    model: ARTEMIS, modelId: 'artemis', root: '/repo', search: false,
+    baseUrl: 'http://gpu-vm:8000', pollMs: 0, initialPrompt: 'go',
+  }));
+  await settle(250);
+  const frame = String(lastFrame());
+  // Six tokens of text were streamed, so context use must be non-zero afterwards.
+  assert.match(frame, /ctx ~/);
+});

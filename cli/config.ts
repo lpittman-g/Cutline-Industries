@@ -13,6 +13,8 @@ export interface Config {
   baseUrl: string;
   apiKey?: string;
   model?: string;
+  /** The server's context window, used for the status bar's usage share. */
+  contextTokens?: number;
 }
 
 export const DEFAULT_BASE_URL = 'https://api.cutline-industries.studio';
@@ -33,6 +35,7 @@ export function readConfig(path = configPath(), env: NodeJS.ProcessEnv = process
     baseUrl: env.ARTEMIS_BASE_URL || stored.baseUrl || DEFAULT_BASE_URL,
     apiKey: env.ARTEMIS_API_KEY || stored.apiKey,
     model: env.ARTEMIS_MODEL || stored.model,
+    contextTokens: Number(env.ARTEMIS_CONTEXT_TOKENS) || stored.contextTokens,
   };
 }
 

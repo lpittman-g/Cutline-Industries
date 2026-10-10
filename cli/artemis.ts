@@ -13,7 +13,8 @@ import { stdin, stdout } from 'node:process';
 import { ROUNDS, lastRoundNotice, parseToolCall, protocolPrompt, resultMessage, runTool } from './agent.ts';
 import { HELP, parseArgs, type Parsed } from './args.ts';
 import { ArtemisError, Client, type ModelInfo } from './client.ts';
-import { DEFAULT_BASE_URL, configPath, maskKey, readConfig, writeConfig } from './config.ts';
+import { DEFAULT_BASE_URL, configPath, maskKey, readConfig, writeConfig, type Config } from './config.ts';
+import { probeServer, serverLabel } from './server.ts';
 import { AnswerWriter, externalBanner, renderModels, style, terminal, type Term } from './render.ts';
 
 export const VERSION = '0.1.0';
@@ -33,6 +34,7 @@ export async function main(argv: string[] = process.argv.slice(2), term: Term = 
   try {
     if (args.command === 'models') return await listModels(client, settings.model ?? 'artemis', args, term);
     if (args.command === 'status') return await showStatus(client, args, term);
+    if (args.command === 'gpu') return await showGpu(settings, args, term);
 
     const piped = await readPipedInput();
     const prompt = [piped, args.prompt].filter(Boolean).join('\n\n').trim();
@@ -43,7 +45,7 @@ export async function main(argv: string[] = process.argv.slice(2), term: Term = 
     // line output rather than painting frames into a file.
     const interactiveTerminal = stdout.isTTY === true && stdin.isTTY === true;
     if (!args.plain && !args.json && interactiveTerminal) {
-      return await runInk(client, { ...args, prompt }, model);
+      return await runInk(client, { ...args, prompt }, model, settings);
     }
     if (!prompt) {
       term.err('No prompt, and this is not an interactive terminal.\n');
@@ -104,6 +106,36 @@ async function showStatus(client: Client, args: Parsed, term: Term): Promise<num
   return status.serving === true ? 0 : 1;
 }
 
+/**
+ * What is actually behind the terminal. Points at whatever ARTEMIS_BASE_URL is: the
+ * Artemis gateway, a vLLM server on a GPU VM, or LM Studio on this machine.
+ *
+ * Reports only what the server published. A server that does not expose GPU figures
+ * is shown as not reporting them, never as a GPU sitting idle at zero.
+ */
+async function showGpu(settings: Config, args: Parsed, term: Term): Promise<number> {
+  const reading = await probeServer(settings.baseUrl, settings.apiKey);
+  if (args.json) { term.out(JSON.stringify({ server: settings.baseUrl, ...reading }, null, 2) + '\n'); return reading.reachable ? 0 : 1; }
+  term.out(`server     ${serverLabel(settings.baseUrl)}\n`);
+  term.out(`reachable  ${reading.reachable ? 'yes' : `no${reading.detail ? ` (${reading.detail})` : ''}`}\n`);
+  if (!reading.reachable) {
+    term.err('\nPoint the terminal at a server with: artemis config --url <url>\n' +
+             'A vLLM server on a GPU host and LM Studio on this machine both work.\n');
+    return 1;
+  }
+  term.out(`model      ${reading.model || 'none loaded'}\n`);
+  if (reading.gpuCache === null) {
+    term.out('gpu        not reported by this server\n');
+    term.err('\nGPU figures come from a vLLM /metrics endpoint. The Artemis gateway and\n' +
+             'LM Studio do not publish one, so there is nothing to read here.\n');
+  } else {
+    term.out(`kv cache   ${Math.round(reading.gpuCache * 100)}%\n`);
+    if (reading.running !== null) term.out(`running    ${reading.running}\n`);
+    if (reading.queued !== null) term.out(`queued     ${reading.queued}\n`);
+  }
+  return 0;
+}
+
 async function askOnce(client: Client, prompt: string, args: Parsed, fallback: string | undefined, term: Term): Promise<number> {
   const model = args.model ?? fallback;
   await announce(client, model, term);
@@ -140,7 +172,7 @@ async function askOnce(client: Client, prompt: string, args: Parsed, fallback: s
 }
 
 /** Hands over to the Ink UI: React components, Yoga layout, one full-screen app. */
-async function runInk(client: Client, args: Parsed, modelId: string): Promise<number> {
+async function runInk(client: Client, args: Parsed, modelId: string, settings: Config): Promise<number> {
   // Imported here, not at the top: `artemis models` in a script should not pay to
   // load React, a reconciler and a WASM layout engine.
   const [{ render }, { App }, { createElement }] = await Promise.all([
@@ -160,6 +192,9 @@ async function runInk(client: Client, args: Parsed, modelId: string): Promise<nu
     modelId,
     root: process.cwd(),
     search: args.search,
+    baseUrl: settings.baseUrl,
+    ...(settings.apiKey ? { apiKey: settings.apiKey } : {}),
+    contextLimit: settings.contextTokens ?? 4096,
     ...(args.prompt ? { initialPrompt: args.prompt } : {}),
   }));
   await app.waitUntilExit();

@@ -98,6 +98,58 @@ The protocol deliberately does *not* reuse the gateway's `<tool_call>` markup: t
 orchestrator owns that and runs those tools server-side, so a client tool written
 that way never arrives.
 
+## The status bar
+
+Two rows. The first says what is answering; the second says how the server behind
+it is doing, polled every five seconds.
+
+```
+╭──────────────────────────────────────────────────────────────────────────╮
+│ Artemis  Artemis                       glob + grep  ~/work/cutline       │
+│ ● Ready (artemis-1b)           ctx ~24% of 4096  kv 42%  gpu-vm:8000     │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+| State | Colour | Reads |
+| --- | --- | --- |
+| Ready | `#10B981` | `Ready (<model>)` |
+| Generating | `#3B82F6` | `Generating… 18.4 tok/s` |
+| Context > 80% | `#F59E0B` | `Context ~85% (clear room)` |
+| Disconnected | `#EF4444` | `Server disconnected — <reason>` |
+| Checking | grey | before the first probe answers |
+
+Every number is measured or marked as an estimate:
+
+- **tok/s** is counted from the arrival of real stream chunks, timed from the
+  *first* token rather than from the request. Including the wait for the first
+  token gives a figure that climbs through the answer and settles nowhere, which
+  says nothing about how fast the GPU is running. Time-to-first-token is kept
+  separately.
+- **ctx** carries a `~` because this process does not have the server's
+  vocabulary. It uses the same four-characters-per-token rule the gateway bills
+  with, so the two disagree in the same direction instead of contradicting.
+- **kv** is vLLM's own `gpu_cache_usage_perc`. A server that does not publish it
+  shows nothing at all — never `0%`, which would claim an idle GPU.
+- Before the first probe answers the bar says *checking*, not *disconnected*.
+  Announcing a dead server while still dialling it is a false alarm.
+
+## Pointing it at a GPU server
+
+The bar and the chat both speak the OpenAI shape, so the same terminal works
+against the Artemis gateway, a vLLM server on a GPU host, or LM Studio locally:
+
+```
+artemis config --url http://localhost:1234     # LM Studio
+artemis config --url http://localhost:8000     # vLLM over an SSH tunnel
+artemis gpu                                    # what is actually back there
+```
+
+`infra/gpu/provision-gpu-vm.sh` stands up an Azure GPU VM running vLLM as a
+systemd unit, bound to localhost and reached over an SSH tunnel — an open
+inference port is an open wallet. It refuses to run while GPU quota is zero,
+which it is on all three subscriptions as of 2026-10-10; the script says how to
+request it.
+
 ## Models
 
 `artemis models` lists what the plan includes, marks third-party models as such,

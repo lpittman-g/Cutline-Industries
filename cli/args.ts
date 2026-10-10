@@ -1,6 +1,6 @@
 /** Command-line parsing, kept pure so the whole surface can be tested without a process. */
 
-export type Command = 'chat' | 'models' | 'status' | 'config' | 'help' | 'version';
+export type Command = 'chat' | 'models' | 'status' | 'gpu' | 'config' | 'help' | 'version';
 
 export interface Parsed {
   command: Command;
@@ -19,7 +19,7 @@ export interface Parsed {
   error?: string;
 }
 
-const COMMANDS = new Set<Command>(['chat', 'models', 'status', 'config', 'help', 'version']);
+const COMMANDS = new Set<Command>(['chat', 'models', 'status', 'gpu', 'config', 'help', 'version']);
 const WITH_VALUE = new Set(['--model', '-m', '--brain', '--tier', '--url']);
 
 export function parseArgs(argv: string[]): Parsed {
@@ -74,6 +74,7 @@ export const HELP = `artemis — Artemis from the terminal
   artemis chat "<prompt>"        the same, stated explicitly
   artemis models                 models your plan includes
   artemis status                 whether Artemis is serving
+  artemis gpu                    the inference server behind it, and its GPU
   artemis config                 show the current settings
   artemis config --key           store an API key (prompted, never echoed)
   artemis config --url <url>     point at a different gateway

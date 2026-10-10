@@ -21,6 +21,11 @@ import type { ReactElement } from 'react';
 import type { Client, ModelInfo } from '../client.ts';
 import { ROUNDS, lastRoundNotice, parseToolCall, protocolPrompt, resultMessage, runTool } from '../agent.ts';
 import { short } from '../render.ts';
+import {
+  STATE_COLOUR, STATE_MARK, TokenMeter, approxTokens, contextShare,
+  deriveState, statusText, type ServerState,
+} from '../metrics.ts';
+import { probeServer, serverLabel, type ServerReading } from '../server.ts';
 
 export interface Step { summary: string; ok: boolean }
 
@@ -40,15 +45,48 @@ export interface AppProps {
   root: string;
   search: boolean;
   initialPrompt?: string;
+  /** Where the bar watches. Defaults to the client's own gateway. */
+  baseUrl?: string;
+  apiKey?: string;
+  /** The server's context window, for the usage share. An estimate is labelled as one. */
+  contextLimit?: number;
+  /** Milliseconds between health probes; 0 turns polling off (used by tests). */
+  pollMs?: number;
+  probe?: typeof probeServer;
 }
 
-export function App({ client, model, modelId, root, search, initialPrompt }: AppProps): ReactElement {
+export function App(props: AppProps): ReactElement {
+  const {
+    client, model, modelId, root, search, initialPrompt,
+    baseUrl = '', apiKey, contextLimit = 4096, pollMs = 5000, probe = probeServer,
+  } = props;
   const { exit } = useApp();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [health, setHealth] = useState<ServerReading | null>(null);
+  const [rate, setRate] = useState<number | null>(null);
+  const [contextUsed, setContextUsed] = useState(0);
   const nextId = useRef(0);
   const history = useRef<{ role: 'user' | 'assistant'; content: string }[]>([]);
+
+  // Health polling. The first reading is `null`, which the bar draws as "checking"
+  // rather than "disconnected": announcing a dead server while still dialling it is
+  // a false alarm, and this bar is meant to be trusted.
+  useEffect(() => {
+    if (!pollMs || !baseUrl) return;
+    let live = true;
+    const tick = async () => {
+      const reading = await probe(baseUrl, apiKey);
+      if (live) setHealth(reading);
+    };
+    void tick();
+    const timer = setInterval(() => void tick(), pollMs);
+    // A health poll must never be the reason a process stays alive: without this the
+    // CLI will not exit after its last answer, and a test run hangs instead of ending.
+    timer.unref?.();
+    return () => { live = false; clearInterval(timer); };
+  }, [baseUrl, apiKey, pollMs, probe]);
 
   const ask = useCallback(async (question: string) => {
     const id = nextId.current++;
@@ -58,6 +96,9 @@ export function App({ client, model, modelId, root, search, initialPrompt }: App
 
     let answer = '';
     const steps: Step[] = [];
+    const meter = new TokenMeter();
+    const startedAt = Date.now();
+    setRate(null);
     // One conversation per question: the retrieval rounds are internal detail, so only
     // the question and the final answer join the history the next question sees.
     const thread = [...history.current];
@@ -69,6 +110,8 @@ export function App({ client, model, modelId, root, search, initialPrompt }: App
         for await (const event of client.stream({ message, model: modelId, history: thread })) {
           if (event.type === 'token' && typeof event.text === 'string') {
             answer += event.text;
+            meter.record(event.text, startedAt);
+            setRate(meter.rate);
             patch({ answer });
           } else if (event.type === 'replace' && typeof event.text === 'string') {
             answer = event.text;
@@ -93,6 +136,7 @@ export function App({ client, model, modelId, root, search, initialPrompt }: App
       }
       patch({ answer, state: 'done' });
       history.current.push({ role: 'user', content: question }, { role: 'assistant', content: answer });
+      setContextUsed(history.current.reduce((total, m) => total + approxTokens(m.content), 0));
     } catch (error) {
       patch({ state: 'failed', error: error instanceof Error ? error.message : String(error) });
     }
@@ -129,9 +173,15 @@ export function App({ client, model, modelId, root, search, initialPrompt }: App
     if (!key.ctrl && !key.meta && text) setDraft((d) => d + text);
   });
 
+  const state = deriveState(health === null ? null : health.reachable, busy, contextUsed, contextLimit);
+
   return (
     <Box flexDirection="column" paddingX={1}>
-      <StatusBar model={model} modelId={modelId} root={root} search={search} />
+      <StatusBar
+        model={model} modelId={modelId} root={root} search={search}
+        state={state} rate={rate} contextUsed={contextUsed} contextLimit={contextLimit}
+        health={health} server={baseUrl ? serverLabel(baseUrl) : ''}
+      />
       <Box flexDirection="column" marginTop={1}>
         {turns.map((turn) => <TurnView key={turn.id} turn={turn} />)}
       </Box>
@@ -140,19 +190,69 @@ export function App({ client, model, modelId, root, search, initialPrompt }: App
   );
 }
 
-export function StatusBar({ model, modelId, root, search }: { model: ModelInfo | undefined; modelId: string; root: string; search: boolean }): ReactElement {
+export interface StatusBarProps {
+  model: ModelInfo | undefined;
+  modelId: string;
+  root: string;
+  search: boolean;
+  state?: ServerState;
+  rate?: number | null;
+  contextUsed?: number;
+  contextLimit?: number;
+  health?: ServerReading | null;
+  server?: string;
+}
+
+/**
+ * The bar. Two rows: what is answering, and how the server behind it is doing.
+ *
+ * The state colour is the loudest thing on screen, so it may only ever say something
+ * that was measured. A GPU figure appears when the server publishes one and is absent
+ * otherwise — a bar that shows 0% for "not told" is reporting an idle GPU, which is a
+ * different and false claim.
+ */
+export function StatusBar({
+  model, modelId, root, search,
+  state = 'unknown', rate = null, contextUsed = 0, contextLimit = 4096, health = null, server = '',
+}: StatusBarProps): ReactElement {
   const external = model?.external === true;
+  const share = contextShare(contextUsed, contextLimit);
+  const line = statusText({
+    state, rate, contextUsed, contextLimit,
+    model: health?.model || model?.display || modelId,
+    server,
+    ...(health?.detail ? { detail: health.detail } : {}),
+  });
   return (
-    <Box borderStyle="round" borderColor={external ? 'yellow' : 'cyan'} paddingX={1} justifyContent="space-between">
-      <Text>
-        <Text bold color={external ? 'yellow' : 'cyan'}>{model?.display ?? modelId}</Text>
-        {external
-          ? <Text color="yellow">{`  not Artemis · requests leave Artemis (${model?.provider})`}</Text>
-          : <Text dimColor>  Artemis</Text>}
-      </Text>
-      <Text dimColor>{search ? 'glob + grep' : 'no file access'}  {short(root)}</Text>
+    <Box flexDirection="column" borderStyle="round" borderColor={external ? 'yellow' : 'cyan'} paddingX={1}>
+      <Box justifyContent="space-between">
+        <Text>
+          <Text bold color={external ? 'yellow' : 'cyan'}>{model?.display ?? modelId}</Text>
+          {external
+            ? <Text color="yellow">{`  not Artemis · requests leave Artemis (${model?.provider})`}</Text>
+            : <Text dimColor>  Artemis</Text>}
+        </Text>
+        <Text dimColor>{search ? 'glob + grep' : 'no file access'}  {short(root)}</Text>
+      </Box>
+      <Box justifyContent="space-between">
+        <Text>
+          <Text color={STATE_COLOUR[state]}>{STATE_MARK[state]} </Text>
+          <Text color={state === 'context' || state === 'offline' ? STATE_COLOUR[state] : undefined}>{line}</Text>
+        </Text>
+        <Text dimColor>{rightSide(share, contextLimit, health, server)}</Text>
+      </Box>
     </Box>
   );
+}
+
+function rightSide(share: number, limit: number, health: ServerReading | null, server: string): string {
+  const parts: string[] = [];
+  // "~" everywhere this is counted rather than tokenised, so nobody reads it as exact.
+  if (share > 0) parts.push(`ctx ~${Math.round(share * 100)}% of ${limit}`);
+  if (health?.gpuCache !== null && health?.gpuCache !== undefined) parts.push(`kv ${Math.round(health.gpuCache * 100)}%`);
+  if (health?.queued) parts.push(`${health.queued} queued`);
+  if (server) parts.push(server);
+  return parts.join('  ');
 }
 
 function TurnView({ turn }: { turn: Turn }): ReactElement {

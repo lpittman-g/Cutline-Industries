@@ -43,3 +43,7 @@
 {"at":"2026-10-10T05:22:17.167Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
 {"at":"2026-10-10T05:22:17.174Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
 {"at":"2026-10-10T05:22:17.190Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-10T05:35:59.780Z","event":"upload","detail":"txt Privacy-Policy-Lisa-Cutline-Industries-.txt → knowledge/Privacy-Policy-Lisa-Cutline-Industries-.txt.md (5 chunks)"}
+{"at":"2026-10-10T05:36:01.084Z","event":"memory.add","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-10T05:36:01.087Z","event":"memory.update","detail":"files/file_sidebar_test_md"}
+{"at":"2026-10-10T05:36:01.099Z","event":"memory.forget","detail":"files/file_sidebar_test_md"}
