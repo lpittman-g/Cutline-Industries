@@ -194,11 +194,31 @@ class AzureAIBackend(ArtemisServerBackend):
         return json.dumps(body).encode()
 
     def readiness(self):
-        r = super().readiness()
-        # Overwrite, never merge: callers must not be able to read this as Artemis serving.
-        r.update(model="external", provider="azure-ai-services", deployment=self.deployment,
-                 quality="not-artemis", bootstrap=True)
-        return r
+        """Probe this backend, cached for 15 seconds.
+
+        Deliberately does NOT call super().readiness(): the parent builds its probe as
+        ArtemisServerBackend(...), hardcoding its own class, so an inherited probe would
+        hit the vLLM URL with a Bearer header against an Azure endpoint and always report
+        serving=False while generate() worked fine. Observed live before this override.
+        """
+        with self._health_lock:
+            if self._health is not None and time.monotonic() - self._health_at < 15:
+                return dict(self._health)
+            probe = AzureAIBackend(self.base_url, self.api_key, self.deployment,
+                                   api_version=self.api_version, timeout=min(self.timeout, 5.0))
+            try:
+                reply = probe.generate("artemis", "Reply briefly.",
+                                       [{"role": "user", "content": "Hello"}], 8)
+                available = isinstance(reply, str) and bool(reply.strip())
+            except ModelUnavailable:
+                available = False
+            self._health = {"configured": True, "serving": available,
+                            "status": "available" if available else "unavailable",
+                            "model": "external", "provider": "azure-ai-services",
+                            "deployment": self.deployment, "quality": "not-artemis",
+                            "bootstrap": True}
+            self._health_at = time.monotonic()
+            return dict(self._health)
 
     def generate(self, brain, system, messages, max_tokens=512, metadata_sink=None):
         req = urllib.request.Request(self._url(), data=self._body(brain, system, messages, max_tokens),

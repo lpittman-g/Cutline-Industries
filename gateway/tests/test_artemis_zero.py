@@ -34,9 +34,8 @@ def make(**kw):
 
 def test_readiness_never_claims_to_be_artemis(monkeypatch):
     b = make()
-    monkeypatch.setattr(ArtemisServerBackend, "readiness",
-                        lambda self: {"configured": True, "serving": True,
-                                      "status": "available", "quality": "unverified"})
+    monkeypatch.setattr("artemis.backends.urllib.request.urlopen",
+                        _fake_urlopen({"choices": [{"message": {"content": "ok"}}]}))
     r = b.readiness()
     assert r["model"] == "external"
     assert r["provider"] == "azure-ai-services"
@@ -44,13 +43,34 @@ def test_readiness_never_claims_to_be_artemis(monkeypatch):
     assert r["quality"] == "not-artemis", "must not inherit 'unverified', which reads as Artemis"
 
 
-def test_readiness_overwrites_rather_than_merges(monkeypatch):
-    """A parent claiming quality='verified' must not survive into the response."""
+def test_readiness_probes_as_itself_not_as_the_parent(monkeypatch):
+    """Regression: inherited readiness() built an ArtemisServerBackend probe.
+
+    The parent hardcodes its own class when probing, so an inherited readiness()
+    sent a vLLM-shaped request with a Bearer header to an Azure endpoint. It always
+    came back serving=False while generate() worked perfectly - observed against the
+    real artemis0 deployment. The probe must use the Azure URL and api-key header.
+    """
     b = make()
-    monkeypatch.setattr(ArtemisServerBackend, "readiness",
-                        lambda self: {"configured": True, "serving": True,
-                                      "status": "loaded", "quality": "verified"})
-    assert b.readiness()["quality"] == "not-artemis"
+    captured = {}
+    monkeypatch.setattr("artemis.backends.urllib.request.urlopen",
+                        _fake_urlopen({"choices": [{"message": {"content": "ok"}}]}, captured))
+    r = b.readiness()
+    assert r["serving"] is True, "a working deployment must not report serving=False"
+    assert "/openai/deployments/" in captured["url"], "probe used the parent's vLLM URL"
+    assert captured["headers"].get("api-key"), "probe used Bearer instead of api-key"
+
+
+def test_readiness_reports_unavailable_when_the_probe_fails(monkeypatch):
+    b = make()
+
+    def boom(*a, **k):
+        raise URLError("down")
+
+    monkeypatch.setattr("artemis.backends.urllib.request.urlopen", boom)
+    r = b.readiness()
+    assert r["serving"] is False and r["status"] == "unavailable"
+    assert r["quality"] == "not-artemis", "still must not read as Artemis when down"
 
 
 def test_generate_marks_every_reply_external(monkeypatch):
