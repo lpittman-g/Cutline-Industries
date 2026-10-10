@@ -171,6 +171,10 @@ class Business:
                         "description": spec.get("description", "")})
         return out
 
+    def model_spec(self, model: str) -> dict:
+        """The catalogue entry for one model id, or {} if the config does not describe it."""
+        return (self.cfg.get("models") or {}).get(model) or {}
+
     def authorize_model(self, account: str, model: str) -> None:
         plan = self.plan_of(account)
         if model not in plan.models:
