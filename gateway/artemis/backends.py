@@ -1,4 +1,12 @@
-"""Where brain replies come from. Every backend runs Artemis's own weights; there is no outside-model backend."""
+"""Where brain replies come from.
+
+Every backend here runs Artemis's own weights EXCEPT AzureAIBackend, which is an
+explicitly-opted-in bootstrap ("Artemis 0") for standing the orchestrator, experts and
+tools up before the first checkpoint passes evaluation. It calls an external provider,
+which Blueprint Decisions 5 and 12 otherwise forbid, so it is never selected by default,
+it announces itself as external in readiness(), and it is meant to be removed once
+LocalBackend or ArtemisServerBackend can serve.
+"""
 from __future__ import annotations
 
 import json
@@ -140,3 +148,93 @@ class ArtemisServerBackend:
                     raise ModelUnavailable("Artemis inference stream ended early; please retry later.")
         except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError) as e:
             raise ModelUnavailable("Artemis inference service is unavailable; please retry later.") from e
+
+
+class AzureAIBackend(ArtemisServerBackend):
+    """Artemis 0: the full stack on a hosted Azure AI Services model, pending Artemis's own.
+
+    THIS IS NOT ARTEMIS. It runs an external provider's model, which Blueprint Decisions 5
+    and 12 forbid for product code and Artemis decisions. It exists so the orchestrator, the
+    ten experts, the tools and the decision engine can be exercised end to end while the real
+    model trains, and it is wired so nothing can mistake it for the real thing:
+
+      - never chosen unless ARTEMIS_BOOTSTRAP_AZURE=1 is set explicitly
+      - readiness() reports model="external" and quality="not-artemis"
+      - every reply carries `external: True` to any metadata sink
+
+    Azure AI Services speaks the OpenAI chat-completions API, so only the URL shape, the auth
+    header and the deployment-name mapping differ from ArtemisServerBackend.
+    """
+
+    #: Azure routes by DEPLOYMENT name, not by brain. One deployment serves every brain, so
+    #: the brain survives in the system prompt rather than in `model` as vLLM adapters do.
+    def __init__(self, endpoint: str, api_key: str, deployment: str,
+                 api_version: str = "2024-10-21", timeout: float = 60.0):
+        if not api_key:
+            raise ValueError("AzureAIBackend needs an api_key; read it from Key Vault, never hardcode it")
+        super().__init__(endpoint, api_key, timeout, served_model=deployment)
+        self.deployment = deployment
+        self.api_version = api_version
+
+    def _url(self) -> str:
+        return (f"{self.base_url}/openai/deployments/{self.deployment}"
+                f"/chat/completions?api-version={self.api_version}")
+
+    def _headers(self) -> dict:
+        # Azure uses api-key, not Authorization: Bearer.
+        return {"Content-Type": "application/json", "api-key": self.api_key}
+
+    def _body(self, brain, system, messages, max_tokens, stream=False) -> bytes:
+        # No chat_template_kwargs: that is a vLLM extension and Azure rejects unknown fields.
+        body = {"max_tokens": max_tokens,
+                "messages": [{"role": "system", "content": clean(f"You are the {brain} brain of Artemis.\n{system}")},
+                             *[{"role": m["role"], "content": clean(m["content"])} for m in messages]]}
+        if stream:
+            body["stream"] = True
+        return json.dumps(body).encode()
+
+    def readiness(self):
+        r = super().readiness()
+        # Overwrite, never merge: callers must not be able to read this as Artemis serving.
+        r.update(model="external", provider="azure-ai-services", deployment=self.deployment,
+                 quality="not-artemis", bootstrap=True)
+        return r
+
+    def generate(self, brain, system, messages, max_tokens=512, metadata_sink=None):
+        req = urllib.request.Request(self._url(), data=self._body(brain, system, messages, max_tokens),
+                                     headers=self._headers())
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                data = json.load(r)
+                content = data["choices"][0]["message"]["content"]
+                if not isinstance(content, str):
+                    raise ValueError("invalid inference content")
+                if metadata_sink:
+                    metadata_sink({"usage": data.get("usage"), "external": True,
+                                   "finish_reason": data["choices"][0].get("finish_reason")})
+                return content
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError) as e:
+            raise ModelUnavailable("Artemis 0 bootstrap backend is unavailable; please retry later.") from e
+
+    def stream(self, brain, system, messages, max_tokens=512, metadata_sink=None):
+        req = urllib.request.Request(self._url(), data=self._body(brain, system, messages, max_tokens, stream=True),
+                                     headers=self._headers())
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                for raw in r:
+                    line = raw.decode().strip()
+                    if line == "data: [DONE]":
+                        break
+                    if not line.startswith("data:"):
+                        continue
+                    data = json.loads(line[5:])
+                    if "error" in data:
+                        raise ModelUnavailable("Artemis 0 bootstrap backend returned an error; please retry later.")
+                    for c in data.get("choices", []):
+                        piece = (c.get("delta") or {}).get("content")
+                        if piece:
+                            yield piece
+                if metadata_sink:
+                    metadata_sink({"external": True})
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError) as e:
+            raise ModelUnavailable("Artemis 0 bootstrap backend is unavailable; please retry later.") from e

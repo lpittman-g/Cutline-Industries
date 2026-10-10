@@ -23,11 +23,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .backends import ArtemisServerBackend, LocalBackend, NotReadyBackend
+from .backends import AzureAIBackend, ArtemisServerBackend, LocalBackend, NotReadyBackend
 from .business import Business, PaymentRequired, RateLimited, Unauthorized
 from .memory import MemoryStore
 from .orchestrator import TIERS, Artemis, ToolAccess
@@ -47,6 +48,19 @@ def build_app() -> tuple[Artemis, Business]:
                                        served_model=os.environ.get("VLLM_MODEL"))
     elif ckpt:
         backend = LocalBackend(ckpt, os.environ["ARTEMIS_TOKENIZER"])
+    elif os.environ.get("ARTEMIS_BOOTSTRAP_AZURE") == "1":
+        # Artemis 0: an EXTERNAL model, which Blueprint Decisions 5 and 12 forbid for product
+        # code. Deliberately last so a real Artemis backend always wins, and gated behind an
+        # explicit flag so it can never be reached by accident or by a missing variable.
+        missing = [v for v in ("AZURE_AI_ENDPOINT", "AZURE_AI_KEY", "AZURE_AI_DEPLOYMENT")
+                   if not os.environ.get(v)]
+        if missing:
+            raise SystemExit("ARTEMIS_BOOTSTRAP_AZURE=1 but missing: " + ", ".join(missing))
+        backend = AzureAIBackend(os.environ["AZURE_AI_ENDPOINT"], os.environ["AZURE_AI_KEY"],
+                                 os.environ["AZURE_AI_DEPLOYMENT"],
+                                 api_version=os.environ.get("AZURE_AI_API_VERSION", "2024-10-21"))
+        print("WARNING: serving Artemis 0 on an EXTERNAL Azure model, not Artemis's own weights.",
+              file=sys.stderr, flush=True)
     else:
         backend = NotReadyBackend()
     biz = Business(os.environ.get("ARTEMIS_DATABASE_URL") or os.environ.get("ARTEMIS_DB", "artemis.db"))
