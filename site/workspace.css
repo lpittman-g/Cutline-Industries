@@ -96,3 +96,21 @@ a.brand { text-decoration: none; color: inherit; }
 .shell-foot { padding: 28px 0 48px; color: var(--muted); font-size: 13px; }
 .shell-foot a { color: inherit; }
 
+
+/* Settings panel. Sections read as a list of plain rows; the meters are the only
+   graphic, and an unlimited allowance prints as text rather than a filled bar. */
+.workspace-settings { max-height: 85vh; overflow-y: auto; }
+.settings-section { border-top: 1px solid var(--line); padding-block: 14px; }
+.settings-section:first-of-type { border-top: 0; }
+.settings-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+.settings-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding-block: 6px; font-size: 13px; }
+.settings-value { color: var(--muted); font-variant-numeric: tabular-nums; }
+.settings-meter-box { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.settings-meter { width: 120px; max-width: 40vw; height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.settings-meter-fill { height: 100%; background: var(--accent, #3279f9); }
+.settings-meter-fill[data-state="full"] { background: #d04a3b; }
+.settings-list { margin: 0 0 6px; padding-left: 18px; color: var(--muted); font-size: 13px; }
+.settings-link { font-size: 13px; }
+.settings-appearance { display: flex; gap: 8px; flex-wrap: wrap; }
+.settings-theme { border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; min-height: 36px; }
+.settings-theme[aria-pressed="true"] { border-color: var(--accent, #3279f9); color: var(--fg); }

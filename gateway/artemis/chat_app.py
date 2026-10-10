@@ -104,6 +104,14 @@ def make_chat_handler(app, biz, records, jobs, site=None):
                     self._json(200, {"requests": dict(records.db.all("SELECT state,COUNT(*) FROM chat_requests GROUP BY state")),
                         "average_generation_seconds": records.db.one("SELECT AVG(ended-started) FROM chat_requests WHERE ended IS NOT NULL AND started IS NOT NULL")[0],
                         "failures": dict(records.db.all("SELECT category,COUNT(*) FROM chat_failures GROUP BY category"))}); return True
+                if name == "usage" and method == "GET":
+                    # Billing, Usage and Capabilities in one reading. Models are marked
+                    # available only when this server can actually serve them.
+                    added = getattr(app, "added_models", {})
+                    data = biz.entitlements(owner)
+                    for m in data["capabilities"]["models"]:
+                        m["available"] = m["id"] == "artemis" or m["id"] in added
+                    self._json(200, data); return True
                 if name == "settings" and len(parts) == 2:
                     if method == "GET": self._json(200, records.preferences(owner)); return True
                     if method == "PATCH": self._json(200, records.preferences(owner, body.get("retention_days"))); return True

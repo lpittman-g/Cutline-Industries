@@ -326,17 +326,103 @@
     if (conversations.length) await openConversation(conversations[0].id); else { active = null; render(); }
     authButton.textContent = 'Account'; showNotice('Signed in. Conversations are saved to your account.');
   }
-  const accountDialog = node('dialog', 'workspace-dialog'), accountTitle = node('h2', '', 'Your account'); accountTitle.id = 'account-title'; accountDialog.setAttribute('aria-labelledby', accountTitle.id);
+  // Settings. Sectioned the way a customer expects to find things: who they are and
+  // what they pay for, what today has spent against the plan, what the plan includes,
+  // what we keep, and how the app looks. Every number is a real meter reading from
+  // /api/usage - a settings screen that guesses is worse than none.
+  const accountDialog = node('dialog', 'workspace-dialog workspace-settings'), accountTitle = node('h2', '', 'Settings'); accountTitle.id = 'account-title'; accountDialog.setAttribute('aria-labelledby', accountTitle.id);
   const retention = node('select'); retention.setAttribute('aria-label', 'Conversation retention');
   for (const [value, label] of [[0, 'Keep until I delete'], [30, 'Delete after 30 inactive days'], [90, 'Delete after 90 inactive days'], [365, 'Delete after one inactive year']]) { const option = node('option', '', label); option.value = value; retention.append(option); }
-  accountDialog.append(accountTitle, node('p', '', 'Conversations are not automatically used to train Artemis. Raw audio recording and file uploads are not enabled.'), node('label', '', 'Conversation retention'), retention,
-    button('Save retention', () => action(async () => { await api('/api/settings', { method: 'PATCH', body: { retention_days: Number(retention.value) } }); showNotice('Retention setting saved.'); accountDialog.close(); })),
+
+  function settingsSection(title) { const s = node('section', 'settings-section'); s.append(node('h3', '', title)); return s; }
+  function settingsRow(label, value) {
+    const row = node('div', 'settings-row');
+    row.append(node('span', '', label), typeof value === 'string' ? node('span', 'settings-value', value) : value);
+    return row;
+  }
+  function meter(used, limit) {
+    // An unlimited allowance has no bar to fill: say so rather than draw a full one.
+    if (limit === null || limit === undefined) return node('span', 'settings-value', used + ' used · unlimited');
+    const wrap = node('div', 'settings-meter'), bar = node('div', 'settings-meter-fill');
+    const share = limit > 0 ? Math.min(1, used / limit) : 0;
+    bar.style.width = (share * 100).toFixed(1) + '%';
+    if (share >= 1) bar.dataset.state = 'full';
+    wrap.append(bar); wrap.title = used + ' of ' + limit;
+    const box = node('div', 'settings-meter-box');
+    box.append(node('span', 'settings-value', used + ' / ' + limit), wrap);
+    return box;
+  }
+
+  const accountSection = settingsSection('Account'), usageSection = settingsSection('Usage');
+  const capabilitySection = settingsSection("What your plan includes");
+  async function loadSettings() {
+    const [settings, entitlements] = await Promise.all([
+      api('/api/settings'),
+      api('/api/usage').catch(() => null),
+    ]);
+    retention.value = settings.retention_days;
+
+    accountSection.replaceChildren(node('h3', '', 'Account'));
+    accountSection.append(settingsRow('Signed in as', (user && user.email) || '—'));
+    usageSection.replaceChildren(node('h3', '', 'Usage'));
+    capabilitySection.replaceChildren(node('h3', '', "What your plan includes"));
+    if (!entitlements) {
+      usageSection.append(node('p', 'session-note', 'Usage is unavailable right now.'));
+      return;
+    }
+    const plan = entitlements.plan;
+    const price = plan.price_usd_month != null ? '$' + plan.price_usd_month + ' a month'
+      : plan.price_usd_seat_month != null ? '$' + plan.price_usd_seat_month + ' per seat a month' : '';
+    accountSection.append(settingsRow('Plan', plan.id + (price ? ' · ' + price : '')));
+    const comparePlans = node('a', 'settings-link', 'Compare plans'); comparePlans.href = '../#pricing';
+    accountSection.append(comparePlans);
+
+    for (const item of entitlements.usage) {
+      usageSection.append(settingsRow(item.label + ' ' + item.period, meter(item.used, item.limit)));
+    }
+    usageSection.append(node('p', 'session-note', 'Daily allowances reset at 00:00 UTC.'));
+
+    const models = node('ul', 'settings-list');
+    for (const m of entitlements.capabilities.models) {
+      const li = node('li', '', m.display + (m.external ? ' · third party' : '') + (m.available ? '' : ' · unavailable'));
+      models.append(li);
+    }
+    capabilitySection.append(settingsRow('Models', ''), models);
+    capabilitySection.append(settingsRow('Tools', entitlements.capabilities.tools.join(', ') || 'None on this plan'));
+    capabilitySection.append(settingsRow('Specialist brains', String(entitlements.capabilities.brains.length)));
+    capabilitySection.append(settingsRow('API access', entitlements.capabilities.api_access ? 'Included' : 'Not on this plan'));
+  }
+
+  // Appearance. The stylesheet already defines both themes and honours data-theme, so
+  // this only has to record the choice; "System" removes it and follows the device.
+  const appearance = node('div', 'settings-appearance');
+  function applyTheme(value) {
+    if (value === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = value;
+    try { localStorage.setItem('artemis.theme', value); } catch {}
+    for (const b of appearance.children) b.setAttribute('aria-pressed', String(b.dataset.theme === value));
+  }
+  for (const [value, label] of [['light', 'Light'], ['dark', 'Dark'], ['system', 'System']]) {
+    const b = button(label, () => applyTheme(value), 'settings-theme'); b.dataset.theme = value; appearance.append(b);
+  }
+  let startTheme = 'system';
+  try { startTheme = localStorage.getItem('artemis.theme') || 'system'; } catch {}
+  applyTheme(startTheme);
+
+  const privacySection = settingsSection('Privacy and data');
+  privacySection.append(node('p', '', 'Conversations are not automatically used to train Artemis. Raw audio recording and file uploads are not enabled.'),
+    node('label', '', 'Conversation retention'), retention,
+    button('Save retention', () => action(async () => { await api('/api/settings', { method: 'PATCH', body: { retention_days: Number(retention.value) } }); showNotice('Retention setting saved.'); })),
     node('p', 'session-note', 'Deletion removes live database records. Hosting backups require a separate expiry policy.'),
     button('Export this conversation (JSON)', () => exportConversation('json')), button('Export this conversation (Markdown)', () => exportConversation('markdown')),
-    button('Export my account', () => action(async () => download(await api('/api/account/export'), 'artemis-account.json'))),
+    button('Export my account', () => action(async () => download(await api('/api/account/export'), 'artemis-account.json'))));
+
+  const appearanceSection = settingsSection('Appearance'); appearanceSection.append(appearance);
+
+  accountDialog.append(accountTitle, accountSection, usageSection, capabilitySection, privacySection, appearanceSection,
     button('Sign out', () => action(async () => { if (flight?.id) await api('/api/requests/' + flight.id + '/cancel', { method: 'POST', body: {} }); flight?.ctrl?.abort(); saveDrafts(); stopSpeech(); await api('/api/auth/logout', { method: 'POST', body: {} }); user = active = flight = null; conversations = []; drafts = pending = {}; input.value = ''; accountDialog.close(); signup = false; authTitle.textContent = 'Sign in to Artemis'; authSubmit.textContent = 'Sign in'; authSwitch.textContent = 'Create an account'; password.autocomplete = 'current-password'; authError.textContent = ''; accountState(); showNotice('Signed out.'); render(); })),
     button('Close', () => accountDialog.close())); document.body.append(accountDialog);
-  authButton.addEventListener('click', () => { if (user) action(async () => { const settings = await api('/api/settings'); retention.value = settings.retention_days; }); });
+  authButton.addEventListener('click', () => { if (user) action(loadSettings); });
   function download(value, name, type = 'application/json') { const blob = new Blob([typeof value === 'string' ? value : JSON.stringify(value, null, 2)], { type }), url = URL.createObjectURL(blob), a = node('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   function exportConversation(format) { action(async () => { if (!active) throw new Error('Open a conversation first.'); const value = await api('/api/conversations/' + active.id + '/export?format=' + format); if (format === 'markdown') download(value.content, value.filename, 'text/markdown'); else download(value, 'artemis-conversation.json'); }); }
 

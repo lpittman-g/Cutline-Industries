@@ -219,6 +219,36 @@ class Business:
     def waitlist_count(self) -> int:
         return int(self.db.one("SELECT COUNT(*) FROM waitlist")[0])
 
+    def entitlements(self, account: str) -> dict:
+        """What this account's plan grants, and how much of it today's use has spent.
+
+        One honest source for the Billing, Usage and Capabilities screens. A limit of
+        None means unlimited: JSON has no infinity, and sending a huge number would read
+        as a real cap. `used` is always a real meter reading, never an estimate.
+        """
+        plan = self.plan_of(account)
+        def cap(value):
+            return None if value == UNLIMITED else int(value)
+        return {
+            "plan": {"id": plan.id, "tier": plan.tier,
+                     "price_usd_month": plan.raw.get("price_usd_month"),
+                     "price_usd_seat_month": plan.raw.get("price_usd_seat_month"),
+                     "api_access": plan.api_access},
+            "usage": [
+                {"id": "messages", "label": "Messages", "period": "today",
+                 "used": int(self.used(account, "message")), "limit": cap(plan.messages_per_day)},
+                {"id": "tool_calls", "label": "Tool calls", "period": "today",
+                 "used": int(self.used(account, "tool_call")), "limit": cap(plan.tool_calls_per_day)},
+            ],
+            "capabilities": {
+                "models": self.allowed_models(account),
+                "tools": [t for t in ALL_TOOLS if t in plan.tools],
+                "brains": sorted(plan.brains),
+                "voice_minutes_per_month": cap(plan.voice_minutes_per_month),
+                "api_access": plan.api_access,
+            },
+        }
+
     def public_plans(self) -> dict:
         return {"plans": self.cfg["plans"], "api_models": self.cfg["api_models"]}
 
