@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import tsx
+#!/usr/bin/env bun
 /**
  * The Artemis CLI: the terminal is the first-class surface, the website is one client.
  *
@@ -8,9 +8,9 @@
  *   - a non-zero exit status on every failure, so scripts can branch on it;
  *   - the API key is never an argument and never printed.
  */
-import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 
+import { ROUNDS, lastRoundNotice, parseToolCall, protocolPrompt, resultMessage, runTool } from './agent.ts';
 import { HELP, parseArgs, type Parsed } from './args.ts';
 import { ArtemisError, Client, type ModelInfo } from './client.ts';
 import { DEFAULT_BASE_URL, configPath, maskKey, readConfig, writeConfig } from './config.ts';
@@ -36,7 +36,19 @@ export async function main(argv: string[] = process.argv.slice(2), term: Term = 
 
     const piped = await readPipedInput();
     const prompt = [piped, args.prompt].filter(Boolean).join('\n\n').trim();
-    if (!prompt) return await interactive(client, args, settings.model, term);
+    const model = args.model ?? settings.model ?? 'artemis';
+
+    // The full-screen UI needs a terminal to draw on and a keyboard to read. Piped
+    // input or a redirected stdout means this is a pipeline stage, so fall back to
+    // line output rather than painting frames into a file.
+    const interactiveTerminal = stdout.isTTY === true && stdin.isTTY === true;
+    if (!args.plain && !args.json && interactiveTerminal) {
+      return await runInk(client, { ...args, prompt }, model);
+    }
+    if (!prompt) {
+      term.err('No prompt, and this is not an interactive terminal.\n');
+      return 2;
+    }
     return await askOnce(client, prompt, args, settings.model, term);
   } catch (error) {
     return fail(error, term);
@@ -97,9 +109,29 @@ async function askOnce(client: Client, prompt: string, args: Parsed, fallback: s
   await announce(client, model, term);
   const writer = new AnswerWriter(term);
   let failure: string | undefined;
-  for await (const event of client.stream({ message: prompt, model, brain: args.brain, tier: args.tier })) {
-    writer.handle(event);
-    if (event.type === 'error' || event.type === 'training') failure = String(event.message ?? 'Artemis could not answer.');
+  const root = process.cwd();
+  const thread: { role: 'user' | 'assistant'; content: string }[] = [];
+  let message = args.search ? `${protocolPrompt(root)}\n\nQuestion: ${prompt}` : prompt;
+
+  // The same retrieval loop the UI runs, so --plain is not a lesser Artemis. Search
+  // activity goes to stderr; only the answer reaches stdout.
+  for (let round = 0; round < (args.search ? ROUNDS : 1); round++) {
+    const reply = new AnswerWriter({ out: () => {}, err: () => {}, colour: false });
+    const sink = args.search ? reply : writer;
+    for await (const event of client.stream({ message, model, brain: args.brain, tier: args.tier, history: thread })) {
+      sink.handle(event);
+      if (event.type === 'error' || event.type === 'training') failure = String(event.message ?? 'Artemis could not answer.');
+    }
+    if (failure) break;
+    if (!args.search) break;
+    const call = parseToolCall(reply.answer);
+    if (!call) { writer.handle({ type: 'done', answer: reply.answer }); break; }
+    if ('error' in call) { message = call.error; continue; }
+    const outcome = await runTool(root, call);
+    term.err(style(term, 'dim', `${outcome.ok ? '·' : '×'} ${outcome.summary}`) + '\n');
+    thread.push({ role: 'user', content: message }, { role: 'assistant', content: reply.answer });
+    message = resultMessage(call, outcome);
+    if (round === ROUNDS - 2) message += '\n\n' + lastRoundNotice();
   }
   if (args.json) { term.out(JSON.stringify({ answer: writer.answer, model: model ?? 'artemis' }, null, 2) + '\n'); return failure ? 1 : 0; }
   if (failure) { term.err('\n' + style(term, 'red', failure) + '\n'); return 1; }
@@ -107,41 +139,30 @@ async function askOnce(client: Client, prompt: string, args: Parsed, fallback: s
   return 0;
 }
 
-async function interactive(client: Client, args: Parsed, fallback: string | undefined, term: Term): Promise<number> {
-  const model = args.model ?? fallback;
-  await announce(client, model, term);
-  term.err(style(term, 'dim', 'Artemis. Ctrl-D or /exit to leave, /model <id> to switch.') + '\n');
-  const rl = createInterface({ input: stdin, output: stdout });
-  const history: { role: 'user' | 'assistant'; content: string }[] = [];
-  let current = model;
+/** Hands over to the Ink UI: React components, Yoga layout, one full-screen app. */
+async function runInk(client: Client, args: Parsed, modelId: string): Promise<number> {
+  // Imported here, not at the top: `artemis models` in a script should not pay to
+  // load React, a reconciler and a WASM layout engine.
+  const [{ render }, { App }, { createElement }] = await Promise.all([
+    import('ink'),
+    import('./ui/App.tsx'),
+    import('react'),
+  ]);
+  let model: ModelInfo | undefined;
   try {
-    for (;;) {
-      const line = (await rl.question(style(term, 'cyan', '› '))).trim();
-      if (!line) continue;
-      if (line === '/exit' || line === '/quit') break;
-      if (line.startsWith('/model')) {
-        current = line.split(/\s+/)[1] || current;
-        await announce(client, current, term);
-        continue;
-      }
-      const writer = new AnswerWriter(term);
-      try {
-        for await (const event of client.stream({ message: line, model: current, brain: args.brain, tier: args.tier, history })) {
-          writer.handle(event);
-          if (event.type === 'error' || event.type === 'training') term.err('\n' + style(term, 'red', String(event.message ?? 'Artemis could not answer.')) + '\n');
-        }
-        term.out('\n\n');
-        // Only a real exchange is remembered, so a failed turn cannot poison the context.
-        if (writer.answer) history.push({ role: 'user', content: line }, { role: 'assistant', content: writer.answer });
-      } catch (error) {
-        fail(error, term);   // one bad turn should not end the session
-      }
-    }
+    model = (await client.models()).find((m) => m.id === modelId);
   } catch {
-    // Ctrl-D closes the stream; that is a normal exit, not a failure
-  } finally {
-    rl.close();
+    // Offline or unauthorised: the first question will report it properly.
   }
+  const app = render(createElement(App, {
+    client,
+    model,
+    modelId,
+    root: process.cwd(),
+    search: args.search,
+    ...(args.prompt ? { initialPrompt: args.prompt } : {}),
+  }));
+  await app.waitUntilExit();
   return 0;
 }
 

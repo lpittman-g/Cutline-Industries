@@ -5,6 +5,10 @@ export type Command = 'chat' | 'models' | 'status' | 'config' | 'help' | 'versio
 export interface Parsed {
   command: Command;
   prompt: string;
+  /** --plain drops the Ink UI for line output; implied when stdout is not a terminal. */
+  plain: boolean;
+  /** --no-search turns off the glob/grep retrieval loop for one run. */
+  search: boolean;
   model?: string;
   brain?: string;
   tier?: string;
@@ -19,7 +23,7 @@ const COMMANDS = new Set<Command>(['chat', 'models', 'status', 'config', 'help',
 const WITH_VALUE = new Set(['--model', '-m', '--brain', '--tier', '--url']);
 
 export function parseArgs(argv: string[]): Parsed {
-  const parsed: Parsed = { command: 'chat', prompt: '', json: false, setKey: false };
+  const parsed: Parsed = { command: 'chat', prompt: '', plain: false, search: true, json: false, setKey: false };
   const words: string[] = [];
   let first = true;
 
@@ -48,6 +52,8 @@ export function parseArgs(argv: string[]): Parsed {
       continue;
     }
     if (arg === '--json') { parsed.json = true; continue; }
+    if (arg === '--plain') { parsed.plain = true; continue; }
+    if (arg === '--no-search') { parsed.search = false; continue; }
     if (arg === '--help' || arg === '-h') return { ...parsed, command: 'help' };
     if (arg === '--version' || arg === '-V') return { ...parsed, command: 'version' };
     if (arg.startsWith('-') && arg !== '-') return { ...parsed, error: `unknown option ${arg}` };
@@ -74,11 +80,17 @@ export const HELP = `artemis — Artemis from the terminal
 
 Options
   -m, --model <id>   answer with this model (default: artemis)
+      --plain        line output instead of the full-screen UI
+      --no-search    answer without reading any files
       --brain <id>   send straight to one specialist
       --tier <id>    request a tier your plan allows
       --json         machine-readable output, for scripts
   -h, --help         this text
   -V, --version      print the version
+
+Artemis reads your files to answer: it writes globs and greps itself, there is no
+index to build and nothing goes stale after an edit. Every search it runs is shown.
+Nothing outside the working directory is read, and nothing is written.
 
 Piping works in both directions:
   cat notes.md | artemis "summarise this"

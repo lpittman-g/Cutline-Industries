@@ -112,3 +112,34 @@ def test_usage_endpoint_marks_an_unservable_model_unavailable():
     listed = {m["id"]: m for m in data["capabilities"]["models"]}
     assert code == 200 and listed["grok"]["available"] is False and listed["artemis"]["available"] is True
     jobs.shutdown(); app.pool.shutdown()
+
+
+# --------------------------------------------------------------- the terminal client
+
+def test_the_website_is_still_pushed_to_the_durable_endpoints():
+    """/v1/chat has no history, no resume and no owner; the site must not use it."""
+    biz, records, jobs, app, model, grok, owner = app_service()
+    _, headers = signed_in(records)
+    with server(make_chat_handler(app, biz, records, jobs)) as base:
+        for path in ("/v1/chat", "/v1/chat/stream"):
+            code, body = call(base, path, {"message": "hi"}, headers=headers)
+            assert code == 404 and "conversation endpoints" in body["error"]
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_an_api_key_client_reaches_the_streaming_endpoint():
+    """Artemis is terminal-first: a request carrying an API key is not the website."""
+    biz, records, jobs, app, model, grok, owner = app_service()
+    biz.db.execute("INSERT INTO api_keys VALUES (?, ?, ?, 0)", (biz._hash("art-cli"), "acct:cli", 0))
+    with server(make_chat_handler(app, biz, records, jobs)) as base:
+        code, body = call(base, "/v1/chat", {"message": "hi"}, headers={"Authorization": "Bearer art-cli"})
+    assert code == 200 and body["answer"], "the terminal must get an answer, not a 404"
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_an_anonymous_request_is_still_turned_away():
+    biz, records, jobs, app, model, grok, owner = app_service()
+    with server(make_chat_handler(app, biz, records, jobs)) as base:
+        code, _ = call(base, "/v1/chat", {"message": "hi"})
+    assert code == 404
+    jobs.shutdown(); app.pool.shutdown()

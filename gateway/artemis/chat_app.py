@@ -218,9 +218,17 @@ def make_chat_handler(app, biz, records, jobs, site=None):
             self.end_headers(); self.wfile.write(data)
 
         def do_POST(self):
-            if urlsplit(self.path).path in ("/v1/chat", "/v1/chat/stream"):
-                return self._json(404, {"error": "Use the authenticated conversation endpoints."})
+            # The website must go through /api/conversations, which is durable, resumable
+            # and owned by a signed-in account; /v1/chat is neither. A terminal client is
+            # a different thing: Artemis is terminal-first, and a request carrying an API
+            # key is not the website, so it gets the streaming endpoint. Cookie and
+            # anonymous requests are still turned away, which is what the gate was for.
+            if urlsplit(self.path).path in ("/v1/chat", "/v1/chat/stream") and not self._bearer():
+                return self._json(404, {"error": "Use the authenticated conversation endpoints, or an API key."})
             if not self._route("POST"): super().do_POST()
+
+        def _bearer(self) -> bool:
+            return self.headers.get("Authorization", "").startswith("Bearer ")
 
         def do_PATCH(self):
             if not self._route("PATCH"): self._json(404, {"error": "Not found."})

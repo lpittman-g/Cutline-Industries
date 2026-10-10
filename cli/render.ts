@@ -105,3 +105,9 @@ export class AnswerWriter {
     }
   }
 }
+
+/** Keeps a deep path from pushing a status line wider than the terminal. */
+export function short(path: string, max = 36): string {
+  if (path.length <= max) return path;
+  return '…' + path.slice(path.length - max + 1);
+}
