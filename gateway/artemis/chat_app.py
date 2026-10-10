@@ -79,6 +79,15 @@ def make_chat_handler(app, biz, records, jobs, site=None):
                     try: user = self._user()
                     except ChatError: user = None
                     self._json(200, {"user": user, "plan": biz.plan_of(user["id"]).id if user else None}); return True
+                if method == "GET" and name == "models":
+                    # The model picker. `external` lets the UI say plainly when a request
+                    # would leave our infrastructure, and an included model this server has
+                    # no credentials for is listed unavailable rather than hidden.
+                    try: user = self._user()
+                    except ChatError: user = None
+                    added = getattr(app, "added_models", {})
+                    self._json(200, {"models": [{**m, "available": m["id"] == "artemis" or m["id"] in added}
+                                                for m in biz.allowed_models(user["id"] if user else "")]}); return True
                 if method == "GET" and name == "health":
                     self._json(200, {"ok": True, "queued": records.db.one("SELECT COUNT(*) FROM chat_requests WHERE state='queued'")[0],
                         "generating": records.db.one("SELECT COUNT(*) FROM chat_requests WHERE state='generating'")[0]}); return True

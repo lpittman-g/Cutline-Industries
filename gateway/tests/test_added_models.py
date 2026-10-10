@@ -224,3 +224,84 @@ def _fake(payload, captured=None):
 
 def _boom(*a, **k):
     raise URLError("down")
+
+
+# --------------------------------------------------------------- the conversation app
+# The site talks to the conversation app (/api/conversations), not to /v1, so model
+# selection has to hold there too: authorized, recorded, and routed as a passthrough.
+
+from artemis.chat_jobs import ChatJobs                              # noqa: E402
+from artemis.conversations import ChatError, Conversations           # noqa: E402
+from test_chat_application import Model, account, complete           # noqa: E402
+
+
+def app_service(plan=None):
+    biz = Business(":memory:")
+    records = Conversations(biz.db)
+    model = Model()
+    app = Artemis(model)
+    grok = FakeGrok()
+    app.added_models = {"grok": grok}
+    jobs = ChatJobs(app, biz, records, workers=2)
+    user = account(records)
+    if plan:
+        biz.set_plan(user[0]["id"], plan)
+    return biz, records, jobs, app, model, grok, user[0]["id"]
+
+
+def test_a_selected_model_answers_the_conversation_and_is_recorded_as_itself():
+    biz, records, jobs, app, model, grok, owner = app_service("pro")
+    cid = records.create(owner, "c")["id"]
+    rid = jobs.submit(owner, cid, {"text": "hello", "model": "grok", "idempotency_key": "k" * 10})["id"]
+    request = complete(records, owner, rid)
+    assert request["state"] == "completed"
+    reply = records.load(owner, cid)["messages"][-1]
+    assert reply["content"] == "Grok here."
+    assert "Grok" in request["model"] and "xai" in request["model"], "the record must name who replied"
+    assert model.calls == [], "Artemis's own reasoning must not run for a passthrough"
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_the_conversation_default_is_still_artemis():
+    biz, records, jobs, app, model, grok, owner = app_service("pro")
+    cid = records.create(owner, "c")["id"]
+    rid = jobs.submit(owner, cid, {"text": "hello", "idempotency_key": "k" * 10})["id"]
+    complete(records, owner, rid)
+    assert grok.calls == [] and model.calls, "no model field must mean Artemis"
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_a_plan_without_the_model_is_refused_before_anything_is_stored():
+    biz, records, jobs, app, model, grok, owner = app_service()      # free plan
+    cid = records.create(owner, "c")["id"]
+    with pytest.raises(PaymentRequired):
+        jobs.submit(owner, cid, {"text": "hello", "model": "grok", "idempotency_key": "k" * 10})
+    assert records.load(owner, cid)["messages"] == [] and grok.calls == []
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_an_included_model_with_no_credentials_is_refused_not_answered_by_artemis():
+    biz, records, jobs, app, model, grok, owner = app_service("pro")
+    app.added_models = {}
+    cid = records.create(owner, "c")["id"]
+    with pytest.raises(ChatError) as caught:
+        jobs.submit(owner, cid, {"text": "hello", "model": "grok", "idempotency_key": "k" * 10})
+    assert caught.value.category == "model_unavailable"
+    assert model.calls == [], "must not silently charge for Grok and answer as Artemis"
+    jobs.shutdown(); app.pool.shutdown()
+
+
+def test_a_provider_failure_fails_the_request_with_its_name():
+    biz, records, jobs, app, model, grok, owner = app_service("pro")
+
+    class Broken:
+        def stream(self, system, messages, max_tokens=512, metadata_sink=None):
+            raise ModelUnavailable("down")
+            yield ""   # pragma: no cover - makes this a generator
+
+    app.added_models = {"grok": Broken()}
+    cid = records.create(owner, "c")["id"]
+    rid = jobs.submit(owner, cid, {"text": "hello", "model": "grok", "idempotency_key": "k" * 10})["id"]
+    request = complete(records, owner, rid)
+    assert request["state"] == "failed" and request["error"] == "model_unavailable"
+    jobs.shutdown(); app.pool.shutdown()

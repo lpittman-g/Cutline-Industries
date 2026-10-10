@@ -35,6 +35,48 @@
   const branchRow = node('div', 'workspace-branches'), branchPicker = node('select'); branchPicker.setAttribute('aria-label', 'Conversation branch');
   branchRow.append(node('span', '', 'Branch'), branchPicker); header.append(branchRow);
   branchPicker.addEventListener('change', () => action(async () => { await api('/api/conversations/' + active.id, { method: 'PATCH', body: { head_id: branchPicker.value } }); head = branchPicker.value; render(); }));
+
+  // Model picker. Artemis is our own model and always the default; a plan may also
+  // include a third-party model as an added service. A request sent to one of those
+  // leaves our infrastructure, so the option says so and the notice repeats it while
+  // it is selected - a customer should never have to guess who answered.
+  const modelRow = node('div', 'workspace-models'), modelPicker = node('select');
+  const modelNote = node('span', 'workspace-model-note');
+  modelPicker.setAttribute('aria-label', 'Model'); modelRow.hidden = true;
+  modelRow.append(node('span', '', 'Model'), modelPicker, modelNote); header.append(modelRow);
+  let models = [{ id: 'artemis', display: 'Artemis', external: false, available: true }];
+  let chosenModel = 'artemis';
+  try { chosenModel = localStorage.getItem('artemis.model') || 'artemis'; } catch {}
+
+  function describeModel() {
+    const current = models.find(m => m.id === chosenModel);
+    modelNote.textContent = current && current.external
+      ? 'Third-party model. This request leaves Artemis.' : '';
+  }
+  function renderModels() {
+    modelPicker.replaceChildren();
+    for (const m of models) {
+      const option = node('option', '', m.display + (m.external ? ' · third party' : '') + (m.available ? '' : ' (unavailable)'));
+      option.value = m.id; option.disabled = !m.available; modelPicker.append(option);
+    }
+    if (!models.some(m => m.id === chosenModel && m.available)) chosenModel = 'artemis';
+    modelPicker.value = chosenModel;
+    modelRow.hidden = models.length < 2;
+    describeModel();
+  }
+  modelPicker.addEventListener('change', () => {
+    chosenModel = modelPicker.value;
+    try { localStorage.setItem('artemis.model', chosenModel); } catch {}
+    describeModel();
+  });
+  async function loadModels() {
+    try {
+      const response = await api('/api/models');
+      if (Array.isArray(response.models) && response.models.length) models = response.models;
+    } catch { /* keep Artemis only; the picker stays hidden */ }
+    renderModels();
+  }
+  renderModels();
   sidebar.replaceChildren();
   const newButton = button('＋ New chat', newConversation, 'btn new'), search = node('input', 'session-search');
   search.type = 'search'; search.placeholder = 'Search conversations'; search.setAttribute('aria-label', 'Search conversations');
@@ -194,7 +236,7 @@
     }
     const cid = active.id, saved = pending[cid];
     if (saved && JSON.stringify(saved.text) !== JSON.stringify(fields.text)) { showNotice('An earlier request has uncertain delivery. Retry that request before sending different input.', button('Retry delivery', () => submit(saved))); return; }
-    const payload = saved || { ...fields, head_id: head, idempotency_key: crypto.randomUUID() };
+    const payload = saved || { ...fields, model: chosenModel, head_id: head, idempotency_key: crypto.randomUUID() };
     pending[cid] = payload; saveDrafts(); flight = { delivering: true }; controls(); showNotice('Connecting…');
     try {
       let result;
@@ -318,6 +360,7 @@
   const requestedPanel = new URLSearchParams(location.search).get('panel');
   if (requestedPanel && Object.prototype.hasOwnProperty.call(panels, requestedPanel)) selectPanel(requestedPanel);
   render();
+  loadModels();
   api('/api/status').then(info => { model.textContent = info.model || 'Artemis'; status.textContent = info.serving ? 'Model connected' : info.status === 'unavailable' ? 'Model unavailable' : 'Model not ready'; status.dataset.state = info.serving ? 'available' : 'unavailable'; status.title = 'Availability does not certify answer quality.'; }).catch(() => { status.textContent = 'Connection unavailable'; });
   const retrySignIn = button('Check connection again', () => checkAccountService()); retrySignIn.hidden = true; authForm.append(retrySignIn);
   async function checkAccountService() {
@@ -326,6 +369,7 @@
       const response = await api('/api/me');
       if (!Object.hasOwn(response, 'user') || (response.user && (!response.user.id || !response.user.csrf))) throw new Error('Invalid session response.');
       user = response.user; authReady = true; authError.textContent = ''; retrySignIn.hidden = true;
+      loadModels();   // the plan, and so the models offered, depend on who is signed in
       if (user) await signedIn(); else { accountState(); render(); }
     } catch {
       authError.textContent = 'Sign-in is temporarily unavailable. Please try again later.'; retrySignIn.hidden = false;
