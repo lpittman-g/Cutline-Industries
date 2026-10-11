@@ -28,6 +28,11 @@ When the user says **`print`**:
 
 **Copilot:** use custom agent **`@thermal`** (`.github/agents/thermal.agent.md`).
 
+When the user says **`run auto`**:
+
+1. `npm run autopilot:once` (single pass)
+2. If the user asks for continuous mode: `npm run autopilot`
+
 Canonical docs: [docs/THERMAL-MISSION-CONTROL.md](../docs/THERMAL-MISSION-CONTROL.md), [docs/THERMAL.md](../docs/THERMAL.md).
 
 | Tier | Product | Price |

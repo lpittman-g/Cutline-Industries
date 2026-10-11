@@ -95,6 +95,30 @@ Open this repo in **Cursor** — Copilot/VS Code optional.
 | Email → Cursor | `tools/email-to-cursor/` | Email triggers Cloud Agent runs |
 | SynthLang CI | `.github/workflows/synthlang-pipeline.yml` | Lint, typecheck, test, build |
 
+### Ramp CLI output modes
+
+Ramp CLI supports both table and JSON output modes:
+
+| Flag | Behavior |
+|------|----------|
+| `--human` | Human-readable table output |
+| `--agent` | Machine-readable JSON output |
+| `--wide` | Show all columns in table output |
+
+Repo scripts for common auth/data calls with explicit mode selection:
+
+```bash
+npm run ramp:auth:login
+npm run ramp:auth:status
+npm run ramp:auth:logout
+npm run ramp:users:me
+npm run ramp:users:me:human
+npm run ramp:users:me:wide
+npm run ramp:bills:search:acme
+npm run ramp:transactions:list
+RAMP_FROM_DATE=2025-01-01 npm run ramp:transactions:list:from
+```
+
 ## Deploy
 
 - **CI:** GitHub Actions on push to `main`
