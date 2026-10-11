@@ -14,11 +14,11 @@
     },
     {
       "source": "/gateway/status",
-      "destination": "https://api.cutline-industries.studio/api/status"
+      "destination": "https://api.artemisai-bycutlineindustries.studio/api/status"
     },
     {
       "source": "/gateway/health",
-      "destination": "https://api.cutline-industries.studio/api/health"
+      "destination": "https://api.artemisai-bycutlineindustries.studio/api/health"
     }
   ],
   "headers": [
