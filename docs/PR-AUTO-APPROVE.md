@@ -33,6 +33,11 @@ Do this once in GitHub → **Settings**:
 |----------|----------|
 | `cursor/**` branches | Other branch prefixes |
 | Same-repo PRs | External forks (token limits) |
+| | `cursor/cutline-thermal-autopilot-*` branches |
+| | PRs labeled `thermal-autopilot` |
+
+Thermal Autopilot draft PRs stay human-merge only — that automation must never
+squash-merge itself (see [`THERMAL-AUTOMATION-MCP.md`](./THERMAL-AUTOMATION-MCP.md)).
 
 ## Troubleshooting
 
