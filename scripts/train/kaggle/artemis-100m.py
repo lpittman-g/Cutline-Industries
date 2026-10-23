@@ -39,13 +39,47 @@ def run(cmd, **kw):
     return subprocess.run(cmd, check=True, **kw)
 
 
+def patch_bf16_detection(gateway: Path) -> None:
+    """Stop the trainer selecting bf16 on a card that has no bf16.
+
+    train.py picks the autocast dtype with torch.cuda.is_bf16_supported(), and
+    on a Tesla T4 that returns TRUE -- it reports whether CUDA can emulate
+    bf16, not whether the silicon implements it. The first run on Kaggle
+    printed "autocast bfloat16 on Tesla T4" and trained in emulated bf16 with
+    no GradScaler, which is precisely the case the surrounding comment was
+    written to prevent.
+
+    Compute capability is the honest test: bf16 arrives with Ampere, sm_80.
+    Turing (T4, sm_75) and Pascal (P100, sm_60) fall through to fp16, which is
+    what they actually have, and the GradScaler attaches as intended.
+
+    Applied here rather than in the repository only because this session cannot
+    push. Fix it upstream and delete this function.
+    """
+    f = gateway / "artemis" / "train.py"
+    src = f.read_text()
+    old = "torch.cuda.is_bf16_supported()"
+    new = "torch.cuda.get_device_capability()[0] >= 8"
+    if old not in src:
+        print("  bf16 patch: pattern absent -- already fixed upstream?", flush=True)
+        return
+    f.write_text(src.replace(old, new))
+    print(f"  bf16 patch: {old} -> {new}", flush=True)
+
+
 def find_prior():
-    """A previous session's output, attached as an input dataset."""
+    """A previous session's output, attached as an input.
+
+    Looks for the CORPUS, not the checkpoint. The first run OOMed at step 1
+    after spending ~3 h preparing 2.24B tokens, so a prior with usable data and
+    no checkpoint is the normal case, not an edge case -- and re-preparing
+    would burn another 3 h of a 30 h weekly allowance for nothing.
+    """
     root = Path("/kaggle/input")
     if not root.exists():
         return None
     for d in sorted(root.iterdir()):
-        if (d / "artemis" / "run" / "latest.pt").exists():
+        if (d / "artemis" / "data" / "train.bin").exists():
             return d / "artemis"
     return None
 
@@ -66,37 +100,48 @@ def main():
     else:
         run(["git", "-C", str(SRC), "pull", "--ff-only", "--quiet"])
     gateway = SRC / "gateway"
+    patch_bf16_detection(gateway)
 
     prior = find_prior()
+    data_dir = WORK / "data"
     if prior:
-        print(f"=== resuming from {prior} ===", flush=True)
-        if not (WORK / "data").exists():
-            run(["cp", "-r", str(prior / "data"), str(WORK / "data")])
+        # /kaggle/input is read-only, which is fine: TokenStream memory-maps the
+        # bins read-only. Copying 4.4 GB into /kaggle/working would waste both
+        # the time and the 20 GB output allowance.
+        data_dir = prior / "data"
+        print(f"=== reusing prepared corpus at {data_dir} ===", flush=True)
         (WORK / "run").mkdir(parents=True, exist_ok=True)
-        if not (WORK / "run" / "latest.pt").exists():
-            run(["cp", str(prior / "run" / "latest.pt"), str(WORK / "run" / "latest.pt")])
+        ck = prior / "run" / "latest.pt"
+        if ck.exists() and not (WORK / "run" / "latest.pt").exists():
+            run(["cp", str(ck), str(WORK / "run" / "latest.pt")])
+            print("=== resuming from checkpoint ===", flush=True)
 
-    if not (WORK / "data" / "train.bin").exists():
+    if not (data_dir / "train.bin").exists():
         print("=== preparing corpus (one shard at a time; deleted as it goes) ===", flush=True)
         run([sys.executable, "-m", "artemis.stream_corpus",
              "--work", str(WORK), "--shards", str(SHARDS), "--vocab", "32000",
              "--tokenizer-shards", "2"], cwd=gateway)
 
-    manifest = json.loads((WORK / "data" / "manifest.json").read_text())
+    manifest = json.loads((data_dir / "manifest.json").read_text())
     tokens = manifest["train_tokens"] + manifest["val_tokens"]
     print(f"=== corpus: {tokens:,} tokens ===", flush=True)
 
     # Steps follow the token budget, not the clock. The session may not reach
     # the end; --stop-at lets it stop cleanly where it is, and the next session
     # picks up from the same step count.
-    batch, accum, seq = 6, 4, 2048
+    # MEASURED, not assumed: batch 6 x seq 2048 OOMs on a T4 -- it asked for
+    # 1.12 GiB with 490 MiB free of 14.56 GiB. docs/TRAIN-ON-YOUR-OWN-GPU.md
+    # claims that shape "fits comfortably in 12 GB"; it does not, and that
+    # claim cost one run. batch 2 with accum 12 holds tokens-per-step
+    # identical, so the schedule is unchanged, at a third of the activations.
+    batch, accum, seq = 2, 12, 2048
     ngpu = int(subprocess.run(["nvidia-smi", "--list-gpus"], capture_output=True,
                               text=True).stdout.count("GPU "))
     per_step = batch * accum * seq * max(ngpu, 1)
     steps = 2_215_111_680 // per_step
     print(f"=== {ngpu} GPU(s), {per_step:,} tokens/step, {steps:,} steps total ===", flush=True)
 
-    args = ["--size", SIZE, "--data", str(WORK / "data"), "--out", str(WORK / "run"),
+    args = ["--size", SIZE, "--data", str(data_dir), "--out", str(WORK / "run"),
             "--steps", str(steps), "--batch", str(batch), "--accum", str(accum),
             "--lr", "3e-4", "--warmup", str(max(1, steps // 50)), "--seed", "1337",
             "--route-coef", "0", "--eval-every", "500", "--eval-batches", "20",
